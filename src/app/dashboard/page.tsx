@@ -54,7 +54,7 @@ import { DEMO_USER, SERVICE_COLUMNS } from "@/lib/data/services";
 function WelcomeSection() {
   return (
     <section
-      className="gnl-gutter [--gnl-gutter:120px] flex h-[228px] w-full flex-col items-start gap-[24px] bg-white pt-[48px] pb-[40px] shadow-[inset_0_-1px_0_0_#d4d8da] max-md:h-auto max-md:min-h-[228px] max-md:pt-[32px] max-md:pb-[32px]"
+      className="gnl-gutter [--gnl-gutter:120px] flex min-h-[228px] w-full flex-col items-start gap-[24px] bg-white pt-[48px] pb-[40px] shadow-[inset_0_-1px_0_0_#d4d8da] max-md:pt-[32px] max-md:pb-[32px]"
       data-node-id="6031:5976"
     >
       <p
@@ -153,7 +153,7 @@ function SearchButton() {
 function FavouritesSection() {
   return (
     <section
-      className="gnl-gutter [--gnl-gutter:120px] flex h-[136px] w-full flex-col items-start gap-[12px] pt-[40px] pb-[20px] max-[1439px]:h-auto max-[1439px]:min-h-[136px]"
+      className="gnl-gutter [--gnl-gutter:120px] flex min-h-[136px] w-full flex-col items-start gap-[12px] pt-[40px] pb-[20px]"
       data-node-id="6031:5983"
     >
       <p

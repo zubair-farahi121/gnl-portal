@@ -28,14 +28,15 @@ import { BtnSignOut, NavLinks } from "@/components/chrome/TopNav";
 export function MobileTopNav() {
   return (
     <nav
-      className="box-border flex h-[145px] w-full flex-col items-start gap-[24px] bg-[#2b3a4e] px-[16px] py-[16px] shadow-[inset_0_-1px_0_0_#ffffff] max-xxs:h-auto max-xxs:min-h-[145px]"
+      aria-label="Main navigation"
+      className="box-border flex min-h-[145px] w-full flex-col items-start gap-[16px] bg-[#2b3a4e] px-[16px] py-[16px] shadow-[inset_0_-1px_0_0_#ffffff]"
       data-node-id="6039:9699"
     >
       {/* 6039:8929 — logo and sign-out */}
       <div className="flex w-full shrink-0 items-start justify-between">
         <Link href="/dashboard/" className="relative h-[33.645px] w-[112px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none" src={ASSETS.mygovnlLogo} />
+          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none object-contain" src={ASSETS.mygovnlLogo} />
         </Link>
         <div className="flex shrink-0 items-center">
           <BtnSignOut />
@@ -43,7 +44,7 @@ export function MobileTopNav() {
       </div>
 
       {/* nav-links 6039:8941 — wraps to two lines at 393px */}
-      <NavLinks className="flex w-full shrink-0 flex-wrap content-center items-center justify-center gap-[16px]" />
+      <NavLinks className="flex w-full shrink-0 flex-wrap content-center items-center justify-center gap-x-[16px]" />
     </nav>
   );
 }

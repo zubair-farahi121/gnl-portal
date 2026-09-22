@@ -51,6 +51,15 @@
  * rule (< 480) would fire at 393 and move the mobile baselines. Mobile
  * components therefore relax at `max-xxs:` (< 384), below their own design
  * width, exactly as desktop components relax below 1440.
+ *
+ * 768 IS ALSO THE CID CHROME SWITCH (added 2026-09-22). Below it the three CID
+ * screens are the Figma mobile frames; at and above it they are dropped into
+ * the desktop wizard chrome the rest of the flow already uses. See
+ * `.gnl-cid-shell` below. That switch uses the NAMED `md` / `max-md` variants
+ * and nothing else: Tailwind sorts arbitrary max-width variants such as
+ * `max-[768px]` into a different group from the named ones, so an arbitrary
+ * one loses to `max-xl` at phone widths. That bug has already been found and
+ * fixed once in this repo — see the wrapper div in the onboard page.
  */
 @theme {
   --breakpoint-xs: 30rem;
@@ -107,6 +116,39 @@ body {
 }
 
 /*
+ * STICKY FOOTER
+ *
+ * Several screens are shorter than the viewport — the prerequisite wizard and
+ * the unverified service page most of all. Without this the footer ended
+ * wherever the content ended and left a band of white below it, which reads
+ * as a page that failed to load the rest of itself.
+ *
+ * `min-height` (not `height`) plus `margin-top: auto` on the footer: on a
+ * short page the leftover space collects above the footer and pushes it to
+ * the bottom of the screen; on a long page there is no leftover space, the
+ * rule resolves to 0, and nothing moves. It is self-cancelling, which is why
+ * it needs no breakpoint.
+ *
+ * Safe for the visual gate: the gate sets the viewport to each frame's design
+ * height, so `100dvh` equals the content height exactly and the auto margin
+ * resolves to 0 on all ten frames.
+ *
+ * `dvh` rather than `vh` so a phone measures the visible area, not the area
+ * behind the browser's own toolbars.
+ */
+.gnl-desktop-shell,
+.gnl-mobile-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.gnl-desktop-shell > footer,
+.gnl-mobile-shell > footer {
+  margin-top: auto;
+}
+
+/*
  * The CID screens are drawn at 393 (iPhone 14/15 Pro). On a phone that is the
  * native width and they fill the screen. On a laptop they are a centred
  * reading column — capped a little above their design width so the line
@@ -136,6 +178,87 @@ body {
     border-inline: 1px solid var(--gnl-border);
     box-shadow: var(--gnl-shadow-card);
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * .gnl-cid-shell — THE CID SHELL. Mobile below 768, desktop at/above.
+ *
+ * INVENTED. Figma has MOBILE frames only for the three CID screens
+ * (6217:62834 / 62835 / 66058, all 393 wide). There is no desktop CID frame,
+ * so everything this class does at >= 768 is a design decision made in code,
+ * not a measurement. Below 768 it is byte-identical to `.gnl-mobile-shell`.
+ *
+ * WHY IT EXISTS. `/services/driver-vehicle/onboard/` and `/confirmation/`
+ * either side of the CID steps are real 1440 desktop frames. With the CID
+ * steps capped at 480 the demo went full desktop page -> 480px strip -> full
+ * desktop page on a laptop, which reads as a half-loaded page. The strip is
+ * honest to Figma and still wrong for the flow; the decision (2026-09-22) was
+ * to reuse the desktop wizard chrome so the flow stops jumping.
+ *
+ * A SEPARATE CLASS, not a conditional bolted onto the two existing shells:
+ * `.gnl-desktop-shell` and `.gnl-mobile-shell` are used by the other seven
+ * routes and none of them may move.
+ *
+ * PURE CSS, NO JAVASCRIPT. Both chromes are in the DOM and one is switched off
+ * per breakpoint with `max-md:hidden` / `md:hidden` (see CidScreen). There is
+ * no media-query hook anywhere in this project on purpose — layout.tsx has no
+ * `suppressHydrationWarning`, so a server/client branch would surface as a
+ * hydration error.
+ * ------------------------------------------------------------------ */
+.gnl-cid-shell {
+  /* < 768: the mobile shell, value for value. */
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  background: var(--gnl-surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/*
+ * Sticky footer. Same treatment as the other two shells, but a DESCENDANT
+ * selector rather than `> footer`: inside this shell each footer sits in a
+ * `display: contents` wrapper that switches it on or off by breakpoint, so it
+ * is a DOM grandchild while still being a flex ITEM of the shell — and
+ * selectors match the DOM tree, not the box tree. Only one footer is ever
+ * displayed; the other is `display: none`.
+ */
+.gnl-cid-shell footer {
+  margin-top: auto;
+}
+
+/*
+ * 481..767 — mobile chrome, but the column no longer fills the viewport. Same
+ * hairline + card shadow `.gnl-mobile-shell` uses, and for the same reason:
+ * without it the dark CID header just ends mid-screen against bare white.
+ * It stops at 768, where the desktop chrome takes over and the shell is a
+ * full-bleed page rather than a column.
+ */
+@media (min-width: 481px) and (max-width: 767.98px) {
+  .gnl-cid-shell {
+    border-inline: 1px solid var(--gnl-border);
+    box-shadow: var(--gnl-shadow-card);
+  }
+}
+
+/* >= 768: the desktop shell's cap, so TopNav / WizardCard / SiteFooter sit
+ * exactly where they do on the onboard page. */
+@media (min-width: 768px) {
+  .gnl-cid-shell {
+    max-width: 1440px;
+  }
+}
+
+/*
+ * Same overflow net as the other two shells, and — importantly — the same
+ * `min-width: 1441px` gap in it, so `.gnl-bleed` on TopNav and the desktop
+ * footer is not clipped on a monitor wider than the 1440 cap.
+ */
+.gnl-cid-shell,
+.gnl-desktop-shell,
+.gnl-mobile-shell {
+  overflow-wrap: anywhere;
 }
 
 /*
@@ -233,9 +356,35 @@ body {
  *
  * Unlayered, so it outranks the Tailwind `min-h-[40px]` utilities it is
  * meant to raise.
+ *
+ * `.gnl-cid-desktop-chrome` is the CID screens' desktop-only wrapper (see
+ * CidScreen). It is `display: none` below 768, so the only width where this
+ * second selector can do anything is exactly 768 — and it has to, or the
+ * desktop TopNav renders 44px targets on /onboard/ and 40px targets on
+ * /cid/terms/ at that one width, which is a visible step between two
+ * consecutive steps of the same flow. The CID *mobile* chrome is deliberately
+ * NOT covered: it is drawn at 393 at its own 37/39/40px heights.
  */
 @media (max-width: 768px) {
-  .gnl-desktop-shell .gnl-touch {
+  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) :is(a, button) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) footer a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) footer {
+    height: auto;
+  }
+
+  .gnl-desktop-shell .gnl-touch,
+  .gnl-cid-desktop-chrome .gnl-touch {
     min-height: 44px;
   }
 }
@@ -340,21 +489,8 @@ body {
   }
 }
 
-/*
- * Last line of defence.
- *
- * `clip` rather than `hidden`: it does not create a scroll container, so it
- * cannot swallow a sticky element or hand the page its own scrollbar — it
- * only stops a too-wide child from dragging the document sideways. Scoped
- * below the design width, so at >= 1440 the shells still clip nothing at all.
- *
- * This is a net, not a layout strategy. Anything it actually catches is a
- * box that still needs to be made to reflow.
- */
-@media (max-width: 1439px) {
-  .gnl-desktop-shell,
-  .gnl-mobile-shell {
-    overflow-x: clip;
-    overflow-y: visible;
-  }
+:focus-visible {
+  outline: 3px solid #004b87;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px white;
 }

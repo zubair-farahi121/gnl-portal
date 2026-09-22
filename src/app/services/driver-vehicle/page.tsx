@@ -96,7 +96,7 @@ const TITLE_ROW =
 
 /** Every inline link in this frame: #004b87, Bold, underlined from-font. */
 const LINK =
-  "text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
+  "inline-flex items-center text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
 
 /**
  * All four cards on this page share one chrome. The border is #d4d8da, NOT the

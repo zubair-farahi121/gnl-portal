@@ -1,9 +1,6 @@
-import { PhoneFrame } from "@/components/mobile/PhoneFrame";
-import { MobileTopNav } from "@/components/mobile/MobileTopNav";
-import { SiteFooter } from "@/components/chrome/SiteFooter";
-import { WizardHeader } from "@/components/wizard/WizardHeader";
+import { CidScreen } from "@/components/cid/CidScreen";
 import { BtnOutline } from "@/components/ui/BtnOutline";
-import { CID_ACTIONS, CID_BIOMETRIC, CID_STEPPER_FILL, CID_WIZARD_TITLE } from "@/lib/data/cid";
+import { CID_ACTIONS, CID_BIOMETRIC } from "@/lib/data/cid";
 
 /*
  * CID_Biometric — Figma 6217:62835, 393 x 834.810546875.
@@ -32,66 +29,73 @@ import { CID_ACTIONS, CID_BIOMETRIC, CID_STEPPER_FILL, CID_WIZARD_TITLE } from "
  *
  * HIDDEN LAYER NOT RENDERED: instance 6049:12263 ("Check box") is
  * hidden="true" in Figma.
+ *
+ * ------------------------------------------------------------------------
+ * DESKTOP LAYOUT — 2026-09-22. INVENTED; NOT IN FIGMA.
+ *
+ * Identical treatment to CID_TU, and for the same reason: this frame exists
+ * only at 393 in Figma, and on a laptop it sat as a 480px strip between two
+ * real 1440 frames. At and above 768 the content goes into the onboard page's
+ * wizard chrome — see CidScreen for the full provenance note.
+ *
+ * Every `md:` class below is part of that invention; nothing else moved, and
+ * the visual gate still measures this frame at 393 x 842 (dH +7 against 835,
+ * the known Figma-vs-CSS line-box difference).
+ *   Frame 5  `md:pb-0`  — the card's own 32px gap replaces the mobile 24px pad.
+ *   Frame 6  onboard actions-row geometry: right aligned, natural widths,
+ *            24px apart, 16px above, instead of two half-width buttons.
+ * The 32px heading and 16px body are unchanged at every width.
+ * ------------------------------------------------------------------------
  */
 export default function CidBiometricPage() {
   return (
-    <PhoneFrame>
-      <MobileTopNav />
-
-      <main
-        className="box-border flex w-full flex-col items-start gap-[8px] px-[16px] py-[24px]"
-        data-node-id="6049:12228"
+    <CidScreen mainNodeId="6049:12228" subStep={CID_BIOMETRIC.subStep}>
+      {/* Frame 5 — 6049:12239 */}
+      <div
+        className="flex w-full shrink-0 flex-col items-start gap-[16px] pt-0 pb-[24px] md:pb-0"
+        data-node-id="6049:12239"
       >
-        <WizardHeader
-          title={CID_WIZARD_TITLE}
-          current={2}
-          fillWidth={CID_STEPPER_FILL}
-          subStep={CID_BIOMETRIC.subStep}
-        />
-
-        {/* Frame 5 — 6049:12239 */}
-        <div
-          className="flex w-full shrink-0 flex-col items-start gap-[16px] pt-0 pb-[24px]"
-          data-node-id="6049:12239"
+        <p
+          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          data-node-id="6049:12240"
         >
+          {CID_BIOMETRIC.title}
+        </p>
+
+        {/* card-description 6049:12262 */}
+        <div
+          className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+          data-node-id="6049:12262"
+        >
+          <p className="mb-[16px] leading-[24px]">{CID_BIOMETRIC.body}</p>
+          {/* Inert, as on CID_TU — the design gives it no destination. */}
           <p
-            className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
-            data-node-id="6049:12240"
+            className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+            data-demo-inert="true"
           >
-            {CID_BIOMETRIC.title}
+            {CID_BIOMETRIC.linkLabel}
           </p>
-
-          {/* card-description 6049:12262 */}
-          <div
-            className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
-            data-node-id="6049:12262"
-          >
-            <p className="mb-[16px] leading-[24px]">{CID_BIOMETRIC.body}</p>
-            {/* Inert, as on CID_TU — the design gives it no destination. */}
-            <p
-              className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
-              data-demo-inert="true"
-            >
-              {CID_BIOMETRIC.linkLabel}
-            </p>
-          </div>
         </div>
+      </div>
 
-        {/* Frame 6 — 6049:12264 */}
-        <div
-          className="flex w-full shrink-0 items-start gap-[8px]"
-          data-node-id="6049:12264"
+      {/* Frame 6 — 6049:12264 */}
+      <div
+        className="flex w-full shrink-0 items-start gap-[8px] md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        data-node-id="6049:12264"
+      >
+        <BtnOutline
+          href="/cid/terms/"
+          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
-          <BtnOutline href="/cid/terms/" className="min-w-px flex-[1_0_0] justify-center">
-            {CID_ACTIONS.decline}
-          </BtnOutline>
-          <BtnOutline href="/cid/verified/" className="min-w-px flex-[1_0_0] justify-center">
-            {CID_ACTIONS.accept}
-          </BtnOutline>
-        </div>
-      </main>
-
-      <SiteFooter variant="mobile" />
-    </PhoneFrame>
+          {CID_ACTIONS.decline}
+        </BtnOutline>
+        <BtnOutline
+          href="/cid/verified/"
+          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
+        >
+          {CID_ACTIONS.accept}
+        </BtnOutline>
+      </div>
+    </CidScreen>
   );
 }

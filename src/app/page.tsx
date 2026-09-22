@@ -54,7 +54,7 @@ import { FAQ_ITEMS, LANDING_SERVICES } from "@/lib/data/landing";
 function HeroSection() {
   return (
     <section
-      className="relative flex h-[560px] w-full flex-col items-center justify-center max-xs:h-auto max-xs:min-h-[560px] max-xs:px-[16px] max-xs:py-[40px]"
+      className="relative flex min-h-[560px] w-full flex-col items-center justify-center px-[16px] py-[40px]"
       data-node-id="6031:5867"
     >
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -86,7 +86,7 @@ function HeroSection() {
         {/* 6125:46291 — the two spans sit on a 0px parent so only their own
             22px line boxes contribute height. Note the 15px/14px size split. */}
         <div className="flex w-full shrink-0 items-center" data-node-id="6125:46291">
-          <p className="shrink-0 text-[0px] leading-[0] font-normal whitespace-nowrap text-[#5f6368] [word-break:break-word]">
+          <p className="min-w-0 text-[0px] leading-[0] font-normal text-[#5f6368] [word-break:break-word]">
             <span className="text-[15px] leading-[22px]">
               Don&#x2019;t have an account?{" "}
             </span>

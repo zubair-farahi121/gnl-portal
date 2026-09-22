@@ -54,17 +54,38 @@ import { STEPPER_STEPS, type StepIndex } from "@/lib/demo-data";
  * Keying the variants to the size map is what keeps those two ladders apart
  * without a second component or a `.gnl-desktop-shell` descendant selector.
  */
-const BAR_H = { sm: "h-[8px]", lg: "h-[16px]" } as const;
+/*
+ * THE THIRD SCALE — `cid`. INVENTED ABOVE 768; MEASURED BELOW IT.
+ *
+ * Added 2026-09-22 with the CID desktop layout. Below 768 every value in it is
+ * `sm` character for character, so the three 393px Figma frames are untouched.
+ * At and above 768 it steps up to the `lg` numbers, because there the same
+ * stepper renders inside the same 820px WizardCard as /onboard/ and
+ * /confirmation/ — two consecutive steps of one wizard cannot show an 8px bar
+ * with 12px labels on one screen and a 16px bar with 16px labels on the next.
+ *
+ * Figma has NO desktop CID frame, so the `md:` half of each pair below is a
+ * design decision made in code and is up to Tatyana to accept or replace. The
+ * `sm` and `lg` maps themselves are deliberately left alone — they are the
+ * measured scales, and seven other routes depend on `lg`.
+ */
+const BAR_H = { sm: "h-[8px]", lg: "h-[16px]", cid: "h-[8px] md:h-[16px]" } as const;
 /** Column gap of `progress-stepper` itself. CID mobile is 8px, desktop 12px. */
-const STACK_GAP = { sm: "gap-[8px]", lg: "gap-[12px]" } as const;
+const STACK_GAP = {
+  sm: "gap-[8px]",
+  lg: "gap-[12px]",
+  cid: "gap-[8px] md:gap-[12px]",
+} as const;
 const LABEL_SIZE = {
   sm: "text-[12px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
-  lg: "text-[16px] max-md:text-[14px] max-xs:gap-[8px] max-xs:text-[12px] max-xs:whitespace-normal max-xxs:gap-[4px] max-xxs:text-[10px]",
+  lg: "text-[16px] max-md:gap-[8px] max-md:text-[12px] max-md:whitespace-normal max-xxs:grid max-xxs:grid-cols-2 max-xxs:gap-[8px]",
+  cid: "text-[12px] md:text-[16px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
 } as const;
 /** Figma marks the current label Lato:Bold on --gnl-heading at both scales. */
 const CURRENT_LABEL = {
   sm: "font-bold text-[color:var(--gnl-heading,#212326)]",
   lg: "font-bold text-[#212326]",
+  cid: "font-bold text-[color:var(--gnl-heading,#212326)]",
 } as const;
 
 /**
@@ -82,10 +103,13 @@ const CURRENT_LABEL = {
  */
 const LABEL_ITEM = {
   sm: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
-  lg: "shrink-0 max-xs:min-w-px max-xs:flex-1 max-xs:text-center",
+  lg: "shrink-0 max-md:min-w-0 max-md:flex-1 max-md:text-center max-xxs:text-left",
+  /* Same as `sm`: at >= 768 the 16px labels have a >= 700px track, which is
+   * what `lg` already survives at 1440, so nothing needs releasing there. */
+  cid: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
 } as const;
 
-export type StepperSize = "sm" | "lg";
+export type StepperSize = "sm" | "lg" | "cid";
 
 /**
  * `sub-step-readout` content. Present on the three CID mobile frames only —
@@ -123,6 +147,7 @@ export function ProgressStepper({
   fillWidth?: string;
 }) {
   const pct = ((current + 1) / STEPPER_STEPS.length) * 100;
+  const pctWidth = `${pct}%`;
 
   return (
     <div
@@ -133,9 +158,33 @@ export function ProgressStepper({
         className={`flex ${BAR_H[size]} w-full shrink-0 items-start overflow-clip rounded-[4px] bg-[#e9ebf0]`}
         data-node-id="6031:6311"
       >
+        {/*
+         * step-bar-fill.
+         *
+         * TWO widths, switched by CSS at 768 — no JavaScript, same reason as
+         * everywhere else in this pass.
+         *
+         * Below 768 the width is `fillWidth` when the frame supplies one, i.e.
+         * the CID frames' verbatim 278.869px. That number is ABSOLUTE, and it
+         * is 77.25% only of the 361px track it was measured on. Dropped into
+         * the 740px desktop wizard card it is 37.7% — so /cid/terms/ read as a
+         * third complete standing next to /onboard/'s three quarters, on the
+         * same step of the same wizard. Caught in the 1280px side-by-side.
+         *
+         * At and above 768 it therefore falls back to the even-quarters
+         * formula, which is exactly what /onboard/ and /confirmation/ use
+         * (555 of 740 at current={2}). Every desktop frame passes no
+         * `fillWidth` at all, so for them the two values are identical and
+         * this changes nothing.
+         */}
         <div
-          className="h-full shrink-0 bg-[#243746]"
-          style={{ width: fillWidth ?? `${pct}%` }}
+          className="h-full shrink-0 bg-[#243746] w-[var(--gnl-step-fill)] md:w-[var(--gnl-step-fill-md)]"
+          style={
+            {
+              "--gnl-step-fill": fillWidth ?? pctWidth,
+              "--gnl-step-fill-md": pctWidth,
+            } as React.CSSProperties
+          }
           data-node-id="6031:6312"
         />
       </div>
@@ -148,6 +197,7 @@ export function ProgressStepper({
           // they render at 400. See design/token-exceptions.md.
           <p
             key={label}
+            aria-current={i === current ? "step" : undefined}
             className={`${LABEL_ITEM[size]} ${
               i === current ? CURRENT_LABEL[size] : "font-normal"
             }`}

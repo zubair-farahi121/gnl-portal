@@ -1,14 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PhoneFrame } from "@/components/mobile/PhoneFrame";
-import { MobileTopNav } from "@/components/mobile/MobileTopNav";
-import { SiteFooter } from "@/components/chrome/SiteFooter";
-import { WizardHeader } from "@/components/wizard/WizardHeader";
+import { CidScreen } from "@/components/cid/CidScreen";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
 import { useDemoState } from "@/lib/demo-state";
-import { CID_ACTIONS, CID_STEPPER_FILL, CID_VERIFIED, CID_WIZARD_TITLE } from "@/lib/data/cid";
+import { CID_ACTIONS, CID_VERIFIED } from "@/lib/data/cid";
 
 /*
  * CID_ID_success — Figma 6217:66058, 393 x 1014.810546875.
@@ -42,9 +39,32 @@ import { CID_ACTIONS, CID_STEPPER_FILL, CID_VERIFIED, CID_WIZARD_TITLE } from "@
  * matched with `current={3}` — is GONE. 6257:69750 is now the ordinary #e9ebf0
  * track with the same 278.869 fill and the same bold "Prerequisite Check" as
  * the other two frames, so this page takes `current={2}` and CID_STEPPER_FILL
- * like them. The exception in design/token-exceptions-phase3.md is resolved.
+ * like them (both now supplied by CidScreen). The exception in
+ * design/token-exceptions-phase3.md is resolved.
  *
  * "use client" is required: this is the screen that flips the demo to verified.
+ *
+ * ------------------------------------------------------------------------
+ * DESKTOP LAYOUT — 2026-09-22. INVENTED; NOT IN FIGMA.
+ *
+ * Mobile-only frame, same as the other two CID screens; at and above 768 the
+ * content is dropped into the onboard page's wizard chrome. See CidScreen for
+ * the full provenance note and the CSS-only breakpoint mechanism.
+ *
+ * Invented here, specifically:
+ *   Frame 5  `md:py-0`  — the 24px pads are the mobile frame's spacing to the
+ *                         header and to Frame 6; the card's 32px gap does that
+ *                         job at desktop and the two would stack.
+ *   Frame 6  `md:flex-row md:items-center md:justify-end md:gap-[24px]
+ *            md:pt-[16px]`, both buttons `md:w-auto`, and `md:order-1/2` —
+ *                         a full-width stacked pair of buttons in an 820px
+ *                         card reads as a phone screen stretched. It becomes
+ *                         the onboard actions-row, and the order classes put
+ *                         the primary on the RIGHT as onboard does, without
+ *                         touching the DOM (and therefore tab) order.
+ * The 32px heading and the 14px description are unchanged at every width —
+ * 14px is already what the onboard card uses for its own body copy.
+ * ------------------------------------------------------------------------
  */
 export default function CidVerifiedPage() {
   const router = useRouter();
@@ -56,76 +76,64 @@ export default function CidVerifiedPage() {
   };
 
   return (
-    <PhoneFrame>
-      <MobileTopNav />
-
-      <main
-        className="box-border flex w-full flex-col items-start gap-[8px] px-[16px] py-[24px]"
-        data-node-id="6062:22542"
+    <CidScreen mainNodeId="6062:22542" subStep={CID_VERIFIED.subStep}>
+      {/* Frame 5 — 6062:22553 */}
+      <div
+        className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"
+        data-node-id="6062:22553"
       >
-        <WizardHeader
-          title={CID_WIZARD_TITLE}
-          current={2}
-          fillWidth={CID_STEPPER_FILL}
-          subStep={CID_VERIFIED.subStep}
-        />
-
-        {/* Frame 5 — 6062:22553 */}
-        <div
-          className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px]"
-          data-node-id="6062:22553"
+        {/* All three CID headings are #212326 now; this one always was. */}
+        <p
+          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          data-node-id="6062:22554"
         >
-          {/* All three CID headings are #212326 now; this one always was. */}
-          <p
-            className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
-            data-node-id="6062:22554"
-          >
-            {CID_VERIFIED.title}
-          </p>
+          {CID_VERIFIED.title}
+        </p>
 
-          {/* card-description 6062:23365 — one text node: 3 paragraphs + a bulleted list. */}
-          <div
-            className="w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
-            data-node-id="6062:23365"
-          >
-            {CID_VERIFIED.description.map((block, i) =>
-              block.kind === "bullets" ? (
-                <ul key={i} className="list-disc">
-                  {block.items.map((item) => (
-                    <li key={item} className="ms-[21px] leading-[1.5]">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p key={i} className="mb-0 whitespace-pre-wrap leading-[1.5]">
-                  {block.text}
-                </p>
-              ),
-            )}
-          </div>
-        </div>
-
-        {/* Frame 6 — 6062:22582 */}
+        {/* card-description 6062:23365 — one text node: 3 paragraphs + a bulleted list. */}
         <div
-          className="flex w-full shrink-0 flex-col items-start gap-[8px]"
-          data-node-id="6062:22582"
+          className="w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+          data-node-id="6062:23365"
         >
-          <BtnPrimary className="w-full" onClick={onContinue}>
-            {CID_ACTIONS.continue}
-          </BtnPrimary>
-          {/*
-           * "Log out" returns to the login page and clears the demo's
-           * verified flag, so the next run starts unverified. It used to be
-           * inert, which read as a broken build in front of the client.
-           */}
-          <BtnOutline href="/" onClick={reset} className="w-full justify-center">
-            {CID_ACTIONS.logOut}
-          </BtnOutline>
+          {CID_VERIFIED.description.map((block, i) =>
+            block.kind === "bullets" ? (
+              <ul key={i} className="list-disc">
+                {block.items.map((item) => (
+                  <li key={item} className="ms-[21px] leading-[1.5]">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p key={i} className="mb-0 whitespace-pre-wrap leading-[1.5]">
+                {block.text}
+              </p>
+            ),
+          )}
         </div>
-      </main>
+      </div>
 
-      <SiteFooter variant="mobile" />
-    </PhoneFrame>
+      {/* Frame 6 — 6062:22582 */}
+      <div
+        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        data-node-id="6062:22582"
+      >
+        <BtnPrimary className="w-full md:order-2 md:w-auto" onClick={onContinue}>
+          {CID_ACTIONS.continue}
+        </BtnPrimary>
+        {/*
+         * "Log out" returns to the login page and clears the demo's
+         * verified flag, so the next run starts unverified. It used to be
+         * inert, which read as a broken build in front of the client.
+         */}
+        <BtnOutline
+          href="/"
+          onClick={reset}
+          className="w-full justify-center md:order-1 md:w-auto"
+        >
+          {CID_ACTIONS.logOut}
+        </BtnOutline>
+      </div>
+    </CidScreen>
   );
 }

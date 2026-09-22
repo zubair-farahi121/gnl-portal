@@ -1,9 +1,6 @@
-import { PhoneFrame } from "@/components/mobile/PhoneFrame";
-import { MobileTopNav } from "@/components/mobile/MobileTopNav";
-import { SiteFooter } from "@/components/chrome/SiteFooter";
-import { WizardHeader } from "@/components/wizard/WizardHeader";
+import { CidScreen } from "@/components/cid/CidScreen";
 import { BtnOutline } from "@/components/ui/BtnOutline";
-import { CID_ACTIONS, CID_STEPPER_FILL, CID_TERMS, CID_WIZARD_TITLE } from "@/lib/data/cid";
+import { CID_ACTIONS, CID_TERMS } from "@/lib/data/cid";
 
 /*
  * CID_TU — Figma 6217:62834, 393 x 810.810546875.
@@ -39,78 +36,92 @@ import { CID_ACTIONS, CID_STEPPER_FILL, CID_TERMS, CID_WIZARD_TITLE } from "@/li
  * Both buttons are named `btn-back` in Figma and are styled identically; the
  * right-hand one is the forward action. Each is 176.5 wide — `flex-[1_0_0]`
  * over a 361px row with an 8px gap gives exactly 176.5.
+ *
+ * ------------------------------------------------------------------------
+ * DESKTOP LAYOUT — 2026-09-22. INVENTED; NOT IN FIGMA.
+ *
+ * This frame is MOBILE ONLY in Figma (393 wide). On a laptop the page used to
+ * be a 480px column stranded in white between two real 1440 desktop frames.
+ * At and above 768 the content is now dropped into the same wizard chrome
+ * `/services/driver-vehicle/onboard/` uses — see CidScreen for the full
+ * provenance note and the mechanism.
+ *
+ * Every `md:` class on this page is part of that invention and nothing else
+ * on it moved. Below 768 the output is byte for byte what it was, which the
+ * visual gate holds at 393 x 818 (dH +7 against the 811 frame, the known
+ * Figma-vs-CSS line-box difference, unchanged by this pass).
+ *
+ * Invented here, specifically:
+ *   Frame 5  `md:pb-0`   — the 24px bottom pad is the mobile frame's spacing
+ *                          to Frame 6; inside the card the 32px card gap does
+ *                          that job and the two would stack to 56.
+ *   Frame 6  `md:justify-end md:gap-[24px] md:pt-[16px]` and `md:flex-none`
+ *                          on both buttons — two 366px half-width buttons in
+ *                          an 820px card read as a phone screen stretched. The
+ *                          row becomes the onboard actions-row: natural-width
+ *                          controls, right aligned, 24px apart, 16px above.
+ * The 32px heading and the 16px body are UNCHANGED at every width; both
+ * already read at desktop size next to onboard's 28px intro and 15px body.
+ * ------------------------------------------------------------------------
  */
 export default function CidTermsPage() {
   return (
-    <PhoneFrame>
-      <MobileTopNav />
-
-      <main
-        className="box-border flex w-full flex-col items-start gap-[8px] px-[16px] py-[24px]"
-        data-node-id="6039:11309"
+    <CidScreen mainNodeId="6039:11309" subStep={CID_TERMS.subStep}>
+      {/* Frame 5 — 6039:11320 */}
+      <div
+        className="flex w-full shrink-0 flex-col items-start gap-[16px] pt-0 pb-[24px] md:pb-0"
+        data-node-id="6039:11320"
       >
-        <WizardHeader
-          title={CID_WIZARD_TITLE}
-          current={2}
-          fillWidth={CID_STEPPER_FILL}
-          subStep={CID_TERMS.subStep}
-        />
-
-        {/* Frame 5 — 6039:11320 */}
-        <div
-          className="flex w-full shrink-0 flex-col items-start gap-[16px] pt-0 pb-[24px]"
-          data-node-id="6039:11320"
+        <p
+          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          data-node-id="6039:11321"
         >
-          <p
-            className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
-            data-node-id="6039:11321"
-          >
-            {CID_TERMS.title}
-          </p>
+          {CID_TERMS.title}
+        </p>
 
-          {/* card-description 6039:11341 */}
-          <div
-            className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
-            data-node-id="6039:11341"
-          >
-            <p className="mb-[16px] leading-[24px]">{CID_TERMS.body}</p>
-            {/*
-             * Rendered as text, not an anchor: the design gives it no
-             * destination, and a live link would let the presenter leave the
-             * flow mid-demo.
-             */}
-            <p
-              className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
-              data-demo-inert="true"
-            >
-              {CID_TERMS.linkLabel}
-            </p>
-          </div>
-        </div>
-
-        {/* Frame 6 — 6049:12216 */}
+        {/* card-description 6039:11341 */}
         <div
-          className="flex w-full shrink-0 items-start gap-[8px]"
-          data-node-id="6049:12216"
+          className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+          data-node-id="6039:11341"
         >
+          <p className="mb-[16px] leading-[24px]">{CID_TERMS.body}</p>
           {/*
-           * Back now returns to the prerequisite check, not CID_Welcome —
-           * that screen was cut from the flow on 2026-09-21, so Terms of Use
-           * is the first step of the IDV journey.
+           * Rendered as text, not an anchor: the design gives it no
+           * destination, and a live link would let the presenter leave the
+           * flow mid-demo.
            */}
-          <BtnOutline
-            href="/services/driver-vehicle/onboard/"
-            className="min-w-px flex-[1_0_0] justify-center"
+          <p
+            className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+            data-demo-inert="true"
           >
-            {CID_ACTIONS.decline}
-          </BtnOutline>
-          <BtnOutline href="/cid/biometric/" className="min-w-px flex-[1_0_0] justify-center">
-            {CID_ACTIONS.accept}
-          </BtnOutline>
+            {CID_TERMS.linkLabel}
+          </p>
         </div>
-      </main>
+      </div>
 
-      <SiteFooter variant="mobile" />
-    </PhoneFrame>
+      {/* Frame 6 — 6049:12216 */}
+      <div
+        className="flex w-full shrink-0 items-start gap-[8px] md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        data-node-id="6049:12216"
+      >
+        {/*
+         * Back now returns to the prerequisite check, not CID_Welcome —
+         * that screen was cut from the flow on 2026-09-21, so Terms of Use
+         * is the first step of the IDV journey.
+         */}
+        <BtnOutline
+          href="/services/driver-vehicle/onboard/"
+          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
+        >
+          {CID_ACTIONS.decline}
+        </BtnOutline>
+        <BtnOutline
+          href="/cid/biometric/"
+          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
+        >
+          {CID_ACTIONS.accept}
+        </BtnOutline>
+      </div>
+    </CidScreen>
   );
 }

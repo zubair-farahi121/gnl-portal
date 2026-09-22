@@ -24,12 +24,32 @@
  *             while still reading as a card. The 32px child gap tightens to 24
  *             at phone width for the same reason.
  */
-export function WizardCard({ children }: { children: React.ReactNode }) {
+const CARD =
+  "box-border flex w-[820px] max-w-full flex-col items-start gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-lg:w-full max-md:p-[32px] max-xs:gap-[24px] max-xs:p-[24px]";
+
+export function WizardCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  /**
+   * Box overrides only — never type, colour, radius or padding.
+   *
+   * It exists for exactly one caller: the CID screens pass
+   * `max-md:contents [--x:…]`-style display overrides so that below 768 this
+   * element generates no box at all and its children become direct items of
+   * the mobile `<main>`, reproducing the 393px Figma frames unchanged. At and
+   * above 768 nothing is overridden and the card is the same box the onboard
+   * and confirmation frames measure. See CidScreen.
+   *
+   * `max-md:` is a VARIANT, so it is emitted after the base `flex`/`p-[40px]`
+   * utilities and wins inside its media query — authoring order here is not
+   * what decides it.
+   */
+  className?: string;
+}) {
   return (
-    <div
-      className="box-border flex w-[820px] max-w-full flex-col items-start gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-lg:w-full max-md:p-[32px] max-xs:gap-[24px] max-xs:p-[24px]"
-      data-node-id="6031:6307"
-    >
+    <div className={className ? `${CARD} ${className}` : CARD} data-node-id="6031:6307">
       {children}
     </div>
   );

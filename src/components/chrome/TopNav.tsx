@@ -169,7 +169,7 @@ export function TopNav() {
       <div className="flex shrink-0 items-center gap-[48px] max-lg:gap-[24px] max-md:contents">
         <Link href="/dashboard/" className="relative h-[33.645px] w-[112px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none" src={ASSETS.mygovnlLogo} />
+          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none object-contain" src={ASSETS.mygovnlLogo} />
         </Link>
         <NavLinks className="flex shrink-0 items-center gap-[32px] max-lg:gap-[20px] max-md:order-3 max-md:w-full max-md:flex-wrap max-md:justify-center max-md:gap-x-[20px] max-md:gap-y-0" />
       </div>

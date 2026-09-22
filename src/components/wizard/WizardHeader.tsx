@@ -27,7 +27,18 @@ import type { StepIndex } from "@/lib/demo-data";
  * its own column gap 12 -> 8. Passing `subStep` is what adds the pill; the
  * desktop frames pass nothing and are untouched.
  */
-const TITLE_SIZE = { sm: "text-[24px]", lg: "text-[28px]" } as const;
+/**
+ * `cid` is the two-breakpoint scale added with the CID desktop layout
+ * (2026-09-22): the measured 24px mobile title below 768, the `lg` 28px title
+ * at and above it, where this header renders inside the same WizardCard as
+ * /onboard/. The `md:` half is INVENTED — Figma has no desktop CID frame.
+ * See the note on the size maps in ProgressStepper.
+ */
+const TITLE_SIZE = {
+  sm: "text-[24px]",
+  lg: "text-[28px]",
+  cid: "text-[24px] md:text-[28px]",
+} as const;
 
 export function WizardHeader({
   title,
