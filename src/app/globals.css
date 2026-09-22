@@ -1,0 +1,360 @@
+@import "tailwindcss";
+
+/*
+ * GNL / C1 design tokens.
+ * Values taken verbatim from Figma (C1 | GNL - R3, node 6102:101147).
+ * Do not round or "improve" these — the pixel gate compares against the mockup.
+ */
+:root {
+  --gnl-primary: #243746;
+  --gnl-heading: #212326;
+  --gnl-text: #5f6368;
+  --gnl-border: #e0e4e6;
+  --gnl-surface: #ffffff;
+
+  --gnl-radius-card: 6px;
+  --gnl-radius-btn: 4px;
+  --gnl-shadow-card: 0px 4px 12px rgba(0, 0, 0, 0.03);
+
+  --gnl-space-4: 24px;
+  --gnl-space-5: 32px;
+}
+
+@theme inline {
+  --color-gnl-primary: var(--gnl-primary);
+  --color-gnl-heading: var(--gnl-heading);
+  --color-gnl-text: var(--gnl-text);
+  --color-gnl-border: var(--gnl-border);
+  --color-gnl-surface: var(--gnl-surface);
+}
+
+/*
+ * BREAKPOINT LADDER
+ *
+ * The site is DESKTOP-FIRST: every base style is the Figma value, and every
+ * responsive rule lives in a `max-width` query that can only engage BELOW the
+ * design width. At >= 1440 nothing in this file applies, which is what keeps
+ * design/frames.json and tests/visual/screens.spec.ts honest.
+ *
+ *   >= 1440   design width — untouched
+ *      1280   max-xl   tight desktop
+ *      1024   max-lg   small laptop / landscape tablet
+ *       768   max-md   portrait tablet
+ *       480   max-xs   phone
+ *       384   max-xxs  narrower than the 393px CID canvas
+ *
+ * Tailwind ships sm/md/lg/xl/2xl; `xs` and `xxs` are added here so the
+ * `max-*` variants line up with the ladder above.
+ *
+ * `xxs` exists for the CID screens only. Those frames are DESIGNED at 393px,
+ * so for them 393 — not 1440 — is the untouchable design width: a `max-xs:`
+ * rule (< 480) would fire at 393 and move the mobile baselines. Mobile
+ * components therefore relax at `max-xxs:` (< 384), below their own design
+ * width, exactly as desktop components relax below 1440.
+ */
+@theme {
+  --breakpoint-xs: 30rem;
+  --breakpoint-xxs: 24rem;
+}
+
+/*
+ * No dark mode. The Figma file defines one appearance only; a
+ * prefers-color-scheme rule here would silently fail the pixel gate
+ * on any machine set to dark.
+ */
+html,
+body {
+  background: var(--gnl-surface);
+  color: var(--gnl-text);
+  font-family: var(--font-lato), sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  /*
+   * Preflight already caps `img` and `video`. Extending it to the remaining
+   * replaced elements means no media box can ever be the thing that pushes a
+   * narrow viewport into a horizontal scroll. In `@layer base`, so every
+   * Tailwind utility still wins — including the `max-w-none` that the
+   * absolutely-positioned Figma images rely on.
+   */
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+}
+
+/*
+ * THE SHELLS
+ *
+ * Both used to be fixed canvases (1440 / 393) scaled down with `zoom`, driven
+ * by an inline pre-paint script in layout.tsx. That was a picture of a
+ * website, not a website: on a phone it rendered a shrunken desktop. The
+ * script, the --gnl-scale / --gnl-mobile-scale variables and the `zoom` are
+ * all gone; the shells are now ordinary fluid containers.
+ *
+ * `max-width` instead of `width` is a no-op at exactly 1440 (and at 393 for
+ * the mobile shell), so the visual gate still measures the design untouched.
+ */
+.gnl-desktop-shell {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  background: var(--gnl-surface);
+}
+
+/*
+ * The CID screens are drawn at 393 (iPhone 14/15 Pro). On a phone that is the
+ * native width and they fill the screen. On a laptop they are a centred
+ * reading column — capped a little above their design width so the line
+ * lengths stay phone-like instead of stretching across a monitor.
+ */
+.gnl-mobile-shell {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  background: var(--gnl-surface);
+}
+
+/*
+ * Above the phone width the column stops filling the viewport, and without
+ * this the dark CID header simply ends mid-screen against bare white — it
+ * reads as an unfinished bar rather than a page.
+ *
+ * A hairline plus the card shadow already in the token set is enough to make
+ * it read as a framed page. Deliberately NOT a drawn phone body: the bezel
+ * mock was removed for the same reason this pass exists.
+ *
+ * min-width, so at <= 480 (every real phone, and the 393 design width the
+ * visual gate measures) the column is edge to edge and no border exists.
+ */
+@media (min-width: 481px) {
+  .gnl-mobile-shell {
+    border-inline: 1px solid var(--gnl-border);
+    box-shadow: var(--gnl-shadow-card);
+  }
+}
+
+/*
+ * The auth-loading spinner (`.gnl-spinner` / `@keyframes gnl-spin`) was
+ * removed on 2026-09-21. Its screen was rebuilt in Figma as 6217:80871
+ * `Provider page_IDV results status`, a static message card with no spinner
+ * and no progress indicator. Nothing else referenced either rule.
+ *
+ * The phone-bezel mock (`.gnl-phone-stage` / `-device` / `-screen`) was
+ * removed on 2026-09-21 too. It drew an iPhone body around the CID screens on
+ * desktop, which is the "phone design on the chrome browser" look this pass
+ * exists to get rid of. PhoneFrame is now a plain centred column.
+ */
+
+/* ------------------------------------------------------------------ *
+ * RESPONSIVE UTILITIES
+ *
+ * A deliberately small set, for page bodies to apply. Everything here is
+ * inert at >= 1440 and every rule is pure CSS — no layout JavaScript.
+ * ------------------------------------------------------------------ */
+
+/*
+ * .gnl-gutter — the page-section side gutter.
+ *
+ * The Figma sections carry hard gutters (px-[170px] on the login page,
+ * px-[120px] on the dashboard, px-[80px] on the nav). Replace the Tailwind
+ * padding class with `gnl-gutter [--gnl-gutter:170px]`: the custom property
+ * is the DESIGN value, honoured verbatim above 1280, and the `min()` steps it
+ * down from there. A section whose design gutter is already small (say 24px)
+ * never grows — `min()` only ever shrinks it.
+ */
+.gnl-gutter {
+  padding-inline: var(--gnl-gutter, 80px);
+}
+
+@media (max-width: 1280px) {
+  .gnl-gutter {
+    padding-inline: min(var(--gnl-gutter, 80px), 96px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .gnl-gutter {
+    padding-inline: min(var(--gnl-gutter, 80px), 64px);
+  }
+}
+
+@media (max-width: 768px) {
+  .gnl-gutter {
+    padding-inline: min(var(--gnl-gutter, 80px), 24px);
+  }
+}
+
+@media (max-width: 480px) {
+  .gnl-gutter {
+    padding-inline: min(var(--gnl-gutter, 80px), 16px);
+  }
+}
+
+/* Below 768 a row becomes a column. The gap is left alone. */
+@media (max-width: 768px) {
+  .gnl-stack-md {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gnl-wrap-md {
+    flex-wrap: wrap;
+  }
+
+  /*
+   * For a box that is a fixed pixel width in the design. Keeps the design
+   * width as the cap and lets it shrink below that.
+   */
+  .gnl-fluid-md {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Releases a design-mandated `whitespace-nowrap` so long labels can wrap. */
+  .gnl-wrap-text-md {
+    white-space: normal;
+  }
+}
+
+/*
+ * .gnl-touch — 44px minimum touch target below the tablet breakpoint.
+ *
+ * Scoped to the DESKTOP shell on purpose. Inside `.gnl-mobile-shell` the same
+ * button components render the CID frames, which a designer drew for a phone
+ * at their own 37/39/40px heights; inflating those would both contradict the
+ * design and move the 393px baselines. The rule is only for desktop-designed
+ * controls that have landed on a small screen.
+ *
+ * Unlayered, so it outranks the Tailwind `min-h-[40px]` utilities it is
+ * meant to raise.
+ */
+@media (max-width: 768px) {
+  .gnl-desktop-shell .gnl-touch {
+    min-height: 44px;
+  }
+}
+
+/*
+ * .gnl-bleed — let a full-width bar paint edge to edge on a monitor wider
+ * than the design.
+ *
+ * The desktop shell is capped at 1440, so above that the dark header and the
+ * grey footer stopped at 1440 too and sat in white bands — the bar looked
+ * boxed rather than like a site header. Content still wants the 1440 cap;
+ * only the BACKGROUND should escape it.
+ *
+ * Technique: an outer box-shadow with a 100vw spread paints behind the
+ * element in every direction, and `clip-path` with 0 vertical inset trims it
+ * back to the bar's own height, leaving just the two horizontal extensions.
+ * No extra DOM, no wrapper, no JavaScript, and no change to layout or to any
+ * box's measured size — so the visual gate at 1440 is untouched.
+ *
+ * The consumer supplies the colours:
+ *   --gnl-bleed-bg    the bar's own background (required)
+ *   --gnl-bleed-line  an optional 1px bottom rule, for bars that have one
+ *
+ * min-width: 1441px, so at every width the design covers this does nothing.
+ */
+@media (min-width: 1441px) {
+  .gnl-bleed {
+    /*
+     * This declaration REPLACES the element's own `box-shadow`, which is
+     * deliberate for the bars that carry a 1px bottom rule.
+     *
+     * That rule cannot follow the bleed: `box-shadow` spread grows in every
+     * direction, so a background layer spread by 100vw cannot be nudged to
+     * reveal a 1px line layer underneath — it swallows it. Keeping the inset
+     * rule while the extensions have none leaves a visible 1px step at x=1440.
+     *
+     * Dropping it above 1440 costs nothing: the rule exists to separate the
+     * dark bar from the page, and the page below it is already white, so at
+     * these widths the line is invisible either way. Below 1441 the element's
+     * own inset rule is untouched and the design keeps it.
+     */
+    box-shadow: 0 0 0 100vw var(--gnl-bleed-bg, transparent);
+    clip-path: inset(0 -100vw 0 -100vw);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * OVERFLOW CONTAINMENT
+ * ------------------------------------------------------------------ */
+
+/*
+ * Section gutters that have not been converted to `.gnl-gutter` yet.
+ *
+ * `px-[170px]` on a 320px viewport is 340px of padding: the section's content
+ * box collapses and its children shove the whole document sideways. These
+ * rules cap the three gutters the design uses, so an unconverted section
+ * still reflows instead of overflowing.
+ *
+ * ESCAPE HATCH: the `:not([class*=":px-"])` means the moment an element gains
+ * ANY responsive padding variant of its own (`max-md:px-[16px]`, …) these
+ * stop matching it entirely and the element's own classes take over. So
+ * converting a section — either to `.gnl-gutter` or to Tailwind variants —
+ * never has to fight this block.
+ */
+@media (max-width: 1280px) {
+  .gnl-desktop-shell [class~="px-[170px]"]:not([class*=":px-"]) {
+    padding-inline: 96px;
+  }
+  .gnl-desktop-shell [class~="px-[120px]"]:not([class*=":px-"]) {
+    padding-inline: 72px;
+  }
+  .gnl-desktop-shell [class~="px-[80px]"]:not([class*=":px-"]) {
+    padding-inline: 56px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .gnl-desktop-shell [class~="px-[170px]"]:not([class*=":px-"]) {
+    padding-inline: 64px;
+  }
+  .gnl-desktop-shell [class~="px-[120px]"]:not([class*=":px-"]) {
+    padding-inline: 48px;
+  }
+  .gnl-desktop-shell [class~="px-[80px]"]:not([class*=":px-"]) {
+    padding-inline: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gnl-desktop-shell [class~="px-[170px]"]:not([class*=":px-"]),
+  .gnl-desktop-shell [class~="px-[120px]"]:not([class*=":px-"]),
+  .gnl-desktop-shell [class~="px-[80px]"]:not([class*=":px-"]) {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gnl-desktop-shell [class~="px-[170px]"]:not([class*=":px-"]),
+  .gnl-desktop-shell [class~="px-[120px]"]:not([class*=":px-"]),
+  .gnl-desktop-shell [class~="px-[80px]"]:not([class*=":px-"]) {
+    padding-inline: 16px;
+  }
+}
+
+/*
+ * Last line of defence.
+ *
+ * `clip` rather than `hidden`: it does not create a scroll container, so it
+ * cannot swallow a sticky element or hand the page its own scrollbar — it
+ * only stops a too-wide child from dragging the document sideways. Scoped
+ * below the design width, so at >= 1440 the shells still clip nothing at all.
+ *
+ * This is a net, not a layout strategy. Anything it actually catches is a
+ * box that still needs to be made to reflow.
+ */
+@media (max-width: 1439px) {
+  .gnl-desktop-shell,
+  .gnl-mobile-shell {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+}

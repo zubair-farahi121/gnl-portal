@@ -1,0 +1,86 @@
+{
+  "fileKey": "Dc1bPoXX1VoB9v1MtLvu8e",
+  "figmaVersion": "UNFROZEN - pending Tatyana confirmation (see plan Task 3)",
+  "frames": [
+    {
+      "id": "login",
+      "node": "6206:23558",
+      "route": "/",
+      "width": 1440,
+      "height": 1881,
+      "budget": 0.008
+    },
+    {
+      "id": "dashboard",
+      "node": "6206:23559",
+      "route": "/dashboard/",
+      "width": 1440,
+      "height": 1890,
+      "budget": 0.008
+    },
+    {
+      "id": "service",
+      "node": "6031:6244",
+      "route": "/services/driver-vehicle/",
+      "width": 1440,
+      "height": 1073,
+      "budget": 0.008
+    },
+    {
+      "id": "onboard",
+      "node": "6031:6304",
+      "route": "/services/driver-vehicle/onboard/",
+      "width": 1440,
+      "height": 1254,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-terms",
+      "node": "6217:62834",
+      "route": "/cid/terms/",
+      "width": 393,
+      "height": 871,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-biometric",
+      "node": "6217:62835",
+      "route": "/cid/biometric/",
+      "width": 393,
+      "height": 895,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-verified",
+      "node": "6217:66058",
+      "route": "/cid/verified/",
+      "width": 393,
+      "height": 1051,
+      "budget": 0.008
+    },
+    {
+      "id": "auth-loading",
+      "node": "6217:80871",
+      "route": "/auth/loading/",
+      "width": 1440,
+      "height": 1079,
+      "budget": 0.008
+    },
+    {
+      "id": "confirmation",
+      "node": "6217:82446",
+      "route": "/services/driver-vehicle/confirmation/",
+      "width": 1440,
+      "height": 1024,
+      "budget": 0.008
+    },
+    {
+      "id": "service-verified",
+      "node": "6065:23367",
+      "route": "/services/driver-vehicle/?verified=1",
+      "width": 1440,
+      "height": 1820,
+      "budget": 0.008
+    }
+  ]
+}

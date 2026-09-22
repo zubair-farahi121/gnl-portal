@@ -1,0 +1,36 @@
+{
+  "name": "gnl-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "shots": "playwright test tests/visual/screens.spec.ts",
+    "diff": "tsx scripts/visual-diff.ts",
+    "visual": "npm run build && npm run shots && npm run diff",
+    "serve": "serve out -l 4173",
+    "responsive": "node scripts/responsive-check.mjs",
+    "clicks": "node scripts/click-through.mjs",
+    "check": "npm run build && npm run responsive && npm run clicks"
+  },
+  "dependencies": {
+    "@fontsource/lato": "^5.3.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "serve": "^14.2.6",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.13",
+    "typescript": "^5"
+  }
+}
