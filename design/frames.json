@@ -39,7 +39,7 @@
       "node": "6217:62834",
       "route": "/cid/terms/",
       "width": 393,
-      "height": 871,
+      "height": 811,
       "budget": 0.008
     },
     {
@@ -47,7 +47,7 @@
       "node": "6217:62835",
       "route": "/cid/biometric/",
       "width": 393,
-      "height": 895,
+      "height": 835,
       "budget": 0.008
     },
     {
@@ -55,7 +55,7 @@
       "node": "6217:66058",
       "route": "/cid/verified/",
       "width": 393,
-      "height": 1051,
+      "height": 1015,
       "budget": 0.008
     },
     {

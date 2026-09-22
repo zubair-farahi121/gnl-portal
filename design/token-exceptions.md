@@ -39,6 +39,8 @@ so each is mapped to the nearest real weight.
 | Component | Node | Figma says | Rendered as | Notes |
 |---|---|---|---|---|
 | Stepper labels (inactive) | 6031:6314 / 6315 / 6317 | `Lato:Medium` (500) | **400** | Active label is `Lato:Bold` and renders at 700 as designed. |
+| Stepper labels (inactive), CID mobile | 6257:67907-910 / 67921-924 / 69753-756 | `Lato:Medium` (500) | **400** | Same mapping, re-confirmed on the reworked CID frames 2026-09-22. The active label there is now `Lato:Bold` on `#212326` (it used to be bold on `#5f6368`). |
+| `sub-step-readout` pill, CID mobile | 6257:72178 / 67925 / 72248 | `Lato:Regular` (400) | **400** | No mapping needed — listed so the pill's type is on the record with the rest of the CID stepper rework. |
 | Top-nav link labels | I6031:6245;6022:2283 | `Lato:Medium` (500) | **400** | Desktop and mobile nav. |
 | `btn-signout` label | I6031:6245;6022:2298 | `Lato:SemiBold` (600) | **700** | 700 is the nearer available weight; 400 read far too light against the design. |
 

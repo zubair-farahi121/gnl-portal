@@ -7,10 +7,33 @@
  * this reason — a hit is a release blocker.
  *
  * NOTE: the Figma host is blocked by this environment's network proxy, so the
- * real exports could not be downloaded. Every file below is a dimension-exact
- * PLACEHOLDER. The outer box and inner leaf geometry are reproduced exactly, so
- * swapping in the real export is a byte replacement with no layout change.
- * See design/token-exceptions.md → "Missing assets".
+ * real exports could not be downloaded. Files still marked PLACEHOLDER below
+ * are dimension-exact stand-ins — the outer box and inner leaf geometry are
+ * reproduced exactly, so swapping in the real export is a byte replacement
+ * with no layout change. See design/token-exceptions.md → "Missing assets".
+ *
+ * REAL ARTWORK — 2026-09-22. Tatyana confirmed the portal uses Bootstrap
+ * Icons and named the exact glyph behind each of the eight "Nav & chrome"
+ * entries, so those are now the real thing, taken from the `bootstrap-icons`
+ * npm package (MIT) rather than a SharePoint export:
+ *
+ *   icon-user  person-fill        icon-bell           bell-fill
+ *   icon-gear  gear-fill          icon-info           info-circle-fill
+ *   icon-home  house-door-fill    icon-mail           envelope-at-fill
+ *   icon-phone telephone-fill     icon-external-link  box-arrow-up-right
+ *
+ * Two deliberate edits to each file, both required by how they are consumed:
+ *   - Bootstrap ships `fill="currentColor"`. These render through <img src>,
+ *     where `currentColor` has no inherited context and resolves to black, so
+ *     the colour is baked in: #bfc4c8 on the dark nav bar, #5f6368 for body
+ *     icons, #004b87 for the external-link glyph.
+ *   - width/height are set to the Figma leaf size while viewBox stays
+ *     "0 0 16 16", so the 16-unit artwork SCALES into a smaller box rather
+ *     than being cropped. Only icon-gear needs this (13.190 x 13.261).
+ *
+ * 16 of 38 assets are now real. The remaining 22 are still placeholders,
+ * pending the SharePoint logo folder and Tatyana's "Cards & lists" and
+ * "Verification & status" batches.
  */
 export const ASSETS = {
   /** GNL crest, "Flowers" leaf. Figma I6011:775;6098:62280. */
@@ -110,13 +133,16 @@ export const ASSETS = {
   /** `Ellipse` red dot in the expired-registration badge, 6 x 6, filled #d32f2f. Figma 6098:34982. */
   iconRedDot: "/assets/icon-red-dot.svg",
 
-  /* --- Tasks 13-16: CID mobile screens (6217:62833 / 62834 / 62835 / 66058) --- */
-  /** CID dot-stepper, current step. 24 x 24 — dark disc with a 9.333 white centre. Figma 6056:13968. */
-  stepDotActive: "/assets/step-dot-active.svg",
-  /** CID dot-stepper, completed step. 18.667 x 18.667 — dark disc with a white check. Figma 6056:13947. */
-  stepDotComplete: "/assets/step-dot-complete.svg",
-  /** CID dot-stepper, pending step. 18.667 x 18.667 — flat #c2c8d6 disc. Figma 6056:13971. */
-  stepDotInactive: "/assets/step-dot-inactive.svg",
+  /*
+   * --- Tasks 13-16: CID mobile screens (6217:62834 / 62835 / 66058) ---
+   *
+   * REMOVED 2026-09-22. `stepDotActive` / `stepDotComplete` / `stepDotInactive`
+   * (Figma 6056:13968 / 13947 / 13971) backed the six-dot CID stepper rail.
+   * Tatyana removed that rail from the mobile frames and replaced it with the
+   * `sub-step-readout` pill, which is pure CSS and needs no artwork, so all
+   * three entries and their files under public/assets/ are deleted. The
+   * designer also crossed them off the outstanding icon request list.
+   */
 } as const;
 
 export type AssetKey = keyof typeof ASSETS;

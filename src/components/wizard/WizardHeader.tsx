@@ -1,4 +1,8 @@
-import { ProgressStepper, type StepperSize } from "@/components/wizard/ProgressStepper";
+import {
+  ProgressStepper,
+  type StepperSize,
+  type SubStep,
+} from "@/components/wizard/ProgressStepper";
 import type { StepIndex } from "@/lib/demo-data";
 
 /*
@@ -16,6 +20,12 @@ import type { StepIndex } from "@/lib/demo-data";
  * `size` exists for the same reason. The rebuilt desktop frames set the title
  * to 28px (6031:6309 / 6217:82432); the CID mobile headers are still 24px
  * (6056:13070). Default `sm` keeps the pre-resync output.
+ *
+ * CID RE-SYNC — 2026-09-22. The three CID headers grew 98 -> 128 tall: the
+ * 24px title gap is unchanged, but `progress-stepper` went 38 -> 68 because it
+ * gained the `sub-step-readout` pill (26px) plus its 8px gap, and tightened
+ * its own column gap 12 -> 8. Passing `subStep` is what adds the pill; the
+ * desktop frames pass nothing and are untouched.
  */
 const TITLE_SIZE = { sm: "text-[24px]", lg: "text-[28px]" } as const;
 
@@ -24,12 +34,15 @@ export function WizardHeader({
   current,
   fillWidth,
   size = "sm",
+  subStep,
 }: {
   title: string;
   current: StepIndex;
   fillWidth?: string;
   /** `lg` is the rebuilt desktop scale. Defaults to the CID/mobile `sm`. */
   size?: StepperSize;
+  /** CID mobile only — renders `sub-step-readout` under the step labels. */
+  subStep?: SubStep;
 }) {
   return (
     <div className="flex w-full shrink-0 flex-col items-center gap-[24px]" data-node-id="6031:6308">
@@ -39,7 +52,7 @@ export function WizardHeader({
       >
         {title}
       </p>
-      <ProgressStepper current={current} fillWidth={fillWidth} size={size} />
+      <ProgressStepper current={current} fillWidth={fillWidth} size={size} subStep={subStep} />
     </div>
   );
 }

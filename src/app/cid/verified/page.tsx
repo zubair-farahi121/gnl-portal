@@ -3,40 +3,46 @@
 import { useRouter } from "next/navigation";
 import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { MobileTopNav } from "@/components/mobile/MobileTopNav";
-import { CidStepper } from "@/components/mobile/CidStepper";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { WizardHeader } from "@/components/wizard/WizardHeader";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
 import { useDemoState } from "@/lib/demo-state";
-import { CID_ACTIONS, CID_VERIFIED, CID_WIZARD_TITLE } from "@/lib/data/cid";
+import { CID_ACTIONS, CID_STEPPER_FILL, CID_VERIFIED, CID_WIZARD_TITLE } from "@/lib/data/cid";
 
 /*
- * CID_ID_success — Figma 6217:66058, 393 x 1050.810546875.
- * (Plan node id 6062:22540; re-published, matched by name and exact size.)
+ * CID_ID_success — Figma 6217:66058, 393 x 1014.810546875.
  *
- * Geometry, verbatim from get_design_context on 6062:22542:
+ * RE-SYNCED 2026-09-22. Same rework as the other two CID frames, but this one
+ * KEEPS its `py-[24px]` on Frame 5, so it is -36px rather than -60px.
+ *
+ * Geometry, verbatim from get_metadata / get_design_context on 6062:22542:
  *   top-nav actions  393 x 145      at y=0
- *   Main content     393 x 640      at y=145   px-[16px] py-[24px] gap-[8px]
- *     wizard-header  361 x 98       at y=24
- *     Frame 5        361 x 394      at y=130   py-[24px] gap-[16px]
- *       title            361 x 96   at y=24    (32px Bold, wraps to 2 lines)
- *       Progress Stepper 361 x 50   at y=136
- *       card-description 361 x 168  at y=202   (14px, NOT the 16px used on the
- *                                               other three CID frames)
- *     Frame 6        361 x 84       at y=532   flex-col gap-[8px]
+ *   Main content     393 x 604      at y=145   px-[16px] py-[24px] gap-[8px]
+ *     wizard-header  361 x 128      at y=24    gap-[24px]
+ *       wizard-title     361 x 36   at y=0
+ *       progress-stepper 361 x 68   at y=60    gap-[8px]
+ *         step-bar         361 x 8  at y=0     fill 278.869
+ *         step-labels      361 x 18 at y=16    current = Prerequisite Check
+ *         sub-step-readout 171 x 26 at y=42    <- THE PILL, 6257:72248
+ *     Frame 5        361 x 328      at y=160   py-[24px] gap-[16px]
+ *       title            361 x 96   at y=24    (32px Bold #212326, 2 lines)
+ *       card-description 361 x 168  at y=136   (14px, NOT the 16px the other
+ *                                               two CID frames use)
+ *     Frame 6        361 x 84       at y=496   flex-col gap-[8px]
  *       ContinueButton 361 x 37     at y=0
  *       btn-back       361 x 39     at y=45
- *   footer verified  393 x 265.81   at y=785
+ *   footer verified  393 x 265.81   at y=749
  *
  * HIDDEN LAYER NOT RENDERED: instance 6062:22581 ("Check box") is
  * hidden="true" in Figma.
  *
- * WIZARD-HEADER STEP BAR: this frame sets the step-bar TRACK to #243746 (the
- * fill colour) while leaving step-bar-fill at 278.869 of 361 and bolding
- * "Ready to Use". A dark track under a dark fill renders identically to a
- * 100%-filled bar, which is what `current={3}` produces, so the component is
- * used unmodified here. Logged in design/token-exceptions-phase3.md.
+ * WIZARD-HEADER STEP BAR: the #243746 step-bar TRACK this frame used to carry
+ * — a dark track under a dark fill, which read as a 100%-filled bar and was
+ * matched with `current={3}` — is GONE. 6257:69750 is now the ordinary #e9ebf0
+ * track with the same 278.869 fill and the same bold "Prerequisite Check" as
+ * the other two frames, so this page takes `current={2}` and CID_STEPPER_FILL
+ * like them. The exception in design/token-exceptions-phase3.md is resolved.
  *
  * "use client" is required: this is the screen that flips the demo to verified.
  */
@@ -57,39 +63,25 @@ export default function CidVerifiedPage() {
         className="box-border flex w-full flex-col items-start gap-[8px] px-[16px] py-[24px]"
         data-node-id="6062:22542"
       >
-        <WizardHeader title={CID_WIZARD_TITLE} current={3} />
+        <WizardHeader
+          title={CID_WIZARD_TITLE}
+          current={2}
+          fillWidth={CID_STEPPER_FILL}
+          subStep={CID_VERIFIED.subStep}
+        />
 
         {/* Frame 5 — 6062:22553 */}
         <div
           className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px]"
           data-node-id="6062:22553"
         >
-          {/*
-           * Heading colour is #212326 here and #5f6368 on the other three CID
-           * frames, at the same 32px Bold. Reproduced, not harmonised.
-           */}
+          {/* All three CID headings are #212326 now; this one always was. */}
           <p
             className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
             data-node-id="6062:22554"
           >
             {CID_VERIFIED.title}
           </p>
-
-          {/*
-           * The 229px label inset is hand-placed in Figma against this frame's
-           * 361px track. Below 384 — under the 393 this frame is drawn at, so
-           * the mobile baselines cannot move — 229 plus the label is wider
-           * than the row, and `justify-end` was pushing the whole container to
-           * x=-11. The inset is dropped there; the label stays right-aligned,
-           * which is where the design puts it anyway.
-           */}
-          <CidStepper
-            current={5}
-            label={CID_VERIFIED.stepperLabel}
-            labelIndentClassName="pl-[229px] max-xxs:pl-0"
-            alignRight
-            nodeId="6062:22555"
-          />
 
           {/* card-description 6062:23365 — one text node: 3 paragraphs + a bulleted list. */}
           <div

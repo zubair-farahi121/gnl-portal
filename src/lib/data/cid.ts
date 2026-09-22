@@ -1,10 +1,17 @@
 /**
- * Content for the four CertifiO ID (CID) mobile screens.
+ * Content for the CertifiO ID (CID) mobile screens.
  *
- *   /cid/welcome    CID_Welcome     6217:62833   393 x 1086.81
- *   /cid/terms      CID_TU          6217:62834   393 x  870.81
- *   /cid/biometric  CID_Biometric   6217:62835   393 x  894.81
- *   /cid/verified   CID_ID_success  6217:66058   393 x 1050.81
+ *   /cid/welcome    CID_Welcome     6217:62833   393 x 1086.81   (cut from the flow)
+ *   /cid/terms      CID_TU          6217:62834   393 x  810.81
+ *   /cid/biometric  CID_Biometric   6217:62835   393 x  834.81
+ *   /cid/verified   CID_ID_success  6217:66058   393 x 1014.81
+ *
+ * RE-SYNC — 2026-09-22. The three live frames were reworked: the six-dot CID
+ * stepper rail is gone and a `sub-step-readout` pill took its place inside
+ * `wizard-header` → `progress-stepper`. Each frame lost 30px of body (the dot
+ * rail plus its gap) and gained 34px of header, minus the 24px of top padding
+ * `Frame 5` dropped on CID_TU and CID_Biometric — net -60 on those two and -36
+ * on CID_ID_success, which kept its `py-[24px]`.
  *
  * NOTE ON NODE IDS: the ids in the plan (6039:6580, 6039:11307, 6049:12226,
  * 6062:22540) no longer resolve — the frames were re-published as the symbols
@@ -25,22 +32,41 @@ export const CID_WIZARD_TITLE = "Driver and Vehicle";
  *
  * 278.869px of a 361px track is 77.25%, where the desktop frames fill 555 of
  * 740 (75%) for the same `current={2}`. Reproduced, not harmonised.
+ *
+ * ALL THREE frames now carry this same fill and bold `Prerequisite Check`
+ * (6257:67902 / 6257:67919 / 6257:69751). CID_ID_success used to be the odd
+ * one out — a #243746 step-bar TRACK, which read as a 100%-filled bar — and no
+ * longer is, so it takes `current={2}` and this fill like the other two.
  */
 export const CID_STEPPER_FILL = "278.869px";
 
 /**
- * The CID dot-stepper has six dots. Only four of them are ever labelled in the
- * happy-path frames, and each frame shows exactly one label, so the labels are
- * carried per screen rather than as a shared array.
+ * `sub-step-readout` — the pill that replaced the six-dot rail.
+ *
+ * Two text runs plus a bullet between them, each its own node in Figma. The
+ * counter says "of 5" while the four-step bar above it says four: the pill
+ * counts CID's own IDV sub-steps, the bar counts the GNL onboarding wizard's.
+ * Reproduced as designed — logged in design/token-exceptions-phase3.md.
  */
-export const CID_STEP_COUNT = 6;
+export type CidSubStep = {
+  readonly label: string;
+  readonly step: string;
+  readonly nodeId: string;
+};
 
 export type CidDescriptionBlock =
   | { kind: "paragraph"; text: string }
   | { kind: "link"; text: string }
   | { kind: "bullets"; items: readonly string[] };
 
-/** CID_Welcome — Frame 5 is 6039:8154; card-description 6039:8156. */
+/**
+ * CID_Welcome — Frame 5 is 6039:8154; card-description 6039:8156.
+ *
+ * DEAD DATA. The screen was cut from the flow on 2026-09-21 and nothing
+ * imports this; kept only so the copy is not lost if it comes back. Its
+ * `stepperLabel` belongs to the six-dot rail that no longer exists — the live
+ * frames use `subStep` instead.
+ */
 export const CID_WELCOME = {
   title: "Welcome to GNL Identity Verification Service",
   stepperLabel: "Welcome",
@@ -52,19 +78,30 @@ export const CID_WELCOME = {
   ],
 } as const;
 
-/** CID_TU — Frame 5 is 6039:11320; card-description 6039:11341; Frame 6 is 6049:12216. */
+/**
+ * CID_TU — Frame 5 is 6039:11320; card-description 6039:11341; Frame 6 is
+ * 6049:12216; pill 6257:72178.
+ *
+ * `title` and `linkLabel` genuinely differ in case. The heading is sentence
+ * case ("Terms of use", 6039:11321) after the rework; the inline link inside
+ * the description is still title case ("Terms of Use", 6039:11341). Both are
+ * verbatim — do not harmonise them.
+ */
 export const CID_TERMS = {
-  title: "Terms of Use",
-  stepperLabel: "Terms of Use",
+  title: "Terms of use",
+  subStep: { label: "Terms of use", step: "step 1 of 5", nodeId: "6257:72178" },
   body: "Your identity documents will be used only to verify your identity and will be deleted after verification.",
   /** Rendered #004b87 underlined. Inert in the demo — it is not a route. */
   linkLabel: "Terms of Use",
 } as const;
 
-/** CID_Biometric — Frame 5 is 6049:12239; card-description 6049:12262; Frame 6 is 6049:12264. */
+/**
+ * CID_Biometric — Frame 5 is 6049:12239; card-description 6049:12262; Frame 6
+ * is 6049:12264; pill 6257:67925.
+ */
 export const CID_BIOMETRIC = {
   title: "Biometric consent",
-  stepperLabel: "Biometric consent",
+  subStep: { label: "Biometric consent", step: "step 2 of 5", nodeId: "6257:67925" },
   body: "A photo or video of your face will be used to verify your identity. It will be deleted after the verification process is complete.",
   linkLabel: "Terms of Use",
 } as const;
@@ -80,7 +117,7 @@ export const CID_BIOMETRIC = {
  */
 export const CID_VERIFIED = {
   title: "Your identity has been verified",
-  stepperLabel: "Identity verified",
+  subStep: { label: "Identity verified", step: "step 5 of 5", nodeId: "6257:72248" },
   description: [
     {
       kind: "paragraph",

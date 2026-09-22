@@ -4,7 +4,15 @@ import { ASSETS } from "@/lib/assets";
 /*
  * "footer verified" — one Figma component at two sizes.
  *   desktop  6031:5972  1440 x 140.215
- *   mobile   6039:9763   393 x 265.81
+ *   mobile   6039:9695   393 x 265.81   (the `Device=Mobile` variant)
+ *
+ * RE-CHECKED 2026-09-22 against 6039:9695 while re-syncing the CID frames. The
+ * mobile variant is unchanged by that rework and already matches this code
+ * node for node: crest (99.214 x 49.811) → Services / Notifications / Account
+ * at gap-[24px] → the wrapping utility row at gap-[8px] px-[16px], all inside
+ * bg-[#64717c] px-[16px] pt-[24px] pb-[32px] gap-[24px], items-center,
+ * justify-end. It carries NO "Need help? … digitalgovernment@gov.nl.ca" line —
+ * that belongs to the desktop variant only, and always has here. Nothing moved.
  *
  * Heights are pinned explicitly. The desktop footer is 140.215px, not 140 —
  * sub-pixel heights compound down an 1880px page and push everything below it
@@ -145,7 +153,7 @@ function MobileFooter() {
   return (
     <footer
       className="flex h-[265.81px] w-full flex-col items-center justify-end gap-[24px] bg-[#64717c] px-[16px] pt-[24px] pb-[32px] max-xxs:h-auto max-xxs:min-h-[265.81px]"
-      data-node-id="6039:9763"
+      data-node-id="6039:9695"
     >
       {/* UL 6039:8958 */}
       <div className="flex w-full shrink-0 items-start justify-center">

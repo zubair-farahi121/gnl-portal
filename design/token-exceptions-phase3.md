@@ -7,7 +7,64 @@ file exists so Tatyana can reconcile the design file, not so the code can
 diverge from it.
 
 Source: `C1 | GNL - R3`, file key `Dc1bPoXX1VoB9v1MtLvu8e`.
-Captured: 2026-09-18.
+Captured: 2026-09-18. Re-synced against the reworked frames 2026-09-22.
+
+---
+
+## RE-SYNC 2026-09-22 — the dot stepper is gone
+
+Tatyana: *"when I reworked the mobile pages, I removed the CID stepper and
+replaced it with a pill."* Re-read from Figma and re-implemented on the three
+live frames (`6217:62834`, `6217:62835`, `6217:66058`). The six-dot
+`Progress Stepper` inside `Frame 5` no longer exists anywhere in the file; in
+its place `wizard-header` → `progress-stepper` gained a third child,
+`sub-step-readout` (`6257:72178` / `6257:67925` / `6257:72248`) — a 26px pill,
+`bg-[rgba(233,235,240,0.5)]`, `rounded-[16px]`, `px-[8px] py-[4px]`,
+`gap-[4px]`, `Lato:Regular` 12px/1.5 on `#5f6368`, holding a label, a `•` and a
+step counter as three separate text nodes.
+
+**Closed by the rework — no longer exceptions:**
+
+| Was | Now |
+|---|---|
+| **1. Duplicated stepper** — two indicators stacked ~50px apart | One bar plus one sub-caption pill under it. Resolved as asked. |
+| **3. `step-bar` track is the fill colour on CID_ID_success** | `6257:69750` is the ordinary `#e9ebf0` track with the same 278.869 fill and the same bold `Prerequisite Check` as the other two. All three frames now render `current={2}` + `CID_STEPPER_FILL`. |
+| **4. Heading colour differs between CID frames** | All three headings are `--gnl-heading` (`#212326`). CID_TU and CID_Biometric were `#5f6368`. |
+| **5. Content order differs on CID_Biometric** | Heading is first on all three, like CID_TU. |
+| **7. Dot-stepper labels are hand-placed** | The dot rail and its `pl-[34px]` / `pl-[72px]` / `pl-[229px]` insets are gone with it. |
+
+**Still open:** 2 (`step-bar-fill` 278.869 vs the desktop 555/740), 6
+(both buttons named `btn-back`), 8 (the ~7px `card-description` measurement
+gap — still exactly +7 on CID_TU and CID_Biometric, see below), 10-13.
+
+**New, minor:** the pill counts *"step 1 of 5"* / *"2 of 5"* / *"5 of 5"* while
+the four-step bar directly above it counts four. They track different
+processes — the pill counts CID's own IDV sub-steps, the bar counts the GNL
+onboarding wizard — but they sit 8px apart, so a reader sees "5 of 5" under a
+bar that is three-quarters full. Reproduced as designed. **Action for Tatyana:**
+confirm that reads correctly, or relabel one of the two.
+
+Other geometry that moved with the rework:
+
+- `wizard-header` 98 → **128** on all three (`progress-stepper` 38 → 68).
+- `progress-stepper` column gap **12px → 8px** on the CID/mobile scale only.
+  The desktop `6031:6310` is still 12px, so the gap is now size-keyed in code.
+- `step-labels` current label is now `Lato:Bold` on `#212326`, was bold on
+  `#5f6368`. The mobile scale now agrees with the desktop scale on this.
+- `Frame 5` dropped its top padding on CID_TU and CID_Biometric
+  (`py-[24px]` → `pt-[0] pb-[24px]`). CID_ID_success kept `py-[24px]`.
+- Frame heights: **871 → 811**, **895 → 835**, **1051 → 1015**.
+- `CID_TU`'s heading is now sentence case, **"Terms of use"**. The inline link
+  inside its `card-description` is still title case, **"Terms of Use"**. Both
+  reproduced verbatim; they genuinely differ in the file.
+- The `footer verified` mobile variant (`6039:9695`) is **unchanged** by the
+  rework — re-checked node for node against the build, nothing moved.
+
+Deleted as dead: `src/components/mobile/CidStepper.tsx`, the `stepDotActive` /
+`stepDotComplete` / `stepDotInactive` entries in `src/lib/assets.ts`, and
+`public/assets/step-dot-{active,complete,inactive}.svg`. These are the three
+icons Tatyana crossed off the outstanding request list. Section 10's asset
+table below still lists them; they are no longer wanted.
 
 ---
 
