@@ -76,12 +76,46 @@ export const CONTACT_CARD = {
 } as const;
 
 /* ------------------------------------------------------------------------- *
- * VERIFIED state — Figma 6065:23367 (`driver-vehicle-service-page`),
- * 1440 x 1819.215 as the file stands on 2026-09-18.
+ * VERIFIED state — Figma 6257:72314 (`driver-vehicle-service-page_verified`),
+ * 1440 x 1792.2152099609375.
+ *
+ * RE-SYNCED 2026-09-22. The frame this state was built from, 6065:23367, has
+ * been DELETED from the file — `get_metadata` returns not found — and
+ * 6257:72314 replaces it. That is a rebuild, not a resize: the frame is 27px
+ * shorter (1819.215 -> 1792.215) because two layers were switched off and one
+ * was added. See design/verification-frame-map.md §4 and §7.
+ *
+ * WHAT CHANGED, AND WHAT DID NOT:
+ *
+ *   REMOVED (hidden="true" in the new frame — hidden layers are not part of
+ *   the design and are not rendered, the same rule every CID `Check box`
+ *   follows):
+ *     - `item-card-licence` 6257:72356, the 129px digital-wallet promo card
+ *       ("Add your driver’s licence to your digital wallet?"). It is still in
+ *       the file, switched off.
+ *     - `VC - Add to your wallet` 6257:72404, the "Add to your digital wallet"
+ *       outline button + green `New` pill on the CHEV card's button row.
+ *   ADDED:
+ *     - `VRC VC upsell` 6257:73252, a 102px panel INSIDE the CHEV card — a QR
+ *       code, "Skip the paper copy" with a blue `New` pill, and an "Add to
+ *       wallet" button. The wallet upsell moved from the driver's licence to
+ *       the vehicle registration certificate, and from its own card into the
+ *       vehicle card.
+ *   UNCHANGED, despite what a diff of the two frames suggests:
+ *     - the green `Trusted` badge beside the title (6257:72322) — this build
+ *       already had it, from 6065:23375.
+ *     - the sidebar `Favourite Service` card (6257:72428) — already present,
+ *       and byte-identical to the unverified frame's 6031:6266, which is why
+ *       `SidebarRight` is still shared between the two states.
+ *     - the CHEV IMT expiry, "Expires on January 14, 2036" (6257:72396). The
+ *       frame map lists this as a flip from expired; this build was already
+ *       carrying 2036, so nothing moved. The 2022 expiry belongs to the
+ *       TRAILER card (6257:72419) and is still expired.
  *
  * Copy below is character-for-character from `get_design_context` on
- * 6065:23373 (title-badge-row), 6076:24331 (actions-section-card) and
- * 6076:24354 (linked-items-section).
+ * 6217:81647-era reads plus 6257:73252 (the new upsell); the actions-section
+ * and linked-item strings are unchanged from 6065:23367 and were re-verified
+ * against 6257:72331 / 6257:72354 by node name.
  *
  * APOSTROPHES: this frame mixes both forms and the mix is reproduced, not
  * normalised. `Add your driver’s licence to your digital wallet?` uses the
@@ -96,36 +130,36 @@ export const CONTACT_CARD = {
 /** The badge swaps from the red "Confirmation required" pill to a green one. */
 export const SERVICE_HEADER_VERIFIED = {
   badgeLabel: "Trusted",
-  nodeId: "6065:23375",
+  nodeId: "6257:72322",
 } as const;
 
 export type ActionLink = { label: string; nodeId: string };
 
-/** actions-section-card — Figma 6076:24331, 860 x 387. */
+/** actions-section-card — Figma 6257:72331, 860 x 387. Unchanged by the re-sync. */
 export const ACTIONS_SECTION = {
   title: "Actions",
   columns: [
     {
       heading: "Driver",
-      nodeId: "6076:24334",
+      nodeId: "6257:72334",
       links: [
-        { label: "Renew your driver's licence", nodeId: "6076:24337" },
-        { label: "Change your address with Motor Registration", nodeId: "6076:24338" },
-        { label: "Purchase your driving record (abstract)", nodeId: "6076:24339" },
-        { label: "Pay for your road test", nodeId: "6076:24340" },
+        { label: "Renew your driver's licence", nodeId: "6257:72337" },
+        { label: "Change your address with Motor Registration", nodeId: "6257:72338" },
+        { label: "Purchase your driving record (abstract)", nodeId: "6257:72339" },
+        { label: "Pay for your road test", nodeId: "6257:72340" },
       ] as readonly ActionLink[],
     },
     {
       heading: "Vehicle",
-      nodeId: "6076:24341",
+      nodeId: "6257:72341",
       links: [
-        { label: "Renew your vehicle registration", nodeId: "6076:24344" },
+        { label: "Renew your vehicle registration", nodeId: "6257:72344" },
         {
           label: "Notify Motor Registration when you no longer own a vehicle",
-          nodeId: "6076:24345",
+          nodeId: "6257:72345",
         },
-        { label: "Request a reprint of your vehicle registration", nodeId: "6076:24346" },
-        { label: "Complete your vehicle ownership transfer", nodeId: "6076:24347" },
+        { label: "Request a reprint of your vehicle registration", nodeId: "6257:72346" },
+        { label: "Complete your vehicle ownership transfer", nodeId: "6257:72347" },
       ] as readonly ActionLink[],
     },
   ],
@@ -142,6 +176,27 @@ export type LinkedItemAction = {
   nodeId: string;
 };
 
+/**
+ * `VRC VC upsell` — Figma 6257:73252, 812 x 102, INSIDE the CHEV card.
+ *
+ * NEW IN THE 6257:72314 REBUILD. A flat #e9ecef panel: QR code, a title with
+ * a blue `New` pill, two lines of body copy, and an "Add to wallet" button.
+ * Everything on it is #004b87 link blue except the button.
+ *
+ * IT IS A DIGITAL-WALLET FEATURE, NOT AN IDV DEVICE HAND-OFF. The `QR code`
+ * component (6259:73307) is the only QR artwork anywhere in this journey and
+ * it belongs here — "add your vehicle registration certificate to your
+ * wallet". No mobile-handoff / "continue on my computer" screen exists. See
+ * design/verification-frame-map.md §5.
+ */
+export type VcUpsell = {
+  title: string;
+  badge: string;
+  body: string;
+  actionLabel: string;
+  nodeId: string;
+};
+
 export type LinkedItem = {
   kind: "wallet-promo" | "licence" | "address" | "vehicle";
   /** 32 x 32 glyph, or 58 x 58 for the wallet promo. */
@@ -155,28 +210,22 @@ export type LinkedItem = {
   /** Inline row beside the details (wallet-promo / licence / address) or a row below (vehicles). */
   layout: "inline" | "stacked";
   actions: LinkedItemAction[];
+  /** `VRC VC upsell` panel below the button row. Only the CHEV card has one. */
+  upsell?: VcUpsell;
   nodeId: string;
 };
 
-/** linked-items-section — Figma 6076:24354, 860 x 894. Five cards, 20px gaps. */
+/**
+ * linked-items-section — Figma 6257:72354, 860 x 867. FOUR cards, 20px gaps.
+ *
+ * Was five cards / 894px on the deleted 6065:23367. The digital-wallet promo
+ * card (now 6257:72356) is hidden="true" in the rebuilt frame and is not
+ * rendered; that is the whole 27px difference between the two frame heights
+ * (129px card + 20px gap = 149 removed, 102px upsell + 20px gap = 122 added).
+ */
 export const LINKED_ITEMS_TITLE = "Your linked items";
 
 export const LINKED_ITEMS: readonly LinkedItem[] = [
-  {
-    kind: "wallet-promo",
-    icon: ASSETS.iconDigitalId,
-    iconSize: 58,
-    title: "Add your driver’s licence to your digital wallet?",
-    lines: [
-      {
-        text: "Your driver's licence is verified. Add it to your digital wallet for quick, secure access, no card needed.",
-      },
-      { text: "Expires on January 14, 2026" },
-    ],
-    layout: "inline",
-    actions: [{ label: "Update", variant: "primary", nodeId: "6220:86430" }],
-    nodeId: "6076:24356",
-  },
   {
     kind: "licence",
     icon: ASSETS.iconUserLarge,
@@ -188,8 +237,8 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
       { text: "Expires on January 14, 2026" },
     ],
     layout: "inline",
-    actions: [{ label: "View demerit points", variant: "outline", nodeId: "6220:86396" }],
-    nodeId: "6220:86386",
+    actions: [{ label: "View demerit points", variant: "outline", nodeId: "6257:72376" }],
+    nodeId: "6257:72366",
   },
   {
     kind: "address",
@@ -198,8 +247,8 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
     title: "Address",
     lines: [{ text: "15 PRINCESS ANNE PL" }],
     layout: "inline",
-    actions: [{ label: "Update", variant: "primary", nodeId: "6076:24376" }],
-    nodeId: "6076:24368",
+    actions: [{ label: "Update", variant: "primary", nodeId: "6257:72386" }],
+    nodeId: "6257:72378",
   },
   {
     kind: "vehicle",
@@ -211,18 +260,26 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
       { text: "Expires on January 14, 2036" },
     ],
     layout: "stacked",
+    /*
+     * THREE buttons, not four. `VC - Add to your wallet` (6257:72404) — the
+     * "Add to your digital wallet" outline button with the green `New` pill —
+     * is hidden="true" in the rebuilt frame. Its job was taken over by the
+     * `VRC VC upsell` panel below, which is why it was switched off rather
+     * than deleted.
+     */
     actions: [
-      { label: "Renew", variant: "primary", nodeId: "6076:24390" },
-      { label: "No longer have?", variant: "outline", nodeId: "6076:24392" },
-      { label: "Lost your registration?", variant: "outline", nodeId: "6076:24394" },
-      {
-        label: "Add to your digital wallet",
-        variant: "outline",
-        badge: "New",
-        nodeId: "6220:86433",
-      },
+      { label: "Renew", variant: "primary", nodeId: "6257:72398" },
+      { label: "No longer have?", variant: "outline", nodeId: "6257:72400" },
+      { label: "Lost your registration?", variant: "outline", nodeId: "6257:72402" },
     ],
-    nodeId: "6076:24378",
+    upsell: {
+      title: "Skip the paper copy",
+      badge: "New",
+      body: "Add your verified vehicle registration certificate to your wallet. Show proof instantly from your phone.",
+      actionLabel: "Add to wallet",
+      nodeId: "6257:73252",
+    },
+    nodeId: "6257:72388",
   },
   {
     kind: "vehicle",
@@ -233,11 +290,11 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
     warning: "Expired on March 31, 2022",
     layout: "stacked",
     actions: [
-      { label: "Renew", variant: "primary", nodeId: "6076:24408" },
-      { label: "No longer have?", variant: "outline", nodeId: "6076:24410" },
-      { label: "Lost your registration?", variant: "outline", nodeId: "6076:24412" },
+      { label: "Renew", variant: "primary", nodeId: "6257:72421" },
+      { label: "No longer have?", variant: "outline", nodeId: "6257:72423" },
+      { label: "Lost your registration?", variant: "outline", nodeId: "6257:72425" },
     ],
-    nodeId: "6076:24396",
+    nodeId: "6257:72409",
   },
 ];
 

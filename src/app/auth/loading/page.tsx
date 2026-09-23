@@ -1,7 +1,3 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { IDV_STATUS } from "@/lib/data/driver-vehicle";
@@ -45,30 +41,36 @@ import { IDV_STATUS } from "@/lib/data/driver-vehicle";
  * file disagrees with itself; both are reproduced verbatim. Copy lives in
  * `IDV_STATUS` in src/lib/data/driver-vehicle.ts.
  *
- * BEHAVIOURAL MISMATCH — DELIBERATE. The copy says the user can close the
- * window and will be notified later, i.e. the design describes a terminal
- * screen with no client-side transition. The demo still auto-advances to the
- * confirmation screen after DWELL_MS so the presenter reaches the success
- * state without a second machine sending the notification. Nothing on screen
- * hints at the auto-advance, which is exactly the design's intent — but it
- * does mean the implemented behaviour is not the designed behaviour. Logged
- * in design/resync-loading-confirmation.md.
+ * THIS FRAME HAS NO BUTTONS, AND NONE IS INVENTED. 6217:80871 carries no
+ * control of any kind — its closing line is "You can close this window." The
+ * forward move is the presenter's ArrowRight (DemoNav, driven by
+ * src/lib/flow.ts), which now lands on /services/driver-vehicle/prerequisite/.
+ * It also contains a `Banner` instance (6236:46388) that is hidden="true" in
+ * Figma — an error/delay state the design anticipates but does not show — and
+ * hidden layers are not rendered.
+ *
+ * THE 2.6s AUTO-ADVANCE WAS REMOVED — 2026-09-22. It used to push to the
+ * confirmation screen after DWELL_MS. Two reasons it had to go once step 7
+ * (/services/driver-vehicle/prerequisite/, Figma 6217:81644) was inserted
+ * after this screen:
+ *
+ *   1. Step 7's `Back` points here, which is what the Figma frame order
+ *      implies. With the timer running, Back was a 2.6-second round trip
+ *      straight back to step 7 — a control that looks right and does nothing,
+ *      which is the exact failure `npm run clicks` exists to catch.
+ *   2. The design is a terminal screen with no client-side transition. The
+ *      old comment here already flagged the timer as "the implemented
+ *      behaviour is not the designed behaviour".
+ *
+ * COST OF THE REMOVAL, STATED PLAINLY: this is now the one screen in the flow
+ * with no on-screen forward control. That is what the design says, but it does
+ * mean a presenter who does not use ArrowRight will stop here. To restore the
+ * old behaviour, put back a `setTimeout` pushing to
+ * "/services/driver-vehicle/prerequisite/" — and then re-point step 7's Back
+ * at something other than this route. Logged in
+ * design/resync-loading-confirmation.md.
  */
-
-/** Long enough to read the card, short enough not to stall the demo. */
-const DWELL_MS = 2600;
-
 export default function AuthLoadingPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const t = setTimeout(
-      () => router.push("/services/driver-vehicle/confirmation/"),
-      DWELL_MS,
-    );
-    return () => clearTimeout(t);
-  }, [router]);
-
   return (
     <div className="gnl-desktop-shell">
       <TopNav />

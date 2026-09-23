@@ -96,7 +96,7 @@ const TITLE_ROW =
 
 /** Every inline link in this frame: #004b87, Bold, underlined from-font. */
 const LINK =
-  "inline-flex items-center text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
+  "text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
 
 /**
  * All four cards on this page share one chrome. The border is #d4d8da, NOT the
@@ -344,31 +344,66 @@ function SidebarRight() {
 }
 
 /* ========================================================================= *
- * VERIFIED state — Figma 6065:23367, 1440 x 1819.215.
+ * VERIFIED state — Figma 6257:72314 `driver-vehicle-service-page_verified`,
+ * 1440 x 1792.2152099609375.
  *
- * Geometry, verbatim from get_metadata / get_design_context on 6065:23369:
- *   top-nav actions    1440 x 69      at y=0
- *   main-container     1440 x 1610    at y=69
- *     content-left      860 x 1482    at x=80,  y=48   gap-[24px]
+ * RE-SYNCED 2026-09-22. The frame this state used to be built from,
+ * 6065:23367, has been DELETED from the file — `get_metadata` returns not
+ * found — and 6257:72314 (Row B, x=27206.39) replaces it. A REBUILD, not a
+ * resize.
+ *
+ * Geometry, verbatim from get_metadata on 6257:72314:
+ *   top-nav actions    1440 x 69      at y=0            (6257:72315)
+ *   main-container     1440 x 1583    at y=69           (6257:72316)
+ *     content-left      860 x 1455    at x=80,  y=48   gap-[24px]
  *       breadcrumb-row  120 x 17      at y=0
  *       title-badge-row 860 x 48      at y=41
+ *         Driver and Vehicle 260 x 48 at x=0
+ *         badge-confirmation  83 x 30 at x=276   green, `Trusted`
+ *         notification-bell   32 x 32 at x=375
  *       service-subtitle 860 x 24     at y=113
- *       left-column     860 x 1321    at y=161          gap-[40px]
- *         Frame 11      860 x 387     (wraps actions-section-card 6076:24331)
- *         linked-items-section 860 x 894 at y=427       gap-[20px]
- *     sidebar-right     380 x 701     at x=980, y=48   gap-[20px]  (identical
- *                                     to the unverified frame — same three
- *                                     cards, same sizes, so SidebarRight is
- *                                     reused rather than duplicated)
- *   footer verified    1440 x 140.215 at y=1679
+ *       left-column     860 x 1294    at y=161          gap-[40px]
+ *         Frame 11      860 x 387     at y=0    (wraps 6257:72331)
+ *         linked-items-section 860 x 867 at y=427       gap-[20px]
+ *           "Your linked items"  171 x 26  at y=0
+ *           item-card-licence    860 x 129 at y=46   HIDDEN — not rendered
+ *           item-card-licence    860 x 156 at y=46
+ *           item-card-address    860 x 112 at y=222
+ *           item-card-chev       860 x 307 at y=354
+ *           item-card-trailer    860 x 186 at y=681
+ *     sidebar-right     380 x 701     at x=980, y=48   gap-[20px]
+ *                                     (6257:72427 — same three cards at the
+ *                                     same sizes as the unverified frame's
+ *                                     6031:6265, so SidebarRight is still
+ *                                     shared rather than duplicated)
+ *   footer verified    1440 x 140.215 at y=1652         (6257:72462)
  *
- * Padding falls out of those offsets exactly as on the unverified frame:
- * pt-[48px] px-[80px] pb-[80px] (1610 - 48 - 1482 = 80) with a 40px gap.
+ * 161 + 1294 = 1455, and 48 + 1455 + 80 = 1583, and 69 + 1583 + 140.215 =
+ * 1792.215 — the frame height, exactly. Padding falls out of those offsets as
+ * on the unverified frame: pt-[48px] px-[80px] pb-[80px], 40px column gap.
+ *
+ * WHAT THE REBUILD CHANGED — the -27px, itemised:
+ *   -149  `item-card-licence` 6257:72356, the 129px digital-wallet promo
+ *         card, is hidden="true" and is NOT rendered (129 + its 20px gap).
+ *   +122  `VRC VC upsell` 6257:73252, a new 102px panel INSIDE the CHEV card
+ *         (102 + its 20px gap). See LinkedItemCard.
+ *   +-0   `VC - Add to your wallet` 6257:72404, the "Add to your digital
+ *         wallet" button + green `New` pill on the CHEV button row, is
+ *         hidden="true" and is NOT rendered — it sat inside the 40px row, so
+ *         dropping it costs no height.
+ * Hidden layers are not part of the design. Same rule every CID `Check box`
+ * and the document screen`s `btn-back` already follow.
+ *
+ * WHAT DID NOT CHANGE, despite the frame map listing them as additions: the
+ * green `Trusted` badge and the sidebar `Favourite Service` card were already
+ * here (from 6065:23375 / 6031:6266), and the CHEV IMT already read "Expires
+ * on January 14, 2036". Only their node ids moved. The still-expired
+ * registration is the TRAILER`s, "Expired on March 31, 2022".
  *
  * !! The plan (Task 19) described this frame as 1440 x 1671.215 with a
- * 380 x 227 `item-card-licence` (6095:32409) in the sidebar. That node no
- * longer exists: the frame has been redesigned since the plan was written.
- * Built against the live file. See design/token-exceptions-phase4.md.
+ * 380 x 227 `item-card-licence` (6095:32409) in the sidebar. That node has not
+ * existed for two rebuilds. Built against the live file. See
+ * design/token-exceptions-phase4.md and design/verification-frame-map.md.
  * ========================================================================= */
 
 /** Action links in the Actions card: 15px, Figma "Lato:SemiBold" (no 600 → 700). */
@@ -376,7 +411,7 @@ const ACTION_LINK =
   "block w-full text-[15px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
 
 /**
- * actions-section-card — Figma 6076:24331, 860 x 387.
+ * actions-section-card — Figma 6257:72331, 860 x 387.
  *
  * The link hrefs in Figma all point at `https://example.com/...`, which is
  * itself a placeholder. Rendering them as live anchors would walk the
@@ -388,22 +423,22 @@ function ActionsSectionCard() {
   return (
     <div
       className={`${CARD} box-border flex flex-col items-start gap-[24px] p-[32px] max-xs:p-[20px]`}
-      data-node-id="6076:24331"
+      data-node-id="6257:72331"
     >
       {/* Figma: Lato:ExtraBold (800). Lato has no 800 — rendered 700. */}
       <p
         className="shrink-0 whitespace-nowrap text-[24px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]"
-        data-node-id="6076:24332"
+        data-node-id="6257:72332"
       >
         {ACTIONS_SECTION.title}
       </p>
 
-      {/* actions-row 6076:24333 — two equal flex-1 columns, 382 each, 32px
+      {/* actions-row 6257:72333 — two equal flex-1 columns, 382 each, 32px
           apart. `.gnl-stack-md` stacks them below 768: these are full
           sentences ("Notify Motor Registration when you no longer own a
           vehicle"), and two of them side by side on a phone is one word per
           line. Stacked they read as two labelled lists. */}
-      <div className="gnl-stack-md flex w-full shrink-0 items-start gap-[32px] max-md:gap-[24px]" data-node-id="6076:24333">
+      <div className="gnl-stack-md flex w-full shrink-0 items-start gap-[32px] max-md:gap-[24px]" data-node-id="6257:72333">
         {ACTIONS_SECTION.columns.map((column) => (
           <div
             key={column.heading}
@@ -430,29 +465,29 @@ function ActionsSectionCard() {
       </div>
 
       {/*
-       * other-actions-box 6076:24348. The 1px top rule is an inset box-shadow,
+       * other-actions-box 6257:72348. The 1px top rule is an inset box-shadow,
        * not `border-t`: Figma strokes inside the frame, so a CSS border would
        * push this box to 71px against the 70px in the design.
        */}
       <div
         className="flex w-full shrink-0 flex-col items-start gap-[12px] pt-[16px] shadow-[inset_0_1px_0_0_#d4d8da]"
-        data-node-id="6076:24348"
+        data-node-id="6257:72348"
       >
         <p
           className="shrink-0 whitespace-nowrap text-[16px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]"
-          data-node-id="6076:24349"
+          data-node-id="6257:72349"
         >
           {ACTIONS_SECTION.otherTitle}
         </p>
-        <div className="flex shrink-0 items-center gap-[6px]" data-node-id="6076:24350">
+        <div className="flex shrink-0 items-center gap-[6px]" data-node-id="6257:72350">
           <span
             className={`${ACTION_LINK} w-auto cursor-default whitespace-nowrap select-none`}
-            data-node-id="6076:24351"
+            data-node-id="6257:72351"
             data-demo-inert="true"
           >
             {ACTIONS_SECTION.otherLinkLabel}
           </span>
-          <div className="relative size-[14px] shrink-0" data-node-id="6076:24352">
+          <div className="relative size-[14px] shrink-0" data-node-id="6257:72352">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt=""
@@ -468,19 +503,19 @@ function ActionsSectionCard() {
 
 function VerifiedContentLeft() {
   return (
-    <div className={CONTENT_LEFT} data-node-id="6065:23370">
-      {/* breadcrumb-row 6065:23371 */}
-      <div className="flex shrink-0 items-center" data-node-id="6065:23371">
-        <Link className={`${LINK} whitespace-nowrap`} href={BREADCRUMB.href} data-node-id="6065:23372">
+    <div className={CONTENT_LEFT} data-node-id="6257:72317">
+      {/* breadcrumb-row 6257:72318 */}
+      <div className="flex shrink-0 items-center" data-node-id="6257:72318">
+        <Link className={`${LINK} whitespace-nowrap`} href={BREADCRUMB.href} data-node-id="6257:72319">
           {BREADCRUMB.label}
         </Link>
       </div>
 
-      {/* title-badge-row 6065:23373 */}
-      <div className={TITLE_ROW} data-node-id="6065:23373">
+      {/* title-badge-row 6257:72320 */}
+      <div className={TITLE_ROW} data-node-id="6257:72320">
         <p
           className="shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
-          data-node-id="6065:23374"
+          data-node-id="6257:72321"
         >
           {SERVICE_HEADER.title}
         </p>
@@ -490,8 +525,8 @@ function VerifiedContentLeft() {
           className="flex shrink-0 items-center gap-[6px] rounded-[100px] bg-[#45ab8e] px-[12px] py-[6px]"
           data-node-id={SERVICE_HEADER_VERIFIED.nodeId}
         >
-          {/* Success_check 6065:24184 — a 12px box whose leaf is pulled 1.13% left. */}
-          <div className="relative size-[12px] shrink-0" data-node-id="6065:24184">
+          {/* Success_check 6257:72323 — a 12px box whose leaf is pulled 1.13% left. */}
+          <div className="relative size-[12px] shrink-0" data-node-id="6257:72323">
             <div className="absolute inset-[0_0_0_-1.13%]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="" className="block size-full max-w-none" src={ASSETS.iconSuccessCheck} />
@@ -499,47 +534,47 @@ function VerifiedContentLeft() {
           </div>
           <p
             className="shrink-0 whitespace-nowrap text-[12px] font-bold leading-[1.5] text-white"
-            data-node-id="6065:23378"
+            data-node-id="6257:72324"
           >
             {SERVICE_HEADER_VERIFIED.badgeLabel}
           </p>
         </div>
 
-        {/* notification-bell-container 6065:23379 — inert, as on the
+        {/* notification-bell-container 6257:72325 — inert, as on the
             unverified frame. */}
         <div
           className="flex size-[32px] shrink-0 cursor-default flex-col items-center justify-center rounded-[100px] bg-[#eaecef] select-none"
-          data-node-id="6065:23379"
+          data-node-id="6257:72325"
           data-demo-inert="true"
           aria-disabled="true"
         >
-          <div className="relative size-[16px] shrink-0" data-node-id="6065:23380">
+          <div className="relative size-[16px] shrink-0" data-node-id="6257:72326">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.iconBellAlert} />
           </div>
         </div>
       </div>
 
-      {/* service-subtitle 6065:23382 */}
+      {/* service-subtitle 6257:72328 */}
       <p
         className="w-full shrink-0 text-[16px] font-normal leading-[1.5] text-[#212326] [word-break:break-word]"
-        data-node-id="6065:23382"
+        data-node-id="6257:72328"
       >
         {SERVICE_HEADER.subtitle}
       </p>
 
-      {/* left-column 6076:24330 */}
-      <div className="flex w-full shrink-0 flex-col items-start gap-[40px]" data-node-id="6076:24330">
-        {/* Frame 11 6076:31314 — a redundant 860 x 387 wrapper in the design,
+      {/* left-column 6257:72329 */}
+      <div className="flex w-full shrink-0 flex-col items-start gap-[40px]" data-node-id="6257:72329">
+        {/* Frame 11 6257:72330 — a redundant 860 x 387 wrapper in the design,
             reproduced so the node tree matches the file. */}
-        <div className="w-full shrink-0" data-node-id="6076:31314">
+        <div className="w-full shrink-0" data-node-id="6257:72330">
           <ActionsSectionCard />
         </div>
 
-        {/* linked-items-section 6076:24354 */}
+        {/* linked-items-section 6257:72354 */}
         <div
           className="flex w-full shrink-0 flex-col items-start gap-[20px]"
-          data-node-id="6076:24354"
+          data-node-id="6257:72354"
         >
           {/*
            * Figma: Lato:ExtraBold (800) → 700.
@@ -550,7 +585,7 @@ function VerifiedContentLeft() {
            */}
           <p
             className="shrink-0 whitespace-nowrap text-[22px] font-bold leading-[26px] text-[#004b87] [word-break:break-word]"
-            data-node-id="6076:24355"
+            data-node-id="6257:72355"
           >
             {LINKED_ITEMS_TITLE}
           </p>
@@ -585,10 +620,10 @@ function VerifiedPage() {
     <div className="gnl-desktop-shell" data-verified="1">
       <TopNav />
 
-      {/* main-container 6065:23369 */}
-      <main className={`${MAIN} h-[1610px]`} data-node-id="6065:23369">
+      {/* main-container 6257:72316 */}
+      <main className={`${MAIN} h-[1583px]`} data-node-id="6257:72316">
         <VerifiedContentLeft />
-        {/* sidebar-right 6065:23388 — byte-identical to the unverified frame. */}
+        {/* sidebar-right 6257:72427 — byte-identical to the unverified frame. */}
         <SidebarRight />
       </main>
 

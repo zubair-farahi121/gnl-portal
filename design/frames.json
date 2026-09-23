@@ -35,6 +35,14 @@
       "budget": 0.008
     },
     {
+      "id": "cid-continue-on-mobile",
+      "node": "6217:62059",
+      "route": "/cid/continue-on-mobile/",
+      "width": 1440,
+      "height": 1162,
+      "budget": 0.008
+    },
+    {
       "id": "cid-terms",
       "node": "6217:62834",
       "route": "/cid/terms/",
@@ -48,6 +56,62 @@
       "route": "/cid/biometric/",
       "width": 393,
       "height": 835,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-liveness",
+      "node": "6217:65268",
+      "route": "/cid/liveness/",
+      "width": 393,
+      "height": 1283,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-liveness-capture",
+      "node": "6217:65271",
+      "route": "/cid/liveness-capture/",
+      "width": 393,
+      "height": 1232,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-country",
+      "node": "6217:66054",
+      "route": "/cid/country/",
+      "width": 393,
+      "height": 1061,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-document",
+      "node": "6087:31396",
+      "route": "/cid/document/",
+      "width": 393,
+      "height": 1169,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-capture-intro",
+      "node": "6217:66055",
+      "route": "/cid/capture-intro/",
+      "width": 393,
+      "height": 995,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-capture-front",
+      "node": "6056:19118",
+      "route": "/cid/capture-front/",
+      "width": 393,
+      "height": 1175,
+      "budget": 0.008
+    },
+    {
+      "id": "cid-capture-back",
+      "node": "6057:20924",
+      "route": "/cid/capture-back/",
+      "width": 393,
+      "height": 1175,
       "budget": 0.008
     },
     {
@@ -67,6 +131,14 @@
       "budget": 0.008
     },
     {
+      "id": "prereq-confirm",
+      "node": "6217:81644",
+      "route": "/services/driver-vehicle/prerequisite/",
+      "width": 1440,
+      "height": 997,
+      "budget": 0.008
+    },
+    {
       "id": "confirmation",
       "node": "6217:82446",
       "route": "/services/driver-vehicle/confirmation/",
@@ -76,10 +148,10 @@
     },
     {
       "id": "service-verified",
-      "node": "6065:23367",
+      "node": "6257:72314",
       "route": "/services/driver-vehicle/?verified=1",
       "width": 1440,
-      "height": 1820,
+      "height": 1793,
       "budget": 0.008
     }
   ]

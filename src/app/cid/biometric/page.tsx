@@ -89,8 +89,32 @@ export default function CidBiometricPage() {
         >
           {CID_ACTIONS.decline}
         </BtnOutline>
+        {/*
+         * RETARGETED 2026-09-22: "I agree" used to jump straight to
+         * /cid/verified/, which skipped the identity verification itself. It
+         * now enters the ID-document step.
+         *
+         * RE-POINTED the same day, /cid/document/ -> /cid/country/ (Figma
+         * 6217:66054), the document-type / country-of-issuance screen that had
+         * been gap G1 in design/verification-frame-map.md.
+         *
+         * RE-POINTED AGAIN 2026-09-23, /cid/country/ -> /cid/liveness/ (Figma
+         * 6217:65268). The liveness check is what actually comes next: this
+         * screen takes consent for a face scan ("A photo or video of your face
+         * will be used to verify your identity"), and until now the demo took
+         * that consent and then never scanned a face. The two liveness frames
+         * sit first in the Yoti cluster, before `CID_ID1_Country`, and that
+         * cluster's x-order is flow order.
+         *
+         * IT IS ALSO WHAT FIXES THE COUNTER. This screen's pill reads
+         * "step 2 of 5" and /cid/country/'s reads "step 4 of 5"; the liveness
+         * frames carry the only "step 3 of 5" in the file. The step is now
+         * /cid/liveness/ -> /cid/liveness-capture/ -> /cid/country/ ->
+         * /cid/document/ -> /cid/capture-intro/ -> capture front -> capture
+         * back -> verified. See src/lib/flow.ts.
+         */}
         <BtnOutline
-          href="/cid/verified/"
+          href="/cid/liveness/"
           className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
           {CID_ACTIONS.accept}

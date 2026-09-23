@@ -285,7 +285,16 @@ export default function PrerequisiteCheckPage() {
               >
                 {WIZARD_ACTIONS.backLabel}
               </BtnOutline>
-              <BtnPrimary href="/cid/terms/" className="max-xs:w-full">
+              {/*
+               * RE-POINTED 2026-09-22 from /cid/terms/ to
+               * /cid/continue-on-mobile/ (Figma 6217:62059). That frame sits at
+               * x=13340.17 on Row B, between this one and CID_TU (x=15130), and
+               * Row B's x-order is flow order — so the mobile hand-off comes
+               * first and IT hands on to Terms of use. The IDV-method card
+               * above is re-pointed with it, so both routes into the CID
+               * journey still land on the same screen.
+               */}
+              <BtnPrimary href="/cid/continue-on-mobile/" className="max-xs:w-full">
                 {WIZARD_ACTIONS.continueLabel}
               </BtnPrimary>
             </div>

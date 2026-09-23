@@ -166,6 +166,128 @@ const CARD =
   "box-border w-full shrink-0 rounded-[6px] bg-white p-[24px] shadow-[inset_0_0_0_1px_#d4d8da] max-xs:p-[16px]";
 
 /*
+ * VRC VC upsell — Figma 6257:73252, 812 x 102. ADDED 2026-09-22 with the
+ * 6257:72314 re-sync; only the CHEV card carries one.
+ *
+ * ====================================================================
+ * MEASURED. Every offset below is read off the node tree, and each one is
+ * produced by the box model rather than hardcoded:
+ *   panel        812 x 102   r-[6px] #e9ecef, p-[16px], gap-[16px], items-center
+ *     avatar-box  64 x 64    at x=16, y=19   ((102 - 64) / 2 = 19 — centred)
+ *       QR code   45 x 45    p-[12px] inside the 64 box   (6259:73307)
+ *     item-details 569 x 70  at x=96, y=16   gap-[6px]
+ *       Frame 14676 173 x 22 at y=0          gap-[8px], items-start
+ *         "Skip the paper copy" 123 x 21     14px Bold #004b87
+ *         New_pill   42 x 22                 px-[8px] py-[4px] r-[4px] #004b87
+ *       body       569 x 42  at y=28         14px Regular #004b87, two lines
+ *     actions-box 115 x 40   at x=681, y=31  ((102 - 40) / 2 = 31 — centred)
+ *       btn-primary 115 x 40                 the same btn-primary as the cards
+ *
+ * 16 + 64 + 16 + 569 + 16 + 115 + 16 = 812. The details column is `flex-1`,
+ * so the 569 is what is left over, not a fixed width.
+ *
+ * THE AVATAR BOX IS THE SAME #e9ecef AS THE PANEL, so it is invisible against
+ * it. That is what the design file says (both fills read #e9ecef) and it is
+ * reproduced rather than "corrected" to the #ffffff a card icon-box would
+ * normally take.
+ *
+ * NEW_PILL LEADING. Figma says `line-height: normal` and measures the pill at
+ * 22px (4 + 14 + 4). The browser's own `normal` for Lato at 12px rounds to 15,
+ * which makes the pill 23 and the panel 103. Pinned to the measured 14px —
+ * the same correction the green `New` and red `Expired` pills above already
+ * carry. Logged in design/token-exceptions.md.
+ *
+ * THIS PILL IS BLUE (#004b87 on white), NOT the green #d1e7dd/#198754 pill the
+ * hidden `VC - Add to your wallet` button used. Two different `New` pills in
+ * one file; reproduced as drawn.
+ * ====================================================================
+ *
+ * RESPONSIVE. Three boxes across at the design width. The details column is
+ * flexible and the other two are `shrink-0`, so at 320 the QR (64) plus the
+ * button (115) plus 48px of padding and gaps leaves ~90px for two lines of
+ * copy. Below 768 it becomes a column, matching how the `inline` card above
+ * reflows, and the button goes full width so it does not sit orphaned.
+ *
+ * THE BUTTON IS INERT, like every other button on a linked-item card: the
+ * design draws no digital-wallet screen. `aria-disabled`, not `disabled`, so
+ * the native disabled state cannot repaint the label and fail the pixel gate.
+ */
+function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }) {
+  return (
+    <div
+      className="flex w-full shrink-0 items-center gap-[16px] rounded-[6px] bg-[#e9ecef] p-[16px] max-md:flex-col max-md:items-start"
+      data-node-id={upsell.nodeId}
+      data-name="VRC VC upsell"
+    >
+      {/* avatar-box 6257:73253 */}
+      <div
+        className="flex size-[64px] shrink-0 items-center justify-center rounded-[6px] bg-[#e9ecef] p-[12px]"
+        data-node-id="6257:73253"
+      >
+        <div className="relative size-[45px] shrink-0" data-node-id="6259:73307">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            className="absolute inset-0 block size-full max-w-none"
+            src={ASSETS.iconQrCode}
+          />
+        </div>
+      </div>
+
+      {/* item-details 6257:73255 */}
+      <div
+        className="flex min-w-px flex-[1_0_0] flex-col items-start gap-[6px] max-md:w-full"
+        data-node-id="6257:73255"
+      >
+        {/* Frame 14676 6259:73327 */}
+        <div className="flex shrink-0 items-start gap-[8px]" data-node-id="6259:73327">
+          <p
+            className="shrink-0 text-[14px] font-bold leading-[1.5] whitespace-nowrap text-[#004b87]"
+            data-node-id="6257:73256"
+          >
+            {upsell.title}
+          </p>
+          {/* New_pill 6259:73324 */}
+          <div
+            className="flex shrink-0 items-center rounded-[4px] bg-[#004b87] px-[8px] py-[4px]"
+            data-node-id="6259:73324"
+          >
+            <p
+              className="shrink-0 text-[12px] font-bold leading-[14px] whitespace-nowrap text-white"
+              data-node-id="6259:73325"
+            >
+              {upsell.badge}
+            </p>
+          </div>
+        </div>
+        <p
+          className="min-w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#004b87] [word-break:break-word]"
+          data-node-id="6257:73257"
+        >
+          {upsell.body}
+        </p>
+      </div>
+
+      {/* actions-box 6257:73259 */}
+      <div
+        className="flex shrink-0 flex-col items-start max-md:w-full max-md:items-stretch"
+        data-node-id="6257:73259"
+      >
+        <button
+          type="button"
+          className={`${BTN_PRIMARY} cursor-default select-none`}
+          data-node-id="6257:73260"
+          data-demo-inert="true"
+          aria-disabled="true"
+        >
+          {upsell.actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/*
  * RESPONSIVE. Both layouts are rows of icon + details + actions at the design
  * width and both reflow the same way below 768:
  *
@@ -223,6 +345,11 @@ export function LinkedItemCard({ item }: { item: LinkedItem }) {
           <ActionButton key={action.label} action={action} />
         ))}
       </div>
+
+      {/* VRC VC upsell 6257:73252 — the third child of the CHEV card only, on
+          the card's own 20px gap. 24 + 77 + 20 + 40 + 20 + 102 + 24 = 307,
+          which is the card height in the design. */}
+      {item.upsell ? <VcUpsellPanel upsell={item.upsell} /> : null}
     </div>
   );
 }

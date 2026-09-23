@@ -78,7 +78,7 @@ const STACK_GAP = {
 } as const;
 const LABEL_SIZE = {
   sm: "text-[12px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
-  lg: "text-[16px] max-md:gap-[8px] max-md:text-[12px] max-md:whitespace-normal max-xxs:grid max-xxs:grid-cols-2 max-xxs:gap-[8px]",
+  lg: "text-[16px] max-md:text-[14px] max-xs:gap-[8px] max-xs:text-[12px] max-xs:whitespace-normal max-xxs:gap-[4px] max-xxs:text-[10px]",
   cid: "text-[12px] md:text-[16px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
 } as const;
 /** Figma marks the current label Lato:Bold on --gnl-heading at both scales. */
@@ -103,7 +103,7 @@ const CURRENT_LABEL = {
  */
 const LABEL_ITEM = {
   sm: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
-  lg: "shrink-0 max-md:min-w-0 max-md:flex-1 max-md:text-center max-xxs:text-left",
+  lg: "shrink-0 max-xs:min-w-px max-xs:flex-1 max-xs:text-center",
   /* Same as `sm`: at >= 768 the 16px labels have a >= 700px track, which is
    * what `lg` already survives at 1440, so nothing needs releasing there. */
   cid: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
@@ -197,7 +197,6 @@ export function ProgressStepper({
           // they render at 400. See design/token-exceptions.md.
           <p
             key={label}
-            aria-current={i === current ? "step" : undefined}
             className={`${LABEL_ITEM[size]} ${
               i === current ? CURRENT_LABEL[size] : "font-normal"
             }`}

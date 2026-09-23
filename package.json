@@ -11,6 +11,7 @@
     "serve": "serve out -l 4173",
     "responsive": "node scripts/responsive-check.mjs",
     "clicks": "node scripts/click-through.mjs",
+    "camera": "node scripts/camera-check.mjs",
     "check": "npm run build && npm run responsive && npm run clicks"
   },
   "dependencies": {

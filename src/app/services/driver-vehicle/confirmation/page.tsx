@@ -93,8 +93,16 @@ export default function ConfirmationPage() {
               className="flex w-full shrink-0 items-center justify-end gap-[24px] pt-[16px] max-xs:flex-col-reverse max-xs:items-stretch max-xs:gap-[12px]"
               data-node-id="6102:101188"
             >
+              {/*
+               * Back -> step 7, /services/driver-vehicle/prerequisite/
+               * (Figma 6217:81644, "Confirm some details"). Retargeted
+               * 2026-09-22: it used to point at /onboard/, which was correct
+               * only while step 7 did not exist in the build. 6217:81644 sits
+               * immediately before this frame on the canvas row, so this is
+               * the screen the design's Back means.
+               */}
               <BtnOutline
-                href="/services/driver-vehicle/onboard/"
+                href="/services/driver-vehicle/prerequisite/"
                 className="max-xs:w-full max-xs:justify-center"
               >
                 Back

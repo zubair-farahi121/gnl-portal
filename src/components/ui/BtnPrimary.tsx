@@ -32,10 +32,28 @@ import Link from "next/link";
  * inflating them there would fight the design and move the mobile baselines.
  * Nothing changes at or above 768. See globals.css.
  */
+/*
+ * TONE — added 2026-09-22 with the CID ID-document screens.
+ *
+ * `Yoti ContinueButton` (Figma 6076:31361) is a SECOND primary button in the
+ * file, used on the three ID-document frames. Box for box it is this one —
+ * rounded-[4px], px-[24px] py-[10px], 14px Bold white at leading-[normal],
+ * centred — and it differs on exactly one property: the fill is the `Yoti CTA`
+ * blue #27619b instead of #243746. Those frames are the CertifiO vendor UI
+ * embedded in the GNL wizard, so the two blues are deliberate, not drift.
+ *
+ * Expressed as a variant rather than a `className` override on purpose: two
+ * arbitrary `bg-[…]` utilities on one element are the same Tailwind property,
+ * and which one wins is decided by stylesheet order, not by the order they are
+ * written in the class attribute. A variant cannot be ambiguous.
+ *
+ * `gnl` is the default, so the four existing call sites are byte-identical.
+ */
 const CLASSES =
-  "gnl-touch box-border inline-flex items-center justify-center overflow-clip rounded-[4px] bg-[#243746] px-[24px] py-[10px] font-bold leading-[normal] text-white";
+  "gnl-touch box-border inline-flex items-center justify-center overflow-clip rounded-[4px] px-[24px] py-[10px] font-bold leading-[normal] text-white";
 
 const LABEL_SIZE = { sm: "text-[14px]", lg: "text-[16px]" } as const;
+const TONE = { gnl: "bg-[#243746]", yoti: "bg-[#27619b]" } as const;
 
 export function BtnPrimary({
   children,
@@ -43,6 +61,8 @@ export function BtnPrimary({
   href,
   className,
   size = "sm",
+  tone = "gnl",
+  nodeId = "6031:6352",
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -51,19 +71,23 @@ export function BtnPrimary({
   className?: string;
   /** `lg` is the rebuilt desktop scale (16px label). Defaults to `sm`. */
   size?: "sm" | "lg";
+  /** `yoti` is the #27619b `Yoti ContinueButton`. Defaults to the GNL navy. */
+  tone?: "gnl" | "yoti";
+  /** The frame's own button node id. Defaults to `ContinueButton` 6031:6352. */
+  nodeId?: string;
 }) {
-  const base = `${CLASSES} ${LABEL_SIZE[size]}`;
+  const base = `${CLASSES} ${TONE[tone]} ${LABEL_SIZE[size]}`;
   const classes = className ? `${base} ${className}` : base;
 
   if (href) {
     return (
-      <Link href={href} className={classes} onClick={onClick} data-node-id="6031:6352">
+      <Link href={href} className={classes} onClick={onClick} data-node-id={nodeId}>
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} className={classes} data-node-id="6031:6352">
+    <button type="button" onClick={onClick} className={classes} data-node-id={nodeId}>
       {children}
     </button>
   );

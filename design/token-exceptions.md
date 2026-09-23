@@ -477,3 +477,669 @@ client.**
 | `Cancel` / `Back` / `Continue` on `6031:6348` | rendered as controls | rendered, but inert (no href, no handler) | Task 12 mandates that **only** the CertifiO ID option is clickable, so the presenter cannot reach an unbuilt screen. |
 | Verified state of `6031:6244` | frame `6065:23367` | not built | Blocked on plan open question **O1**. Marked in `src/app/services/driver-vehicle/page.tsx` with `// TODO(task-19)`; `verified` is already read from `useDemoState()` and surfaced as a non-visual `data-verified` attribute on the shell. |
 | `Terms of Use` `6031:6293`, phone link `6031:6299` | external `gov.nl.ca` / `tel:` | kept as designed | Genuinely external destinations; left alone. |
+
+---
+
+# 9. The CID ID-document step — added 2026-09-22
+
+The three `CID_ID1` frames on the Driver-and-Vehicle row (y=779) were built as
+`/cid/document/`, `/cid/capture-front/` and `/cid/capture-back/`:
+
+| Route | Node | Frame size | Pill |
+|---|---|---|---|
+| `/cid/document/` | `6087:31396` | 393 x 1168.81 | ID document selection • step 4 of 5 |
+| `/cid/capture-front/` | `6056:19118` | 393 x 1174.81 | ID document selection • step 4 of 5 |
+| `/cid/capture-back/` | `6057:20924` | 393 x 1174.81 | ID document selection • step 4 of 5 |
+
+Three further frames share the name `CID_ID1` on the y=2341 row
+(`6217:66072`, `6217:76798`, `6217:66154`). Their `wizard-title` reads
+**StudentAidNL**, so they belong to a different service journey and are **not**
+built here. `6102:103451`, also named for this row in the hand-off notes, is the
+Driver-and-Vehicle **"Success!"** frame — the already-built
+`/services/driver-vehicle/confirmation/`.
+
+## 9.1 The sub-step counter skips 3 — ASK FOR TATYANA
+
+All **six** `CID_ID1` frames — ours and StudentAidNL's — carry the pill
+`ID document selection • step 4 of 5`. **No frame anywhere in the file reads
+"step 3 of 5."** So the demo's sub-step counter now runs:
+
+| Screen | Pill |
+|---|---|
+| `/cid/terms/` | step **1** of 5 |
+| `/cid/biometric/` | step **2** of 5 |
+| `/cid/document/` | step **4** of 5 |
+| `/cid/capture-front/` | step **4** of 5 |
+| `/cid/capture-back/` | step **4** of 5 |
+| `/cid/verified/` | step **5** of 5 |
+
+Reproduced verbatim rather than renumbered, per the rule that the build matches
+the design file. **This is visible on stage** — the pill jumps 2 → 4 and then
+repeats 4 three times. Two things are needed from the design file: what step 3
+is (a selfie / liveness capture is the obvious candidate, and `CID_Biometric`
+only takes *consent*), and whether the three ID-document screens are really all
+meant to be one step or should read 4a/4b/4c.
+
+## 9.2 Montserrat cannot be rendered
+
+These three frames are the **Yoti / CertifiO vendor UI** embedded in the GNL
+wizard, and every text node on them is **Montserrat**, not Lato. Montserrat is
+not self-hosted in this project, and `figma.com` *and* the Google Fonts host are
+both blocked by this environment's proxy, so no face could be fetched. The type
+renders in the project's Lato.
+
+| Node | Figma says | Rendered as |
+|---|---|---|
+| `6087:32268` "Accepted documents:" (22px) | `Montserrat:Bold` | **Lato 700** |
+| `6087:32275` et al, row labels (16px) | `Montserrat:SemiBold` (600) | **Lato 700** |
+| `6087:32280` "Issued on or after 01/2010" (12px) | `Montserrat:Regular` | **Lato 400** |
+| `6088:32304` / `6088:32306` capture headings (32px) | `Montserrat:Bold` | **Lato 700** |
+| `6056:13940` `Yoti ContinueButton` label (14px) | `Montserrat:Bold` | **Lato 700** |
+
+Lato has no 600, so `Montserrat:SemiBold` maps to 700 the same way
+`Lato:SemiBold` already does elsewhere in this file. **Ask for Tatyana:** should
+the vendor screens be restyled to Lato in the design file, or should Montserrat
+be licensed and self-hosted the way Lato is? Advancing metrics differ between
+the two families, so line *wraps* inside the radio rows may not match the frame
+exactly until this is settled.
+
+## 9.3 Yoti colours are NOT in the GNL token set
+
+Reproduced verbatim, not mapped onto the GNL ramp.
+
+| Role | Figma variable | Value | Nearest GNL token |
+|---|---|---|---|
+| Headings on these frames | `Yoti app` | `#333b40` | `--gnl-heading` (`#212326`) |
+| Radio row labels | `Yoti gris` | `#546072` | `--gnl-text` (`#5f6368`) |
+| Primary button, selected radio and its 2px row border | `Yoti CTA` | `#27619b` | `--gnl-primary` (`#243746`) |
+| Radio row border, unselected | *(none)* | `#d1d5db` | `--gnl-border` (`#e0e4e6`) |
+| "Issued on or after 01/2010" note | *(none)* | `#4b5563` | *(none)* |
+| Camera viewport panel | *(none)* | `rgba(17,22,37,0.05)` | *(none)* |
+
+`Yoti ContinueButton` (`6076:31361`) is a **second primary button** in the file:
+box for box identical to `ContinueButton` (`6031:6352`) — `rounded-[4px]`,
+`px-[24px] py-[10px]`, 14px Bold white at `leading-[normal]` — and differing
+only in fill. It is expressed as a `tone="yoti"` variant on `BtnPrimary` rather
+than a `className` override, because two arbitrary `bg-[…]` utilities on one
+element are resolved by stylesheet order, not by class-attribute order.
+
+## 9.4 Leading
+
+The capture headings are `leading-[normal]` (≈1.2 — the measured 39px lines and
+78px two-line block), where the three GNL-ramp CID headings on `/cid/terms/`,
+`/cid/biometric/` and `/cid/verified/` are `leading-[1.5]`. Both are verbatim.
+`leading-[normal]`, never Tailwind's `leading-normal` (which is 1.5).
+
+## 9.5 Row box model
+
+Figma draws the `RadioRow` stroke **inside** the 52px frame (content at x=16
+from the outer edge). A CSS `border` would make the rows 54 and the selected one
+56, so the stroke is painted with an inset `box-shadow`, the same technique
+`WizardCard`, `TopNav` and the onboard option cards already use.
+
+## 9.6 Hidden layers not rendered — and therefore no Back button
+
+| Node | Layer | Frame |
+|---|---|---|
+| `6087:31452` | `Check box`, 286 x 27 | `6087:31396` |
+| `6087:31455` | **`btn-back`, 361 x 39** | `6087:31396` |
+| `6056:19164` | `Check box` | `6056:19118` |
+| `6057:20965` | `Check box` | `6057:20924` |
+
+All are `hidden="true"`. Hidden layers are not part of the design — the same
+rule the other CID frames' `Check box` instances already follow. The
+consequence is that **Continue is the only on-screen control on all three new
+screens**: the design gives them no Back. Reverse navigation is the presenter's
+ArrowLeft (`DemoNav` over `src/lib/flow.ts`, asserted in
+`scripts/click-through.mjs`) and the browser's own back button. If a visible
+Back is wanted for the dry run, un-hiding `6087:31455` in Figma — or one line
+per page here — is all it takes.
+
+## 9.7 New placeholder assets
+
+`figma.com` is blocked, so these follow the existing placeholder convention:
+dimension-exact stand-ins, so swapping in a real export is a byte replacement
+with **no layout change**.
+
+| Placeholder file | Figma node | Exact dimensions | Used by |
+|---|---|---|---|
+| `radio-circle-20.svg` | `6098:100406` (and `6087:32277` et al) | 20 x 20 | `/cid/document/`, unselected rows |
+| `radio-circle-20-selected.svg` | `6098:100396` (`Group 7`) | 20 x 20 | `/cid/document/`, the Driver's License row |
+| `id-doc-front.svg` | `6056:19942` (`image 16`) | 725.828125 x 450.30224609375 (**PNG in Figma**) | `/cid/capture-front/` |
+| `id-doc-back.svg` | `6088:32336` (`image 17`) | 288.001953125 x 181.80224609375 (**PNG in Figma**) | `/cid/capture-back/` |
+
+The two ID images are the only ones whose *content* is load-bearing for the
+demo — they are the document the presenter is supposedly photographing — so
+they are the highest-priority re-export of the whole set.
+
+## 9.8 Copy reproduced as-is
+
+"Driver's **License**" (`6087:32300`) uses the American spelling and a U+0027
+apostrophe, where the rest of the portal says "licence". Verbatim, not
+harmonised — same rule as the `Terms of use` / `Terms of Use` split on
+`/cid/terms/`.
+
+## 9.9 Invented desktop layout
+
+Figma has **mobile frames only** for these three screens, as for every CID
+screen, so everything at and above 768 is a decision made in code (see
+`CidScreen`). Specific to these three:
+
+| Element | Invented rule | Why |
+|---|---|---|
+| `accepted-documents` / `Frame 5` | `md:pt-0` / `md:py-0` | The mobile pads space the block away from the header and the button; inside the card the 32px card gap does that and the two would stack. |
+| `Frame 14` (camera viewport) | `md:items-center` plus `md:max-w-[644px]` (front) / `md:max-w-[633px]` (back) on the image | The panel keeps its **measured** 400px height at every width, so the image has to be stopped from outgrowing it: at 1440 the panel's content box is 708px, which at these aspects would make the picture 439px / 447px tall and burst it. The caps are 400 × each image's own aspect, rounded down, which is why the two numbers differ. |
+| `Frame 6` | `md:flex-row md:items-center md:justify-end md:pt-[16px]`, button `md:w-auto` | A full-width 740px button in an 820px card reads as a stretched phone screen; it becomes the onboard actions-row. |
+
+---
+
+# 10. Step 7 + verified-page re-sync — 2026-09-22
+
+Covers `6217:81644` (`/services/driver-vehicle/prerequisite/`, "Confirm some
+details") and the re-sync of the verified service page from the **deleted**
+`6065:23367` to `6257:72314`. Source audit: `design/verification-frame-map.md`.
+
+## 10.1 Font weights — Lato has no 500 or 600
+
+Unchanged rule, new call sites. Self-hosted Lato ships 300 / 400 / 700 only.
+
+| Frame | Node | Figma weight | Rendered | Element |
+|---|---|---|---|---|
+| `6217:81644` | `6217:81654` / `81655` / `81657` | `Lato:Medium` (500) | **400** | inactive step-labels |
+| `6217:81644` | `6217:81662` | `Lato:SemiBold` (600) | **700** | "Must have a valid driver’s license" |
+| `6217:81644` | `6217:81663` | `Lato:SemiBold` (600) | **700** | "Confirmed" |
+| `6217:81644` | `6217:81665` | `Lato:SemiBold` (600) | **700** | "Cancel" |
+
+No new *kinds* of mapping — `Medium → 400` and `SemiBold → 700` were both
+already in use. Nothing on `6257:72314`'s new `VRC VC upsell` needs a mapping:
+it is `Lato:Bold` and `Lato:Regular` throughout.
+
+## 10.2 `line-height: normal` pinned to the measured box
+
+| Frame | Node | Figma | Browser `normal` | Pinned to | Effect if unpinned |
+|---|---|---|---|---|---|
+| `6257:72314` | `6259:73325` (`New_pill` label) | `normal`, measured 14px | 15px at 12px Lato | `leading-[14px]` | pill 23px not 22, upsell panel 103px not 102, page +1px |
+
+Same correction the green `New` and red `Expired on March 31, 2022` pills on
+this page already carry. Note `leading-[normal]` (~1.2) is used everywhere
+Figma says `normal`; Tailwind's `leading-normal` is 1.5 and is never correct
+for these.
+
+## 10.3 The file disagrees with itself about apostrophes — again
+
+`6217:81644` uses the **typographic U+2019** in both of its strings:
+
+- `6217:81660` "you need to confirm it**’**s you"
+- `6217:81662` "Must have a valid driver**’**s license"
+
+The prerequisite-check frame `6031:6304`, one step earlier in the same wizard,
+writes the *same requirement sentence* with a **straight U+0027**
+("Must have a valid driver's license", `IDV_OPTIONS` bullets). Same words, two
+apostrophes, one file. Both reproduced verbatim — a straight quote on
+`6217:81644` is a pixel-gate failure and vice versa.
+
+`6217:81660` also ends with a **trailing space** after its colon. Kept.
+
+"driver’s **license**" is the American spelling on this frame, where the
+linked-items cards say "licence". Verbatim, not harmonised.
+
+## 10.4 Height rounding — `ceil` CONFIRMED by measurement
+
+`design/verification-frame-map.md` C3 left this open: `frames.json` stores
+`auth-loading` as 1079 against a true 1078.196, which is `ceil`, but that was a
+single sample. Both new entries were pasted with `ceil` and both render
+**exactly**, which settles it:
+
+| Frame | Figma height | `ceil` | `round` | Rendered |
+|---|---|---|---|---|
+| `6217:81644` | 996.2152099609375 | **997** | 996 | **997** |
+| `6257:72314` | 1792.2152099609375 | **1793** | 1792 | **1793** |
+
+`round` would have left both 1px short. The task brief quoted 996 / 1792; the
+manifest and the build use 997 / 1793.
+
+## 10.5 Hidden layers not rendered
+
+Three on these two frames, all `hidden="true"`, none rendered — the same rule
+every CID `Check box` and `6087:31396`'s `btn-back` already follow.
+
+| Frame | Node | Layer | Size |
+|---|---|---|---|
+| `6217:80871` | `6236:46388` | `Banner` — an error/delay state | — |
+| `6257:72314` | `6257:72356` | `item-card-licence`, the digital-wallet promo card | 860 × 129 |
+| `6257:72314` | `6257:72404` | `VC - Add to your wallet` button + green `New` pill | 221 × 40 |
+
+The last two are the whole −27px between the old frame (1819.215) and the new
+one (1792.215): −129−20 for the card, +102+20 for the `VRC VC upsell` that
+replaced it inside the CHEV card.
+
+## 10.6 Two different `New` pills
+
+`6259:73324` (the new upsell) is **white on `#004b87`**. `6220:86438`, the pill
+on the now-hidden wallet button, was **`#198754` on `#d1e7dd`**. Different pill,
+same word, same page. Reproduced as drawn.
+
+## 10.7 The upsell's avatar-box is invisible
+
+`6257:73253` is filled `#e9ecef` — the same fill as the `6257:73252` panel it
+sits on — so the 64px box around the QR code cannot be seen. That is what the
+file says; not "corrected" to the white an icon-box would normally take.
+
+## 10.8 Invented — responsive only
+
+Nothing about `6217:81644` is invented chrome: it is a real 1440 desktop frame,
+so unlike the CID screens it needs no made-up desktop layout. Only the
+below-1440 ladder is a decision, and it is copied from `/onboard/` and
+`/confirmation/` next door.
+
+| Element | Invented rule | Why |
+|---|---|---|
+| `section-title` `6217:81659` | `max-md:text-[30px] max-xs:text-[26px]` | 36px is the largest heading on any wizard frame; at 320 the card interior is ~240px, where it is two words a line. Same ladder `/auth/loading/`'s 40px heading uses. |
+| `Frame 1` `6217:81661` | `max-xs:flex-col max-xs:gap-[4px]`, status loses `text-right` | A right-aligned "Confirmed" under a left-aligned label reads as an orphan once the row stacks. |
+| `actions-row` `6217:81664` | `max-xs:flex-col-reverse max-xs:items-stretch` | ~237px of controls + 48px of gaps against ~240px of card interior at 320. `flex-col-reverse` puts the primary action on top while leaving the DOM (and tab order) as designed. Lifted from `/onboard/`. |
+| `VRC VC upsell` `6257:73252` | `max-md:flex-col max-md:items-start`, button full width | Three boxes across leaves ~90px for two lines of copy at 320. Matches how the `inline` linked-item cards above already reflow. |
+| label width `6217:81662` | `flex-1` instead of Figma's pinned `448.189px` | The 448.189 is a measured artefact of the string at 740px, not a designed constraint. Identical at 1440; lets the label wrap instead of overflow below it. |
+
+## 10.9 Missing assets — one new placeholder
+
+`figma.com` is blocked by this environment's proxy, so no real export could be
+downloaded. Dimension-exact neutral stand-in, so swapping in the real export is
+a byte replacement with **no layout change**.
+
+| Placeholder file | Figma node | Dimensions (px) | Used by |
+|---|---|---|---|
+| `icon-qr-code.svg` | `6259:73307` (`QR code`) | 45 × 45, inside a 64px avatar-box at a 12px inset | `VRC VC upsell` on the verified service page |
+
+This QR is a **digital-wallet** feature ("Skip the paper copy" — add your
+vehicle registration certificate to your wallet). It is **not** an IDV device
+hand-off; no mobile-handoff screen exists anywhere in this journey.
+
+## 10.10 Behaviour change — `/auth/loading/`'s auto-advance was removed
+
+Not a token, but it belongs in the record. `6217:80871` has **no buttons** in
+Figma ("You can close this window."), and none is invented. The build used to
+paper over that with a 2.6s `setTimeout` pushing to the confirmation screen.
+That timer was removed when step 7 was inserted, because step 7's `Back` points
+at `/auth/loading/` — with the timer running, `Back` was a 2.6-second round
+trip straight back to step 7, i.e. a control that looks right and does nothing.
+
+Cost, stated plainly: `/auth/loading/` is now the one screen in the flow with no
+on-screen forward control. The forward move there is the presenter's
+**ArrowRight** (`DemoNav` / `src/lib/flow.ts`), which the click-through gate
+asserts explicitly. To revert, restore the `setTimeout` targeting
+`/services/driver-vehicle/prerequisite/` **and** re-point step 7's `Back`.
+
+## 10.11 Still open — not resolved by this pass
+
+- **`step 3 of 5`** is displayed by no frame in the file. The sub-step counter
+  runs 1 → 2 → 4 → 4 → 4 → 5. Not renumbered. (Frame map C4.)
+- **Step 4b**, the front-capture instruction screen, exists but its master's
+  node id is not derivable from an instance, so it cannot be built.
+  `/cid/document/` goes straight to `/cid/capture-front/`. (Frame map C2 / G2.)
+- **The 4,924px void on Row B** between `CID_Biometric` and `CID_ID_success`
+  could hold newer copies of 4a/4c/4d. Page `0:2` cannot be enumerated by the
+  MCP server, so this is unresolved. (Frame map C1.)
+- **Route naming.** `6217:81644` is named "Prerequisite confirmed" but its
+  heading is "Confirm some details"; the route built is
+  `/services/driver-vehicle/prerequisite/`, as the frame map proposed.
+  (Frame map C5.)
+
+---
+
+# 11. The three screens located 2026-09-22
+
+`/cid/continue-on-mobile/` (6217:62059), `/cid/country/` (6217:66054) and
+`/cid/capture-intro/` (6217:66055). See design/verification-frame-map.md §12 for
+the audit record; this section is only the token and asset exceptions.
+
+## 11.1 Font-weight mappings — no new rules, three new call sites
+
+Self-hosted Lato ships 300 / 400 / 700 only. The existing mapping is unchanged
+and is simply applied to more nodes:
+
+| Figma weight | Rendered | New nodes using it |
+|---|---|---|
+| `Lato:Regular` | 400 | `6156:60703` (the 40 px heading — **not** bold, like /auth/loading/'s), `6156:60705`, `6156:60707` |
+| `Lato:Bold` | 700 | `6156:60708` "Continue on my computer" |
+| `Montserrat:Regular` | Lato 400 | `6076:31357`, `6056:15808`, `6056:20793` |
+| `Montserrat:Bold` | Lato 700 | `6056:15797`, `6056:15807`, `6056:15810`, `6056:15811`, `6056:20792`, `6056:20795` |
+| `Montserrat:SemiBold` | Lato **700** | `6056:15798`, `6056:20800`, `6056:20805`, `6056:20810` |
+
+No `Lato:Medium` and no weight 500 or 600 appears on any of the three frames, so
+**no new mapping was needed**. Montserrat still renders in Lato throughout — it
+is not self-hosted here and both the Figma and Google font hosts are blocked by
+the proxy. Pre-existing; unchanged.
+
+## 11.2 Line-height — `leading-[normal]`, not `leading-normal`
+
+Figma says `line-height: normal` (~1.2) on `6156:60708`, `6056:15797`,
+`6056:15807`, `6056:15810`, `6056:15811`, `6056:20792`, `6056:20795` and
+`6076:31357`. Tailwind's `leading-normal` is **1.5**; all of these use
+`leading-[normal]`. Using the wrong one would have added ~5 px per node and
+moved every box below it. Same trap already logged in phase 2b.
+
+Explicit numeric leadings reproduced verbatim where Figma gives one:
+`leading-[1.4]` (`6056:15798`, `6056:15808`), `leading-[20px]` (`6056:20793`),
+`leading-[18px]` (the three guideline labels), `leading-[1.5]` (all four GNL
+nodes on the hand-off frame).
+
+## 11.3 Colours — verbatim, including the Yoti ramp
+
+Nothing was harmonised. `6217:66054` and `6217:66055` are Yoti/CertifiO vendor
+surfaces inside GNL chrome and carry the Yoti palette:
+
+| Token | Hex | Used for |
+|---|---|---|
+| `Yoti app` | `#333b40` | the 22 px headings and the country body |
+| `Yoti gris` | `#546072` | select label, privacy card, guideline labels, chevron |
+| `Yoti gris pâle` | `#f3f4f6` | `PrivacyInfoCard` and `Guidelines Card` fills |
+| `Yoti CTA` | `#27619b` | `Privacy Policy` link and both Continue buttons |
+| *(no token)* | `#d1d5db` | the select's 1 px stroke |
+| *(no token)* | `#4b5563` | the capture-intro subtitle |
+
+`6217:62059` is the opposite: a GNL frame, so `--gnl-heading`, `--gnl-text`
+`#5f6368`, link `#004b87` and the `#e0e4e6` card stroke — no Yoti colour on it
+at all. **Do not unify the two ramps.** Every Yoti-owned box carries a comment
+saying so at its call site.
+
+## 11.4 Box model — the select's stroke is an inset box-shadow
+
+Figma draws `select-dropdown` (`6076:31356`) as 361 × 52 with its label at
+x=16, y=16 **from the outer edge** — i.e. the 1 px stroke is inside the frame. A
+CSS `border` would make the control 54 tall and push everything below it down 2,
+so the stroke is painted with `shadow-[inset_0_0_0_1px_#d1d5db]`. Identical
+treatment to the RadioRows on `/cid/document/`, `WizardCard` and `TopNav`.
+
+Same reasoning for the hand-off card (`6156:60701`): 824 wide with its content
+at x=40, so `shadow-[inset_0_0_0_1px_#e0e4e6]`, not `border`.
+
+## 11.5 The hand-off card is 824, not the 820 `wizard-card`
+
+`6156:60701` measures **824 × 647.9812** with a 744 px interior, where every
+wizard frame in the file uses the 820 × 740 `wizard-card` (`6031:6307`). It is
+the same 824 `/auth/loading/`'s card (`6236:46385`) uses. Reproduced, not
+harmonised — which is why `/cid/continue-on-mobile/` does **not** use the
+`WizardCard` component. Visible as a 4 px width step between consecutive
+desktop screens; that step is in the design file.
+
+## 11.6 Missing assets — six new placeholders
+
+`figma.com` is blocked by this environment's proxy, so no real export could be
+downloaded. Every file below is a **dimension-exact** neutral stand-in: the
+outer box is the exact Figma float and the page pins the box to those literals,
+so swapping in the real export is a byte replacement with **no layout change**.
+
+| Placeholder file | Figma node | Dimensions (px) | Used by |
+|---|---|---|---|
+| `qr-mobile-handoff.svg` | `6156:60706` `image 13` | 220.4013671875 × 216.981201171875 | the mobile hand-off QR |
+| `icon-chevron-down-yoti.svg` | `6076:31358` `chevron-down` | 16 × 16 | the country select |
+| `yoti-badge.svg` | `6087:31390` `image 20` | 33.701072692871094 × 16 | "Powered by YOTI" |
+| `icon-guideline-clear.svg` | `6088:32315` | 34 × 34 | guideline row 1 (eye) |
+| `icon-guideline-light.svg` | `6088:32320` | 34 × 34 | guideline row 2 (sun) |
+| `icon-guideline-framed.svg` | `6088:32322` | 34 × 34 | guideline row 3 (viewfinder) |
+
+Three notes worth keeping:
+
+- **`qr-mobile-handoff.svg` is NOT `icon-qr-code.svg`.** The existing 45 × 45
+  entry (`6259:73307`) is the *digital-wallet* upsell QR on the verified service
+  page. This one is the *identity-verification device hand-off*. Different
+  nodes, different sizes, different features. Neither was overwritten. The
+  drawn pattern is deterministic noise around three real finder squares — **it
+  is not scannable and is not meant to be.**
+- **`icon-chevron-down-yoti.svg` is a deliberate near-duplicate** of the GNL
+  `icon-chevron-down.svg` (`6031:5962`). Same glyph today, but the two belong to
+  different design systems and are stroked differently (`#546072` vs `#5f6368`);
+  either can be re-exported without the other, so they do not share a file.
+- **The three guideline icons are one screenshot in Figma.** They are crops of a
+  single pasted image (`Screenshot_20260302_102709_Firefox 5 / 4 / 2`)
+  positioned by negative offsets — not clean exports even in the design file.
+  Split into three single-purpose SVGs here so a later real export is a per-icon
+  byte swap. **Worth telling the designer:** these three need a proper export.
+
+## 11.7 Invented — desktop layout and the responsive ladder only
+
+| Element | Invented rule | Why |
+|---|---|---|
+| everything ≥ 768 on `/cid/country/` and `/cid/capture-intro/` | `CidScreen`'s desktop chrome | Both frames are 393-only in Figma. Same invention already carried by the other six CID screens; see `CidScreen`. |
+| `document-type-select` / `Screen 7` | `md:pt-0 md:pb-0` | The 24 px pads are the mobile frame's spacing to `wizard-header` and `Frame 6`. Inside the card the 32 px card gap does both jobs; the two would stack. |
+| both `Frame 6`s | `md:flex-row md:items-center md:justify-end md:pt-[16px]` + `md:w-auto` | A full-width 740 px button in an 820 px card reads as a phone screen stretched. Lifted verbatim from `/cid/document/` so all four ID-document screens put Continue in the same place. |
+| `6156:60703` (hand-off heading) | `max-md:text-[32px] max-xs:text-[26px]` | Same ladder `/auth/loading/` applies to its own 40 px H4. At 320 the card interior is ~240 px, where 40 px type is three words a line. |
+| `6076:31357` (select label) | `max-xxs:whitespace-normal` | Figma pins the label `whitespace-nowrap` at 240 px, which with the 16 px chevron exactly fills the 256 px interior at 393. At 320 that interior is 224. **`max-xxs`, not `max-xs`** — 393 is these screens' untouchable design width and a `max-xs:` rule (< 480) would fire on it. |
+| `/cid/continue-on-mobile/` below 1440 | the 152 → 96 → 48 → 32 well and `.gnl-gutter [--gnl-gutter:308px]` | Copied verbatim from `/onboard/` and `/prerequisite/` so three consecutive desktop frames reflow identically. Inert at 1440. |
+
+Nothing else was invented. No control, no copy and no step number was added.
+
+## 11.8 Typeface substitution is visible in two places
+
+Consequences of Montserrat rendering in Lato (Lato is narrower), both cosmetic
+and both left alone rather than forced:
+
+- **`6056:20806` guideline row 3** — "Make sure the document is properly framed"
+  wraps to **two** lines in Figma and fits on **one** in Lato, so the row
+  measures 34 instead of 36 and the card 190 instead of 192. Forcing a wrap
+  would be inventing a line break the design does not specify.
+- **`6056:20796` guideline row 1** wraps in both, but one word later.
+
+Both disappear the moment Montserrat can be self-hosted.
+
+## 11.9 Still open — carried forward, not resolved by this pass
+
+- ~~**`step 3 of 5`** is *still* displayed by nothing.~~ **RESOLVED 2026-09-23
+  — see §12 below.** Two frames display it. The counter no longer skips.
+- **The capture screens exist twice, 48 px apart.** Components `6217:66056` /
+  `6217:66057` are 393 × 1222.810546875; the built instances `6056:19118` /
+  `6057:20924` are 393 × 1174.810546875. The build uses the instances and was
+  **not** switched. (Frame map C7 / §12 — needs a human.)
+- **Heading scale disagrees** across the five ID-document frames: 22 px on
+  `6217:66054` / `6087:31396` / `6217:66055`, 32 px on `6056:19118` /
+  `6057:20924`. All reproduced at their own measured size.
+- **"We will try to get a clearer image *this time*"** (`6056:20793`) implies a
+  previous failed attempt on a screen that sits in the happy path. Verbatim.
+  (Frame map §8 item 6.)
+- **The 4,924 px void on Row B** is still unresolved, but the evidence for
+  reading it as empty is now stronger — see frame map §12.
+
+---
+
+# 12. The liveness check — added 2026-09-23
+
+Two frames, both named `CID_Biometric`, both in the `Yoti` section at y=779:
+
+| Route | Node | Size (exact) | x |
+|---|---|---|---|
+| `/cid/liveness/` | `6217:65268` | 393 × 1282.44091796875 | 44.87 |
+| `/cid/liveness-capture/` | `6217:65271` | 393 × 1231.810546875 | 553.87 |
+
+## 12.1 C4 IS CLOSED — the counter no longer skips 3
+
+`§11.9` and frame map `C4` asked whether a screen displaying `step 3 of 5` was
+missing or whether the stepper should read "of 4". **It was a missing screen,
+twice over.** These two frames carry `Liveness check • step 3 of 5`
+(`6257:72187` / `6257:72196`) and they are the **only** two nodes in the file
+that display it.
+
+The pill across the ten CID screens now reads:
+
+| # | Route | Pill |
+|---|---|---|
+| 1 | `/cid/terms/` | Terms of use • **step 1 of 5** |
+| 2 | `/cid/biometric/` | Biometric consent • **step 2 of 5** |
+| 3 | `/cid/liveness/` | Liveness check • **step 3 of 5** |
+| 4 | `/cid/liveness-capture/` | Liveness check • **step 3 of 5** |
+| 5 | `/cid/country/` | ID document selection • **step 4 of 5** |
+| 6 | `/cid/document/` | ID document selection • **step 4 of 5** |
+| 7 | `/cid/capture-intro/` | ID document selection • **step 4 of 5** |
+| 8 | `/cid/capture-front/` | ID document selection • **step 4 of 5** |
+| 9 | `/cid/capture-back/` | ID document selection • **step 4 of 5** |
+| 10 | `/cid/verified/` | Identity verified • **step 5 of 5** |
+
+`1 → 2 → 3 → 3 → 4 → 4 → 4 → 4 → 4 → 5`. **No number is skipped.** Every value
+is verbatim; nothing was renumbered.
+
+> **Still worth saying to Tatyana:** a *sub-step* number that repeats across
+> consecutive screens is the design's own choice (step 3 twice, step 4 five
+> times), and it is not a defect — the pill counts CID's five sub-steps, not
+> screens. The **gap** was the defect, and it is gone.
+
+## 12.2 Why four earlier audits missed them
+
+They are named `CID_Biometric` — the same name as the built consent screen
+`6217:62835`. A name-based search returns the consent screen and stops. They are
+told apart by size (1282.441 / 1231.811 vs 834.811), by canvas position (the
+`Yoti` section at y=779, not Row B at y=3563) and by their headings.
+
+They are **current, not abandoned sketches**: both have live instances in the
+parallel StudentAidNL journey in the matching slot (`6217:66069` / `6217:66070`),
+and the master/instance height delta matches the other CID screens on that row.
+
+## 12.3 Montserrat again — and a THIRD weight this time
+
+Same substitution as §9.2 and §11: Montserrat is not self-hosted and both font
+hosts are blocked by the proxy, so all type renders in Lato. Colours verbatim.
+
+These two frames introduce **Montserrat:Medium**, which had not appeared before.
+Lato ships 300/400/700 only, so the mapping table gains a row:
+
+| Figma | Rendered | Where |
+|---|---|---|
+| Montserrat:Bold | Lato 700 | both headings, the "Back" label |
+| Montserrat:Medium | **Lato 400** | the three `InstructionRow` labels on `6217:65268` |
+
+(For the record, the full set now in use: `Lato:Medium` → 400,
+`Lato:SemiBold`/`ExtraBold` → 700, `Montserrat:Regular`/`Medium` → 400,
+`Montserrat:SemiBold`/`Bold` → 700.)
+
+## 12.4 Typeface substitution is visible in ONE place here
+
+Exactly the §11.8 consequence, on one row, and measured rather than estimated:
+
+- **`6056:13919`, InstructionRow 1** — "Find a well-lit area with a clear
+  background" in a 295 px label box. In Lato 14 px/400 the string measures
+  **297.33 px** unwrapped and renders on **one** line (label 295 × 19.59, row
+  34 px). Figma's Montserrat wraps it to **two** (label 295 × 40, row 40 px).
+- Rows 2 and 3 match Figma exactly: row 2 wraps in both (39.19 vs 40), row 3
+  fits on one line in both (34 vs 34).
+
+The margin is **~1 %** — 297 px of text in a 295 px box. A real Montserrat wraps
+it; Lato does not. **Not forced**, because forcing it means inventing a line
+break the design does not specify, which is the same call §11.8 made.
+
+Net effect: `instructions-list` measures 139.19 instead of 146, and `Frame 5`
+642.81 instead of 649.63 — i.e. the body is **6.8 px short**. It disappears the
+moment Montserrat can be self-hosted.
+
+## 12.5 Box-model — everything else is exact
+
+Measured in the browser at 393 against the Figma values:
+
+| Node | Figma | Rendered |
+|---|---|---|
+| `6056:13105` heading | 345 × 78 | 345 × 78 |
+| `6076:31212` illustration | 345 × 345.630 | 345 × 345.625 |
+| `6056:14036` Frame 5 | 361 × 599 | 361 × 599 |
+| `6076:31255` Frame 10 | 361 × 551 | 361 × 551 |
+| `6076:31259` viewport | 345 × 522 | 345 × 522 |
+| `6076:31260` pill | 321 × 51 | 321 × 51 |
+| `6076:31262` face guide | 193.271 × 263.058 | 193.266 × 263.047 |
+| `6076:31257` back chevron | 11.961 × 16.053 | 11.953 × 16.047 |
+| both Continue buttons | 361 × 37 | 361 × 37 |
+
+The two offsets inside the viewport are **produced by the centring, not
+hardcoded**: the pill lands at y = 71.469 and the guide at y = 187.469 against
+Figma's 71.471 / 187.471.
+
+`sub-step-readout` renders 162.83 wide against Figma's 167. The pill is pure
+content width and is not pinned anywhere (see `SubStepReadout`), and every other
+CID frame shows the same Lato-vs-Montserrat width difference. Not a deviation.
+
+## 12.6 Frame deltas
+
+| Frame | Design | Rendered | dH |
+|---|---|---|---|
+| `cid-liveness` | 393 × 1283 | 393 × 1283 | **0** |
+| `cid-liveness-capture` | 393 × 1232 | 393 × 1239 | **+7** |
+
+`+7` is the established CID wizard-header line-box delta — `cid-terms`,
+`cid-biometric`, `cid-capture-front` and `cid-capture-back` all carry exactly it.
+
+**`cid-liveness`'s 0 is a coincidence, not a better result.** Its header carries
+the same +7 and its body is 6.8 px short for the §12.4 reason; the two nearly
+cancel. Recorded here so nobody later reads the 0 as evidence that screen is
+more accurate than its neighbours.
+
+## 12.7 The camera — reused, not reimplemented
+
+`/cid/liveness-capture/` mounts the existing `CameraViewport`. Three differences
+from the two ID-capture screens, all handled as props/data rather than a second
+implementation:
+
+1. **Front camera.** `facingMode="user"` (the ID screens use `environment`).
+   Added as a **prop**, always `ideal` and never `exact` — the dry-run laptop
+   has only a front camera and an `exact` constraint in either direction throws
+   `OverconstrainedError` and loses the feed.
+2. **No mock image.** Figma draws a flat `#e9ebe8` panel with the instruction
+   pill and the face guide on it, so `children` is `null` and **the panel is the
+   fallback**. The other two screens need a mock because Figma draws a captured
+   document in their panel.
+3. **A visible Back.** It is the only camera screen a viewer can leave without
+   pressing Continue, so both exits are gated.
+
+`scripts/camera-check.mjs` gained a section 0 covering all of it — including
+that the pill and the guide paint **above** the feed (checked structurally, via
+`position` + DOM order, because the `<video>` is `pointer-events-none` and
+hit-testing would skip it and pass regardless).
+
+## 12.8 Deliberate non-invention: the preview is NOT mirrored
+
+A selfie preview is conventionally flipped horizontally and would probably read
+better on stage. **Figma does not draw a mirror and this build does not invent
+one.** One line of CSS (`scale-x-[-1]`) if Tatyana wants it. Flagged, not decided.
+
+## 12.9 New placeholder assets (5)
+
+All five are PNGs or negative-offset screenshot crops in Figma, and the Figma
+host is blocked by the proxy. Each carries its exact rendered leaf size, so a
+real export is a byte swap with no layout change. **All five are Yoti-owned.**
+
+| Key | File | Size | Figma |
+|---|---|---|---|
+| `livenessIllustration` | `liveness-illustration.svg` | 345 × 345.63043212890625 | `6076:31212` |
+| `iconLivenessLighting` | `icon-liveness-lighting.svg` | 34 × 34 | `6076:31228` |
+| `iconLivenessBackground` | `icon-liveness-background.svg` | 34 × 34 | `6076:31231` |
+| `iconLivenessEyeLevel` | `icon-liveness-eye-level.svg` | 34 × 34 | `6076:31233` |
+| `iconYotiBack` | `icon-yoti-back.svg` | 11.961 × 16.053 | `6076:31257` |
+| `livenessFaceGuide` | `liveness-face-guide.svg` | 197.252 × 267.056 | `6076:31262` |
+
+Two notes:
+
+- **`livenessFaceGuide`'s size is NOT its group's box.** `Group 6` measures
+  193.271 × 263.058; Figma draws the SVG overflowing it by half a stroke on
+  every side, which is why the page places the file at `inset-[-0.76%_-1.03%]`
+  inside a box of the group's own size. Reproduced verbatim, exactly as
+  `/cid/capture-front/` reproduces its own oversized image placement.
+- **The sun and eye glyphs are deliberately NOT the `iconGuideline*` files**,
+  despite being the same shapes. Those are cropped from a different pasted
+  screenshot (`Screenshot_20260302_102709_*`) on a different screen and stroked
+  `Yoti gris` #546072; these render on `Yoti app` #333b40. Two sources, two
+  sets — either can be re-exported without disturbing the other.
+
+## 12.10 Invented at ≥ 768 — nothing below it
+
+Everything at and above 768 is `CidScreen`'s invented desktop chrome, as on the
+other eight CID screens. Specific to these two:
+
+| Element | Invented | Why |
+|---|---|---|
+| both `Frame 5` | `md:py-0` | The 24 px pads are the mobile frame's spacing to `wizard-header` and the button; the card's own 32 px gap does both. Same as every CID sibling. |
+| `6056:13912` illustration | `md:max-w-[480px]` | It is `w-full` at a fixed aspect, so in an 820 px card it would render **741 px tall** — a decorative drawing taller than the whole phone frame, pushing Continue below the fold. The problem `/cid/capture-front/` solved with `md:max-w-[644px]`. Inert at 393. |
+| `6076:31260` pill | `md:max-w-[321px]` | Keeps its measured width instead of stretching to a 716 px interior. `Frame 9` is already `items-center`, so the cap centres it. Inert at 393. |
+| `6076:31364` Continue | `md:mt-[16px] md:w-auto md:self-end` | The onboard actions-row position. `self-end` rather than a parent `justify-end` because this frame uniquely gives the button **no `Frame 6` wrapper** — it is a direct child of `Main content` at y=760. |
+
+One relaxation below the design width: `6076:31261` (the pill label) is
+`whitespace-nowrap` in Figma, where 264 px of text sits in a 305 px interior at
+393. At 320 that interior is 232 px, so it is released at **`max-xxs:`** —
+below 384, never at 393. `max-xxs`, **not** `max-xs`: 393 is these screens'
+untouchable design width and a `max-xs:` rule (< 480) would fire on it. Same
+relaxation and same reasoning as the select label on `/cid/country/`.
+
+No control, no copy and no step number was invented.
