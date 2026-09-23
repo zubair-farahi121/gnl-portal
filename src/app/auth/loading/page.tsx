@@ -1,6 +1,17 @@
 import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
+import { ProcessingAdvance } from "@/components/onboarding/ProcessingAdvance";
 import { IDV_STATUS } from "@/lib/data/driver-vehicle";
+import { serviceRoutes } from "@/lib/data/service-config";
+
+/*
+ * `"driver-vehicle"` is a LITERAL, not `DEFAULT_SERVICE_ID`. This screen is
+ * shared by both flows (PP-20 is an instance of it), so when Flow B lands the
+ * service has to come from the store — the same seam every `/cid/` page has,
+ * documented at the foot of src/lib/data/service-config.ts. Until then it is
+ * spelled out rather than resolved, so the seam is visible.
+ */
+const ROUTES = serviceRoutes("driver-vehicle");
 
 /*
  * Provider page_IDV results status — Figma 6217:80871, 1440 x 1078.196.
@@ -49,6 +60,23 @@ import { IDV_STATUS } from "@/lib/data/driver-vehicle";
  * Figma — an error/delay state the design anticipates but does not show — and
  * hidden layers are not rendered.
  *
+ * THE AUTO-ADVANCE IS BACK — 2026-09-23 — AND IT IS A ONE-SHOT.
+ *
+ * BUILD_BRIEF.md §8.3 asks for it again: when the session is `verified`, stay
+ * at least `processingMinMs` (3 s), then go to NL-22 with the toast "Identity
+ * verification complete". SAY PLAINLY THAT THIS IS A REVERSAL of the removal
+ * recorded immediately below, not a regression creeping back in.
+ *
+ * The failure the removal was avoiding is avoided a different way: the advance
+ * is ARMED by `/cid/verified/`'s Continue (the only forward entry) and CONSUMED
+ * on mount here, so it fires exactly once, on the way forward. Arriving on this
+ * screen any other way — step 7's Back, the presenter's ArrowLeft, a direct URL
+ * — finds nothing armed and the screen stays put. See ProcessingAdvance, which
+ * carries the full reasoning, and design/token-exceptions.md §10.10.
+ *
+ * Step 7's Back therefore still points here and still works. Both directions
+ * are asserted by `npm run clicks`.
+ *
  * THE 2.6s AUTO-ADVANCE WAS REMOVED — 2026-09-22. It used to push to the
  * confirmation screen after DWELL_MS. Two reasons it had to go once step 7
  * (/services/driver-vehicle/prerequisite/, Figma 6217:81644) was inserted
@@ -74,6 +102,11 @@ export default function AuthLoadingPage() {
   return (
     <div className="gnl-desktop-shell">
       <TopNav />
+      {/*
+       * Renders nothing. Fires ONCE, only when armed by /cid/verified/ — see
+       * the note above and ProcessingAdvance itself.
+       */}
+      <ProcessingAdvance service="driver-vehicle" to={ROUTES.prerequisite} />
 
       {/*
        * main-content.
@@ -100,9 +133,19 @@ export default function AuthLoadingPage() {
           className="box-border flex w-[824px] max-w-full shrink-0 flex-col items-center gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-md:gap-[24px] max-xs:p-[24px]"
           data-node-id="6236:46385"
         >
+          {/*
+           * §7.8: `aria-live="polite"` on NL-21. It goes on the EXISTING block
+           * that already holds the heading and the three status paragraphs —
+           * an attribute, not a new node, so nothing is added to the page and
+           * `auth-loading` cannot move in the pixel gate. The completion itself
+           * is announced by the toast's own live region when the screen
+           * advances (§8.3).
+           */}
           <div
             className="flex w-full shrink-0 flex-col items-start gap-[32px]"
             data-node-id="6236:46386"
+            role="status"
+            aria-live="polite"
           >
             {/*
              * Headings. Figma maps this to a design-system `CocHeadings`

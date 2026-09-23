@@ -13,9 +13,13 @@ export default defineConfig({
     // Force light rendering: the design has no dark mode, and a dark-mode
     // browser would fail every diff for the wrong reason.
     colorScheme: "light",
+    // This environment ships Chromium build 1194 at PLAYWRIGHT_BROWSERS_PATH
+    // and forbids `playwright install`. Point at it explicitly so the version
+    // the npm package expects does not matter.
     launchOptions: {
       executablePath:
-        process.env.PLAYWRIGHT_CHROMIUM_PATH,
+        process.env.PLAYWRIGHT_CHROMIUM_PATH ??
+        "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
     },
   },
   webServer: {

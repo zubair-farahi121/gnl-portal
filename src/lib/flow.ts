@@ -1,13 +1,50 @@
+import {
+  APP_ROUTES,
+  CID_ROUTES,
+  DEFAULT_SERVICE_ID,
+  serviceRoutes,
+} from "@/lib/data/service-config";
+
 /**
  * The demo click-through order. DemoNav uses this for the presenter's
  * arrow-key shortcuts; it is not a substitute for on-screen links, which
  * must reach every step on their own.
  */
+const R = serviceRoutes(DEFAULT_SERVICE_ID);
+
 export const FLOW = [
-  "/",
-  "/dashboard/",
-  "/services/driver-vehicle/",
-  "/services/driver-vehicle/onboard/",
+  APP_ROUTES.login,
+  APP_ROUTES.dashboard,
+  R.page,
+  /*
+   * THE FRONT OF THE WIZARD — added 2026-09-23 (Tier 1).
+   *
+   *   R.summary        NL-04  Summary                     25 %
+   *   R.terms          NL-05  Terms and Conditions        50 %
+   *   R.confirmDetails NL-06  Confirm Some Details: Required  75 %
+   *
+   * DEMO_AUDIT.md marked all three BUILD against a brief that called them KEEP:
+   * *"No route, no component and no copy for any of them. They are the first
+   * three screens after 'Onboard' — the demo currently cannot get from the
+   * service page to the verification step by clicking."*
+   *
+   * THEY GO HERE BECAUSE §5 SAYS SO, and it is the one part of the flow the
+   * canvas does not have to arbitrate: *"service page -> Onboard -> Summary ->
+   * Terms -> Confirm some details (Required) -> Choose verification service"*.
+   * The service page's "Onboard" button was re-pointed from R.onboard to
+   * R.summary in the same change.
+   *
+   * NOTE R.confirmDetails AND R.prerequisite ARE THE SAME SCREEN IN TWO STATES
+   * (§8.1 NL-06, "one component, two states"), which is why they sit at
+   * opposite ends of this list: Required before the verification, Confirmed
+   * after it. One component, `ConfirmDetailsCard`; two routes, because each
+   * one's state has to be right in the server-rendered HTML — see the note on
+   * `confirmDetails` in src/lib/data/service-config.ts.
+   */
+  R.summary,
+  R.terms,
+  R.confirmDetails,
+  R.onboard,
   /*
    * The mobile hand-off, added 2026-09-22 — Figma 6217:62059
    * `CID_Redirect to mobile`, 1440 x 1161.196.
@@ -32,15 +69,15 @@ export const FLOW = [
    * hidden="true" — so ArrowLeft here is the reverse path, as on the four Yoti
    * ID-document screens.
    */
-  "/cid/continue-on-mobile/",
+  CID_ROUTES.handoff,
   /*
    * /cid/welcome/ was removed on 2026-09-21. The designer judged the CID
    * Welcome screen redundant and took it out of the flow, so the IDV journey
    * now starts at Terms of Use. It was also the screen with no forward
    * button — that was the symptom, this is the cause.
    */
-  "/cid/terms/",
-  "/cid/biometric/",
+  CID_ROUTES.terms,
+  CID_ROUTES.biometric,
   /*
    * THE LIVENESS CHECK — STEP 3, added 2026-09-23. Two frames, both named
    * `CID_Biometric`, both carrying the pill `Liveness check • step 3 of 5`:
@@ -76,8 +113,8 @@ export const FLOW = [
    *                          the only visible Back anywhere in the Yoti run —
    *                          pointing one step back at /cid/liveness/.
    */
-  "/cid/liveness/",
-  "/cid/liveness-capture/",
+  CID_ROUTES.liveness,
+  CID_ROUTES.livenessCapture,
   /*
    * Document-type / country-of-issuance selection, added 2026-09-22 — Figma
    * 6217:66054 `CID_ID1_Country`, 393 x 1060.811. Gap G1 in the frame map
@@ -90,7 +127,7 @@ export const FLOW = [
    * Like the three ID-document screens below it, it has NO Back button
    * (`btn-back` 6056:15024 is hidden="true"), so ArrowLeft is the reverse path.
    */
-  "/cid/country/",
+  CID_ROUTES.country,
   /*
    * The ID-document step, added 2026-09-22 — the identity verification itself,
    * which the flow was missing entirely: it ran Terms (step 1 of 5) ->
@@ -110,7 +147,7 @@ export const FLOW = [
    * them correctly in this list is therefore load-bearing, not just a
    * convenience for the presenter.
    */
-  "/cid/document/",
+  CID_ROUTES.document,
   /*
    * The capture instructions, added 2026-09-22 — Figma 6217:66055
    * `CID_ID1_Front_instruction`, 393 x 994.811. Step 4b.
@@ -125,10 +162,10 @@ export const FLOW = [
    * (`btn-back` 6056:20004 and `Expiry Banner` 6056:20787 are both
    * hidden="true"), so ArrowLeft is the reverse path.
    */
-  "/cid/capture-intro/",
-  "/cid/capture-front/",
-  "/cid/capture-back/",
-  "/cid/verified/",
+  CID_ROUTES.captureIntro,
+  CID_ROUTES.captureFront,
+  CID_ROUTES.captureBack,
+  CID_ROUTES.verified,
   /*
    * /auth/loading/ (6217:80871) has NO buttons in Figma — its closing line is
    * "You can close this window." None is invented, and the 2.6s auto-advance
@@ -136,7 +173,7 @@ export const FLOW = [
    * So on this ONE screen ArrowRight is not a convenience, it is the only
    * forward move; the reverse move is step 7's Back, which points here.
    */
-  "/auth/loading/",
+  APP_ROUTES.processing,
   /*
    * Step 7, added 2026-09-22 — Figma 6217:81644
    * `Driver and Vehicle_Prerequisite confirmed`, "Confirm some details".
@@ -147,7 +184,7 @@ export const FLOW = [
    * row (x=23416.06 then x=25108.81), with different steppers, headings and
    * actions. See design/verification-frame-map.md §4.
    */
-  "/services/driver-vehicle/prerequisite/",
-  "/services/driver-vehicle/confirmation/",
-  "/services/driver-vehicle/?verified=1",
+  R.prerequisite,
+  R.confirmation,
+  R.pageVerified,
 ] as const;

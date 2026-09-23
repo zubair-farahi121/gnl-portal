@@ -31,6 +31,17 @@ const ROUTES = [
   ['login', '/'],
   ['dashboard', '/dashboard/'],
   ['service', '/services/driver-vehicle/'],
+  // THE FRONT OF THE WIZARD — added 2026-09-23 (Tier 1). NL-04 / NL-05 / NL-06,
+  // the three screens between "Onboard" and the method step. All three are
+  // DERIVED: their only Figma source is a pasted screenshot with no text layer,
+  // so this gate and the pixel gate are the only mechanical checks they have.
+  //
+  // NL-05 is the one to watch here: it is the tallest wizard card in the demo
+  // and the only one with a bordered scroll box and a checkbox row, both of
+  // which are the kind of fixed-ish box that drags a 320px viewport sideways.
+  ['summary', '/services/driver-vehicle/summary/'],
+  ['terms', '/services/driver-vehicle/terms/'],
+  ['confirm-details', '/services/driver-vehicle/confirm-details/'],
   ['onboard', '/services/driver-vehicle/onboard/'],
   // Step 7, added 2026-09-22 (Figma 6217:81644 "Confirm some details"). A 1440
   // desktop wizard frame, so it reflows like /onboard/ and /confirmation/
@@ -70,12 +81,82 @@ const ROUTES = [
   ['cid-capture-front', '/cid/capture-front/'],
   ['cid-capture-back', '/cid/capture-back/'],
   ['cid-verified', '/cid/verified/'],
+  // ====================================================================
+  // FLOW B's CertifiO ID run — added 2026-09-23.
+  //
+  // The SAME ten screen components as the block above, prerendered a second
+  // time for `studentaid` by src/app/cid/[serviceId]/. They are listed here in
+  // flow order, like Flow A's, so design/responsive/ reads as the sequence the
+  // presenter walks, and they are in this gate for three reasons:
+  //
+  //   1. THE COPY IS LONGER IN PLACES and the layout has to survive it.
+  //      "StudentAidNL" is a longer wizard title than "Driver and Vehicle" at
+  //      the same 393px, the step-5 bullets are full sentences rather than
+  //      fragments, and "Continue to StudentAidNL service" is a wider button
+  //      label. Every one of those is a plausible 320px overflow, and nothing
+  //      else in the build would catch it — there is no Figma baseline for
+  //      these ten URLs, so the pixel gate cannot see them at all.
+  //   2. THEY ARE REAL FILES, so a broken `generateStaticParams` shows up here
+  //      as an immediate 404-shaped failure rather than on stage.
+  //   3. /cid/studentaid/capture-front/ mounts CameraViewport, exactly as its
+  //      Flow A twin does, so its FALLBACK branch is exercised here on a
+  //      headless Chromium with no capture device.
+  //
+  // NOTE THERE IS NO `cid-b-capture-back`. §9: "**no back capture**" for
+  // PP-09..PP-19. `captureSides: ['front']` means that route is never generated
+  // and never linked; listing it here would assert a page that should not
+  // exist. The click-through gate asserts the absence directly instead.
+  // ====================================================================
+  ['cid-b-continue-on-mobile', '/cid/studentaid/continue-on-mobile/'],
+  ['cid-b-terms', '/cid/studentaid/terms/'],
+  ['cid-b-biometric', '/cid/studentaid/biometric/'],
+  ['cid-b-liveness', '/cid/studentaid/liveness/'],
+  ['cid-b-liveness-capture', '/cid/studentaid/liveness-capture/'],
+  ['cid-b-country', '/cid/studentaid/country/'],
+  ['cid-b-document', '/cid/studentaid/document/'],
+  ['cid-b-capture-intro', '/cid/studentaid/capture-intro/'],
+  ['cid-b-capture-front', '/cid/studentaid/capture-front/'],
+  ['cid-b-verified', '/cid/studentaid/verified/'],
+  // THE GNL 404 — added 2026-09-23 (Tier 1 item 1.6, brief §7.6). `/nope/` is
+  // an unknown path on purpose: the static export serves out/404.html for it,
+  // which is the page under test. It is in this gate because §7.6 says the demo
+  // link may be shared, so the 404 is a page strangers will actually see, and
+  // because it is the only route here that nothing else navigates to.
+  ['not-found', '/nope/'],
 ];
 
 const WIDTHS = [320, 375, 393, 768, 1024, 1280, 1440, 1920];
 const SHOT_WIDTHS = [320, 390, 768, 1024, 1280];
 
-const browser = await chromium.launch({ executablePath: EXEC });
+/*
+ * THE FLAGS ARE A SPEED FIX, NOT A PREFERENCE — added 2026-09-23 (Tier 2).
+ *
+ * When Flow B's ten `/cid/studentaid/…` routes joined the list this gate went
+ * from ~9 minutes to over 10 and was killed mid-run. The cause was not the
+ * extra routes: a plain headless Chromium opens background connections of its
+ * own (safebrowsing lists, component update, connectivity probes to
+ * www.google.com). This container has no route to those hosts, so each attempt
+ * sat until the egress proxy refused it — 522 refusals in one run — and because
+ * every `goto` below waits for `networkidle`, the gate was waiting on
+ * Chromium's own traffic on every one of the ~300 page loads.
+ *
+ * Nothing in the build requests Google: `grep -r google src/ out/` is empty,
+ * the fonts are self-hosted under src/app/fonts/ via next/font/local. So this
+ * was never a demo problem and these flags change nothing about what is
+ * rendered — they only stop the browser making requests the page never asked
+ * for. Keep them in step with scripts/click-through.mjs and camera-check.mjs.
+ */
+const QUIET_ARGS = [
+  '--disable-background-networking',
+  '--disable-component-update',
+  '--disable-client-side-phishing-detection',
+  '--disable-sync',
+  '--disable-default-apps',
+  '--no-first-run',
+  '--no-default-browser-check',
+];
+
+const browser = await chromium.launch({ executablePath: EXEC, args: QUIET_ARGS });
 const fails = [];
 const consoleIssues = [];
 
@@ -103,7 +184,18 @@ for (const [name, route] of ROUTES) {
     if (m.scrollWidth > m.clientWidth) {
       fails.push(`${name} @${w}: scrollWidth ${m.scrollWidth} > clientWidth ${m.clientWidth} :: ${m.wide.join(' | ')}`);
     }
-    const real = msgs.filter(t => !/favicon|Download the React DevTools/i.test(t));
+    /*
+     * `not-found` is the one route whose document is SUPPOSED to come back
+     * 404 — that is the assertion, not a defect: Chromium logs the status of
+     * the top-level response as a console error. The exemption is scoped to
+     * that route by name, so a stray 404 on any OTHER route (a missing icon, a
+     * missing font) still fails this gate the way it always has.
+     */
+    const real = msgs.filter(
+      (t) =>
+        !/favicon|Download the React DevTools/i.test(t) &&
+        !(name === 'not-found' && /status of 404/i.test(t)),
+    );
     if (real.length) consoleIssues.push(`${name} @${w}: ${real.join(' ;; ')}`);
     await ctx.close();
   }

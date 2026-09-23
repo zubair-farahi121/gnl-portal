@@ -4,7 +4,8 @@ import { MobileTopNav } from "@/components/mobile/MobileTopNav";
 import { WizardCard } from "@/components/wizard/WizardCard";
 import { WizardHeader } from "@/components/wizard/WizardHeader";
 import type { SubStep } from "@/components/wizard/ProgressStepper";
-import { CID_STEPPER_FILL, CID_WIZARD_TITLE } from "@/lib/data/cid";
+import { getCidCopy } from "@/lib/data/cid";
+import type { ServiceConfig } from "@/lib/data/service-config";
 
 /*
  * CidScreen — the shell, chrome and wizard header shared by the three CID
@@ -65,19 +66,65 @@ import { CID_STEPPER_FILL, CID_WIZARD_TITLE } from "@/lib/data/cid";
  * CONTENT IS AUTHORED ONCE. Only the chrome differs between breakpoints; the
  * heading, stepper, pill, body copy and buttons exist in a single place (the
  * page's own `children`) and are never duplicated per breakpoint.
+ *
+ * ====================================================================
+ * THE SERVICE IS A PROP — 2026-09-23.
+ *
+ * This component used to import `CID_WIZARD_TITLE`, a module constant that was
+ * computed from a module constant that always answered "driver-vehicle". It now
+ * takes the service the ROUTE names, which is what lets the same shell draw
+ * "Driver and Vehicle" at /cid/terms/ and "StudentAidNL" at
+ * /cid/studentaid/terms/ with no client read and no flash — both are prerendered
+ * HTML files. See the seam note at the foot of src/lib/data/service-config.ts.
+ *
+ * DO NOT re-introduce a default for `service`. A default here would be a second
+ * resolution point: a screen that forgot to pass one would silently render Flow
+ * A's title inside Flow B's journey, and nothing would fail.
+ * ====================================================================
  */
 export function CidScreen({
+  service,
   mainNodeId,
   subStep,
+  yotiZone = false,
   children,
 }: {
+  /**
+   * The service this CertifiO ID session is verifying for. Supplies the
+   * `wizard-title` and nothing else in this component — every other
+   * service-dependent string belongs to the screen inside `children`.
+   */
+  service: ServiceConfig;
   /** The frame's own `Main content` node id — it differs on all three. */
   mainNodeId: string;
   /** `sub-step-readout` content. All three CID frames carry one. */
   subStep: SubStep;
+  /**
+   * THE YOTI ZONE — brief §8.2 and §11.9.
+   *
+   * Figma's own note on these frames: "Yoti app (embed code) below the stepper
+   * and above the footer starts here. Action buttons are part of it. We have no
+   * control over its look and feel." That boundary is exactly this component's
+   * `children`, which is why the flag lives here and not on each page's markup.
+   *
+   * `true` on NL-11..NL-19 only — /cid/liveness/, /cid/liveness-capture/,
+   * /cid/country/, /cid/document/, /cid/capture-intro/, /cid/capture-front/ and
+   * /cid/capture-back/. It renders the body in MONTSERRAT (400/500/600/700,
+   * self-hosted in layout.tsx).
+   *
+   * `false` — the default — on the four CID routes that are GNL frames on the
+   * GNL ramp: /cid/continue-on-mobile/ (NL-08), /cid/terms/ (NL-09),
+   * /cid/biometric/ (NL-10) and /cid/verified/ (NL-20). Those stay in Lato.
+   * Do not set this to `true` "for consistency": §11.9 says the two ramps are
+   * meant to look different, and the GNL chrome this component draws above and
+   * below the zone stays Lato on every one of the eleven screens.
+   */
+  yotiZone?: boolean;
   /** Frame 5 (heading + description) and Frame 6 (actions), from the page. */
   children: React.ReactNode;
 }) {
+  const copy = getCidCopy(service);
+
   return (
     <div className="gnl-cid-shell flex flex-col items-stretch">
       {/* INVENTED desktop chrome. `gnl-cid-desktop-chrome` is what lets the
@@ -119,20 +166,39 @@ export function CidScreen({
               it vanish below 768. */}
           <WizardCard className="max-md:contents">
             {/*
-             * MEASURED. wizard-header at the CID frames' own values — title
-             * "Driver and Vehicle", current={2}, the 278.869px step-bar fill
-             * the three frames carry, and the sub-step pill. `size="cid"` is
-             * the `sm` numbers below 768 and the onboard `lg` numbers above,
-             * which is the one INVENTED part of this element.
+             * MEASURED. wizard-header at the CID frames' own values — the
+             * SERVICE's title ("Driver and Vehicle" on the Figma masters,
+             * "StudentAidNL" on their PP-10..PP-19 instances), current={2}, the
+             * 278.869px step-bar fill the three frames carry, and the sub-step
+             * pill. `size="cid"` is the `sm` numbers below 768 and the onboard
+             * `lg` numbers above, which is the one INVENTED part of this
+             * element.
              */}
             <WizardHeader
-              title={CID_WIZARD_TITLE}
+              title={copy.wizardTitle}
               current={2}
-              fillWidth={CID_STEPPER_FILL}
+              fillWidth={copy.stepperFill}
               size="cid"
               subStep={subStep}
             />
-            {children}
+            {/*
+             * THE YOTI ZONE BOUNDARY. `contents`, so it generates NO box: the
+             * page's own children stay direct flex items of the mobile <main>
+             * (gap-[8px]) and of WizardCard above 768, exactly as before this
+             * wrapper existed. Nothing moves; only the inherited font-family
+             * changes, and only when `yotiZone` is set.
+             *
+             * Everything ABOVE this point — MobileTopNav / TopNav, the wizard
+             * title, the progress bar, the step labels and the sub-step pill —
+             * and the footer BELOW it are GNL chrome and stay in Lato on every
+             * CID screen. That is the boundary Figma draws and §11.9 protects.
+             */}
+            <div
+              className={yotiZone ? "gnl-yoti-zone contents" : "contents"}
+              data-yoti-zone={yotiZone ? "true" : undefined}
+            >
+              {children}
+            </div>
           </WizardCard>
         </div>
       </main>

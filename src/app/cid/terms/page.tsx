@@ -1,127 +1,29 @@
-import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnOutline } from "@/components/ui/BtnOutline";
-import { CID_ACTIONS, CID_TERMS } from "@/lib/data/cid";
+import { CidTermsScreen } from "@/components/cid/screens/CidTermsScreen";
+import { DEFAULT_SERVICE_ID, getService } from "@/lib/data/service-config";
 
 /*
- * CID_TU — Figma 6217:62834, 393 x 810.810546875.
+ * /cid/terms/ — FLOW A's binding of CID_TU 6217:62834.
  *
- * RE-SYNCED 2026-09-22 against the reworked frame. The six-dot CID stepper
- * that sat between the heading and the description is gone; its replacement is
- * the `sub-step-readout` pill, which lives INSIDE wizard-header (see
- * SubStepReadout). The frame is 60px shorter as a result: -50 for the dot rail,
- * -16 for its gap, -24 for the top padding Frame 5 dropped, +30 for the pill
- * and its gap, minus the 4px progress-stepper gap tightened 12 -> 8.
+ * ====================================================================
+ * THIS FILE IS A BINDING, NOT A SCREEN — 2026-09-23.
  *
- * Geometry, verbatim from get_metadata / get_design_context on 6039:11309:
- *   top-nav actions  393 x 145      at y=0
- *   Main content     393 x 400      at y=145   px-[16px] py-[24px] gap-[8px]
- *     wizard-header  361 x 128      at y=24    gap-[24px]      <- was 98
- *       wizard-title     361 x 36   at y=0
- *       progress-stepper 361 x 68   at y=60    gap-[8px]       <- gap was 12
- *         step-bar         361 x 8  at y=0     fill 278.869
- *         step-labels      361 x 18 at y=16    current = Prerequisite Check
- *         sub-step-readout 155 x 26 at y=42    <- THE PILL, 6257:72178
- *     Frame 5        361 x 169      at y=160   pt-[0] pb-[24px] gap-[16px]
- *       "Terms of use"   361 x 48   at y=0     32px Bold #212326  <- was #5f6368
- *       card-description 361 x 81   at y=64
- *     Frame 6        361 x 39       at y=337   gap-[8px]
- *   footer verified  393 x 265.81   at y=545
+ * All the markup, the Figma geometry and the provenance notes live in
+ * src/components/cid/screens/CidTermsScreen.tsx. This file exists only to
+ * say WHICH SERVICE this URL renders, and it says it once, explicitly.
  *
- * HEADING CASE: the frame now says "Terms of use" (sentence case) while the
- * inline link inside card-description is still "Terms of Use". Both verbatim.
+ * Its Flow B twin is /cid/studentaid/terms/ (§9 PP-10, Figma 6217:66060),
+ * generated from the SAME component by src/app/cid/[serviceId]/terms/page.tsx.
  *
- * HIDDEN LAYER NOT RENDERED: instance 6049:12215 ("Check box", 286 x 27 at
- * y=577) is hidden="true" in Figma. Hidden layers are not part of the design.
+ * WHY THE BARE PATH STAYS FLOW A's: these eleven /cid/ URLs are frozen
+ * baseline frames (design/frames.json) and `npm run diff` measures them, and
+ * BUILD_BRIEF.md §6 says to keep an existing path. Moving them under
+ * /cid/driver-vehicle/ for symmetry would move nineteen frames and buy nothing.
  *
- * Both buttons are named `btn-back` in Figma and are styled identically; the
- * right-hand one is the forward action. Each is 176.5 wide — `flex-[1_0_0]`
- * over a 361px row with an 8px gap gives exactly 176.5.
- *
- * ------------------------------------------------------------------------
- * DESKTOP LAYOUT — 2026-09-22. INVENTED; NOT IN FIGMA.
- *
- * This frame is MOBILE ONLY in Figma (393 wide). On a laptop the page used to
- * be a 480px column stranded in white between two real 1440 desktop frames.
- * At and above 768 the content is now dropped into the same wizard chrome
- * `/services/driver-vehicle/onboard/` uses — see CidScreen for the full
- * provenance note and the mechanism.
- *
- * Every `md:` class on this page is part of that invention and nothing else
- * on it moved. Below 768 the output is byte for byte what it was, which the
- * visual gate holds at 393 x 818 (dH +7 against the 811 frame, the known
- * Figma-vs-CSS line-box difference, unchanged by this pass).
- *
- * Invented here, specifically:
- *   Frame 5  `md:pb-0`   — the 24px bottom pad is the mobile frame's spacing
- *                          to Frame 6; inside the card the 32px card gap does
- *                          that job and the two would stack to 56.
- *   Frame 6  `md:justify-end md:gap-[24px] md:pt-[16px]` and `md:flex-none`
- *                          on both buttons — two 366px half-width buttons in
- *                          an 820px card read as a phone screen stretched. The
- *                          row becomes the onboard actions-row: natural-width
- *                          controls, right aligned, 24px apart, 16px above.
- * The 32px heading and the 16px body are UNCHANGED at every width; both
- * already read at desktop size next to onboard's 28px intro and 15px body.
- * ------------------------------------------------------------------------
+ * `getService(DEFAULT_SERVICE_ID)` is spelled out rather than left to
+ * `getService()`'s default argument so that a reader of this file can see the
+ * answer without opening another one.
+ * ====================================================================
  */
 export default function CidTermsPage() {
-  return (
-    <CidScreen mainNodeId="6039:11309" subStep={CID_TERMS.subStep}>
-      {/* Frame 5 — 6039:11320 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[16px] pt-0 pb-[24px] md:pb-0"
-        data-node-id="6039:11320"
-      >
-        <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
-          data-node-id="6039:11321"
-        >
-          {CID_TERMS.title}
-        </p>
-
-        {/* card-description 6039:11341 */}
-        <div
-          className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
-          data-node-id="6039:11341"
-        >
-          <p className="mb-[16px] leading-[24px]">{CID_TERMS.body}</p>
-          {/*
-           * Rendered as text, not an anchor: the design gives it no
-           * destination, and a live link would let the presenter leave the
-           * flow mid-demo.
-           */}
-          <p
-            className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
-            data-demo-inert="true"
-          >
-            {CID_TERMS.linkLabel}
-          </p>
-        </div>
-      </div>
-
-      {/* Frame 6 — 6049:12216 */}
-      <div
-        className="flex w-full shrink-0 items-start gap-[8px] md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
-        data-node-id="6049:12216"
-      >
-        {/*
-         * Back now returns to the prerequisite check, not CID_Welcome —
-         * that screen was cut from the flow on 2026-09-21, so Terms of Use
-         * is the first step of the IDV journey.
-         */}
-        <BtnOutline
-          href="/services/driver-vehicle/onboard/"
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
-        >
-          {CID_ACTIONS.decline}
-        </BtnOutline>
-        <BtnOutline
-          href="/cid/biometric/"
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
-        >
-          {CID_ACTIONS.accept}
-        </BtnOutline>
-      </div>
-    </CidScreen>
-  );
+  return <CidTermsScreen service={getService(DEFAULT_SERVICE_ID)} />;
 }

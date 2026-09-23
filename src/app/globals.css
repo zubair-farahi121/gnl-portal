@@ -255,10 +255,11 @@ body {
  * `min-width: 1441px` gap in it, so `.gnl-bleed` on TopNav and the desktop
  * footer is not clipped on a monitor wider than the 1440 cap.
  */
-.gnl-cid-shell,
-.gnl-desktop-shell,
-.gnl-mobile-shell {
-  overflow-wrap: anywhere;
+@media (max-width: 1439px) {
+  .gnl-cid-shell {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
 }
 
 /*
@@ -272,6 +273,140 @@ body {
  * desktop, which is the "phone design on the chrome browser" look this pass
  * exists to get rid of. PhoneFrame is now a plain centred column.
  */
+
+/* ------------------------------------------------------------------ *
+ * THE DEMO TOAST — "Not part of this demo" (brief §10.5, §7.6, §15).
+ *
+ * See src/components/ui/DemoToast.tsx for the wiring. This is the appearance
+ * only, and it is styled from the brief's own tokens rather than invented:
+ *   background  #243746   §11.2 `primary`, the same navy as the primary button
+ *   text        white Bold 14   §11.7's primary-button label scale
+ *   radius      6px       §11.4 `card` (a toast is a small card, not a button)
+ *   shadow      0 4px 16px rgba(0,0,0,.10)   §11.4, the login card's shadow —
+ *               the heaviest in the set, which is right for the one thing on
+ *               screen that must read as floating above the page
+ *
+ * IT MUST NOT MOVE A FRAME. `position: fixed` is out of flow, so the region
+ * contributes nothing to any page's scroll height and `npm run diff` is
+ * unaffected. The region is always in the DOM (an aria-live region has to
+ * exist before content is inserted or nothing is announced), so with no
+ * toasts it must paint NOTHING: no background, no border, no padding, and
+ * `pointer-events: none` so an invisible box can never swallow a click meant
+ * for the page. The toasts themselves put pointer events back.
+ *
+ * BOTTOM CENTRE. Out of the way of the header nav and the wizard actions row,
+ * and the one region of these screens that is never a click target. `1rem`
+ * from the bottom with `env(safe-area-inset-bottom)` added so it clears a
+ * phone's home indicator — the CID screens are the ones drawn at 393.
+ * ------------------------------------------------------------------ */
+.gnl-toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  /* Never wider than the narrowest supported viewport, minus a 16px gutter. */
+  max-width: min(calc(100vw - 32px), 420px);
+  pointer-events: none;
+}
+
+.gnl-toast {
+  pointer-events: auto;
+  box-sizing: border-box;
+  display: block;
+  max-width: 100%;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: var(--gnl-radius-card);
+  background: var(--gnl-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  font-family: var(--font-lato), sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  cursor: pointer;
+}
+
+/*
+ * A short rise-and-fade in. 150 ms, which is the ceiling §13.2 sets for page
+ * transitions — the toast should not be the slowest thing on screen.
+ */
+@keyframes gnl-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gnl-toast {
+  animation: gnl-toast-in 150ms ease-out;
+}
+
+/*
+ * §7.8 / §13.2: respect `prefers-reduced-motion`. The toast still appears and
+ * still announces — only the movement goes. `animation: none`, not a zero
+ * duration, so nothing is queued at all.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .gnl-toast {
+    animation: none;
+  }
+}
+
+/*
+ * Every inert control now does something, so it should say so on hover. This
+ * is a CSS rule on the existing `data-demo-inert` attribute rather than a
+ * class change at ~30 call sites: most of those sites are on KEEP screens
+ * (§1.4), and the cursor is not painted into a screenshot, so this is the one
+ * change that improves the affordance without touching KEEP markup at all.
+ */
+[data-demo-inert="true"] {
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ *
+ * .gnl-yoti-zone — MONTSERRAT, AND ONLY HERE.
+ *
+ * Brief §11.1: "Montserrat 400/500/600/700 only inside the Yoti zone."
+ * Brief §8.2 defines that zone as starting BELOW the sub-step pill and ending
+ * ABOVE the footer, on NL-11..NL-19 — i.e. /cid/liveness/,
+ * /cid/liveness-capture/, /cid/country/, /cid/document/, /cid/capture-intro/,
+ * /cid/capture-front/ and /cid/capture-back/. Those seven routes are the
+ * identity provider's own UI embedded in GNL chrome.
+ *
+ * NOT the other four CID routes. /cid/continue-on-mobile/ (NL-08),
+ * /cid/terms/ (NL-09), /cid/biometric/ (NL-10) and /cid/verified/ (NL-20) are
+ * GNL frames on the GNL ramp and stay in Lato — that is what the Figma nodes
+ * say, and §11.9 says to keep the contrast on purpose. The class is applied by
+ * `CidScreen`'s `yotiZone` prop, per page, so the set is explicit in code
+ * rather than inferred from a route prefix.
+ *
+ * WHY A CLASS AND NOT A FONT ON <html>. Applying Montserrat globally would
+ * restyle the whole MyGovNL portal, which §11.9 forbids in the opposite
+ * direction and which the login, dashboard and service frames would fail.
+ * The variable is declared on <html> by next/font (layout.tsx); exactly one
+ * rule consumes it.
+ *
+ * INHERITANCE ONLY — the element carrying this class is `display: contents`,
+ * so it generates no box and moves nothing. `font-family` is an inherited
+ * property and passes through a contents box normally; the same technique the
+ * breakpoint chrome switch in CidScreen already relies on. That is what lets
+ * the zone wrap the page's existing children without becoming a flex item
+ * between the shell and them.
+ * ------------------------------------------------------------------ */
+.gnl-yoti-zone {
+  font-family: var(--font-montserrat), sans-serif;
+}
 
 /* ------------------------------------------------------------------ *
  * RESPONSIVE UTILITIES
@@ -366,23 +501,6 @@ body {
  * NOT covered: it is drawn at 393 at its own 37/39/40px heights.
  */
 @media (max-width: 768px) {
-  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) :is(a, button) {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) footer a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
-    white-space: normal;
-  }
-
-  :is(.gnl-desktop-shell, .gnl-cid-shell, .gnl-mobile-shell) footer {
-    height: auto;
-  }
-
   .gnl-desktop-shell .gnl-touch,
   .gnl-cid-desktop-chrome .gnl-touch {
     min-height: 44px;
@@ -489,8 +607,21 @@ body {
   }
 }
 
-:focus-visible {
-  outline: 3px solid #004b87;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px white;
+/*
+ * Last line of defence.
+ *
+ * `clip` rather than `hidden`: it does not create a scroll container, so it
+ * cannot swallow a sticky element or hand the page its own scrollbar — it
+ * only stops a too-wide child from dragging the document sideways. Scoped
+ * below the design width, so at >= 1440 the shells still clip nothing at all.
+ *
+ * This is a net, not a layout strategy. Anything it actually catches is a
+ * box that still needs to be made to reflow.
+ */
+@media (max-width: 1439px) {
+  .gnl-desktop-shell,
+  .gnl-mobile-shell {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
 }

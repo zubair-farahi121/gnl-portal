@@ -13,6 +13,24 @@ import {
   WIZARD_TITLE,
   type IdvOption,
 } from "@/lib/data/onboarding";
+import { CID_ROUTES, serviceRoutes } from "@/lib/data/service-config";
+import { CancelLink } from "@/components/onboarding/CancelLink";
+
+/* Destinations only. PP-07 is this frame with a THIRD option card and a
+ * visible Back (DEMO_AUDIT.md PP-07); that is a Flow B build item, not this
+ * pass. §12.1. */
+/*
+ * `"driver-vehicle"` is a LITERAL here, not `DEFAULT_SERVICE_ID`, and that is
+ * deliberate: this page lives at `src/app/services/driver-vehicle/`, so the
+ * service is fixed by the route directory itself. Resolving it from the
+ * default would make this page silently follow whatever the CertifiO ID
+ * screens happen to be running, which is a different thing.
+ *
+ * Flow B gets its own `src/app/services/studentaid/` directory (or the whole
+ * folder becomes a `[serviceId]` segment) passing `"studentaid"` here. Either
+ * way, everything below reads from the config and nothing else changes.
+ */
+const ROUTES = serviceRoutes("driver-vehicle");
 
 /*
  * driver-vehicle-prerequisite-check — Figma 6031:6304, 1440 x 1202.215.
@@ -272,15 +290,33 @@ export default function PrerequisiteCheckPage() {
               className="flex w-full shrink-0 items-center justify-end gap-[24px] pt-[16px] max-xs:flex-col-reverse max-xs:items-stretch max-xs:gap-[12px]"
               data-node-id="6031:6348"
             >
-              <Link
-                href="/services/driver-vehicle/"
+              {/* §7.4: Cancel leaves onboarding and resets it to not-started
+                  (unless the service is already onboarded). Same `<Link>`, same
+                  classes, same node id — see CancelLink. */}
+              <CancelLink
+                service="driver-vehicle"
+                href={ROUTES.page}
                 className="shrink-0 whitespace-nowrap text-[16px] font-bold leading-[normal] text-[#004b87] max-xs:py-[10px] max-xs:text-center"
-                data-node-id="6031:6349"
+                nodeId="6031:6349"
               >
                 {WIZARD_ACTIONS.cancelLabel}
-              </Link>
+              </CancelLink>
+              {/*
+               * RE-POINTED 2026-09-23 from the service page to NL-06
+               * `/services/driver-vehicle/confirm-details/`.
+               *
+               * §7.4 is "Back -> previous page", and until Tier 1 the previous
+               * page WAS the service page — NL-04, NL-05 and NL-06 did not
+               * exist. Now they do, so leaving this pointing at the service
+               * page would dump the presenter out of the wizard in one hop
+               * from step 4 of 4. The reverse chain now walks back through
+               * Confirm details -> Terms -> Summary, which `npm run clicks`
+               * asserts hop by hop (B16..B19).
+               *
+               * Destination only. Nothing about the button moved.
+               */}
               <BtnOutline
-                href="/services/driver-vehicle/"
+                href={ROUTES.confirmDetails}
                 className="max-xs:w-full max-xs:justify-center"
               >
                 {WIZARD_ACTIONS.backLabel}
@@ -294,7 +330,7 @@ export default function PrerequisiteCheckPage() {
                * above is re-pointed with it, so both routes into the CID
                * journey still land on the same screen.
                */}
-              <BtnPrimary href="/cid/continue-on-mobile/" className="max-xs:w-full">
+              <BtnPrimary href={CID_ROUTES.handoff} className="max-xs:w-full">
                 {WIZARD_ACTIONS.continueLabel}
               </BtnPrimary>
             </div>

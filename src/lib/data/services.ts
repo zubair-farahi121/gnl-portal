@@ -1,3 +1,5 @@
+import { serviceRoutes } from "@/lib/data/service-config";
+
 /**
  * Copy for the services dashboard — Figma `mygovnl-services-dashboard`
  * 6206:23559 (the 2026-09 rebuild; it was 6031:5974).
@@ -117,7 +119,7 @@ export const SERVICE_COLUMNS: readonly (readonly ServiceCardData[])[] = [
       // service-card-c3-0 6031:6130 — the ONLY navigable card in the demo.
       title: "Driver and Vehicle",
       body: "Renew your vehicle or drivers licence\nChange your address with Motor Registration\nPurchase your driving record (abstract)\nRenew your vehicle registration\nNotify Motor Registration when you no longer own a vehicle\nPay for your road test\nRequest a vehicle registration reprint\nTake your commercial driver test (Class 1-4 & 9)",
-      href: "/services/driver-vehicle/",
+      href: serviceRoutes("driver-vehicle").page,
     },
     {
       // service-card-c3-1 6031:6172

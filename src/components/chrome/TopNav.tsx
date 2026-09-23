@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ASSETS } from "@/lib/assets";
-import { useDemoState } from "@/lib/demo-state";
 
 /*
  * "top-nav actions" — Figma 6031:6245, 1440 x 69.
@@ -118,16 +117,27 @@ export function NavLinks({ className }: { className: string }) {
 /**
  * btn-signout — Figma calls this Lato:SemiBold; the webfont has no 600.
  *
- * Clears the demo's verified flag on the way out so the next run of the demo
- * starts from the unverified service page. `reset()` writes sessionStorage
- * synchronously, so it completes before the navigation.
+ * ====================================================================
+ * IT NO LONGER CLEARS THE DEMO STATE — CHANGED 2026-09-23, Q-17 SETTLED.
+ *
+ * This used to call `reset()` on the way out, which is what DEMO_AUDIT.md X-04
+ * flagged as a **direct conflict with BUILD_BRIEF.md §7.1**: *"Header **Log
+ * Out** -> `/login`, **keeps** onboarding progress; only 'Reset demo' clears
+ * everything."* Q-17 asked which was demo-day behaviour; it was settled in the
+ * brief's favour.
+ *
+ * So Log Out is now a plain navigation. The `gnl-demo:v1` store survives it,
+ * which means the presenter can log out mid-story, log back in, and the service
+ * is still where they left it — including still Trusted. The only things that
+ * clear the store are `/reset` and the presenter's Escape key (`DemoNav`).
+ *
+ * Nothing visual changed: same element, same classes, same destination.
+ * ====================================================================
  */
 export function BtnSignOut() {
-  const { reset } = useDemoState();
   return (
     <Link
       href="/"
-      onClick={reset}
       className="gnl-touch flex shrink-0 items-center justify-center rounded-[6px] border border-solid border-white px-[20px] py-[10px]"
     >
       <p className="shrink-0 whitespace-nowrap text-[14px] font-bold leading-normal text-[#bfc4c8]">Log Out</p>
@@ -169,7 +179,7 @@ export function TopNav() {
       <div className="flex shrink-0 items-center gap-[48px] max-lg:gap-[24px] max-md:contents">
         <Link href="/dashboard/" className="relative h-[33.645px] w-[112px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none object-contain" src={ASSETS.mygovnlLogo} />
+          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none" src={ASSETS.mygovnlLogo} />
         </Link>
         <NavLinks className="flex shrink-0 items-center gap-[32px] max-lg:gap-[20px] max-md:order-3 max-md:w-full max-md:flex-wrap max-md:justify-center max-md:gap-x-[20px] max-md:gap-y-0" />
       </div>

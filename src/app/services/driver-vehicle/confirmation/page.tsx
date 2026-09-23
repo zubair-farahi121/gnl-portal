@@ -4,6 +4,29 @@ import { WizardCard } from "@/components/wizard/WizardCard";
 import { WizardHeader } from "@/components/wizard/WizardHeader";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
+import { MarkOnboarded } from "@/components/onboarding/TrackStep";
+import { getService, serviceRoutes } from "@/lib/data/service-config";
+
+/*
+ * BUILD_BRIEF.md §12.1. The two Back/Continue destinations and the primary
+ * CTA label are all per-service — PP-22 is this same frame reading
+ * "Go to Service StudentAidNL" (§10.1) — so they come from the config. The
+ * layout, the "Success!" heading and the body copy are identical in both flows
+ * and stay here.
+ */
+/*
+ * `"driver-vehicle"` is a LITERAL here, not `DEFAULT_SERVICE_ID`, and that is
+ * deliberate: this page lives at `src/app/services/driver-vehicle/`, so the
+ * service is fixed by the route directory itself. Resolving it from the
+ * default would make this page silently follow whatever the CertifiO ID
+ * screens happen to be running, which is a different thing.
+ *
+ * Flow B gets its own `src/app/services/studentaid/` directory (or the whole
+ * folder becomes a `[serviceId]` segment) passing `"studentaid"` here. Either
+ * way, everything below reads from the config and nothing else changes.
+ */
+const SERVICE = getService("driver-vehicle");
+const ROUTES = serviceRoutes("driver-vehicle");
 
 /*
  * driver-vehicle-confirmation — Figma 6217:82446, 1440 x 1024.
@@ -57,6 +80,13 @@ export default function ConfirmationPage() {
   return (
     <div className="gnl-desktop-shell">
       <TopNav />
+      {/*
+       * §8.3 NL-23: "On open, mark the service onboarded." Renders nothing, so
+       * this frame's measured markup is untouched. It is what makes the service
+       * page show "Trusted" from here on — and keep showing it after a refresh,
+       * which the old `?verified=1` query param could not (DEMO_AUDIT.md X-04).
+       */}
+      <MarkOnboarded service="driver-vehicle" />
 
       <main className="h-[814.785px] w-full max-[1439px]:h-auto" data-node-id="6102:101146">
         {/*
@@ -102,17 +132,17 @@ export default function ConfirmationPage() {
                * the screen the design's Back means.
                */}
               <BtnOutline
-                href="/services/driver-vehicle/prerequisite/"
+                href={ROUTES.prerequisite}
                 className="max-xs:w-full max-xs:justify-center"
               >
                 Back
               </BtnOutline>
               <BtnPrimary
-                href="/services/driver-vehicle/?verified=1"
+                href={ROUTES.pageVerified}
                 size="lg"
                 className="max-md:min-w-px max-md:shrink max-md:text-center max-xs:w-full"
               >
-                Go to Service Driver&#x2019;s License Renewal
+                {SERVICE.goToServiceLabel}
               </BtnPrimary>
             </div>
           </WizardCard>

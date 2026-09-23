@@ -7,6 +7,7 @@
     "build": "next build",
     "shots": "playwright test tests/visual/screens.spec.ts",
     "diff": "tsx scripts/visual-diff.ts",
+    "baseline": "node scripts/baseline.mjs",
     "visual": "npm run build && npm run shots && npm run diff",
     "serve": "serve out -l 4173",
     "responsive": "node scripts/responsive-check.mjs",
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "@fontsource/lato": "^5.3.0",
+    "@fontsource/montserrat": "^5.3.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"

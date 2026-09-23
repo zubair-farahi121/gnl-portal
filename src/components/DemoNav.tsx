@@ -13,7 +13,12 @@ import { useDemoState } from "@/lib/demo-state";
 export function DemoNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const { reset } = useDemoState();
+  /*
+   * Escape is "Reset demo" (§7.5): it is now one of only two things that clear
+   * `gnl-demo:v1`, the other being the `/reset` route. The header's Log Out
+   * deliberately does NOT — see §7.1 and BtnSignOut.
+   */
+  const { resetAll } = useDemoState();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -25,13 +30,13 @@ export function DemoNav() {
         router.push(FLOW[i - 1]);
       }
       if (e.key === "Escape") {
-        reset();
+        resetAll();
         router.push(FLOW[0]);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pathname, router, reset]);
+  }, [pathname, router, resetAll]);
 
   return null;
 }

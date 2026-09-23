@@ -1143,3 +1143,280 @@ untouchable design width and a `max-xs:` rule (< 480) would fire on it. Same
 relaxation and same reasoning as the select label on `/cid/country/`.
 
 No control, no copy and no step number was invented.
+
+---
+
+# 13. Tier 0 — Montserrat, self-baselines, the toast, the service config (2026-09-23)
+
+Four changes, in this order. Everything in §9.2, §11.1 and §11.8 about the
+typeface substitution is **superseded by 13.1**; those sections are left in
+place as the record of why the substitution existed.
+
+## 13.1 Montserrat is self-hosted — the substitution is over
+
+`@fontsource/montserrat` 5.3.0, **SIL Open Font License 1.1**
+(`node_modules/@fontsource/montserrat/LICENSE`), so the woff2 files are
+redistributable and are committed under `src/app/fonts/`:
+
+| File | Weight |
+|---|---|
+| `montserrat-latin-400-normal.woff2` | 400 Regular |
+| `montserrat-latin-500-normal.woff2` | 500 Medium |
+| `montserrat-latin-600-normal.woff2` | 600 SemiBold |
+| `montserrat-latin-700-normal.woff2` | 700 Bold |
+
+Vendored exactly as Lato already was — `next/font/local` in `layout.tsx`,
+`display: "block"`, exposed as `--font-montserrat`. The demo still needs no
+network on stage.
+
+**Q-19 in `DEMO_AUDIT.md` is answered: yes, and it cost nothing.** The Google
+Fonts *host* is blocked by this container's proxy, which is what earlier passes
+hit; the npm registry is not, and `@fontsource` ships the same files.
+
+### Scope — the Yoti zone and nothing else
+
+Brief §11.1 says Montserrat **only** inside the Yoti zone, and §11.9 forbids
+restyling that zone into GNL style. Both directions are now enforced in code:
+
+- `globals.css` defines exactly one rule, `.gnl-yoti-zone { font-family:
+  var(--font-montserrat), sans-serif }`. The face is **not** on `<html>`.
+- `CidScreen` takes a `yotiZone` prop and puts that class on a `display:
+  contents` wrapper around its `children` — which is precisely the boundary
+  Figma's own note draws ("Yoti app (embed code) below the stepper and above
+  the footer starts here"). `contents` generates no box, so nothing moved; only
+  the inherited `font-family` changed.
+- `yotiZone` is set on the **seven** NL-11..NL-19 routes: `/cid/liveness/`,
+  `/cid/liveness-capture/`, `/cid/country/`, `/cid/document/`,
+  `/cid/capture-intro/`, `/cid/capture-front/`, `/cid/capture-back/`.
+- It is **not** set on the four CID routes that are GNL frames on the GNL ramp:
+  `/cid/continue-on-mobile/` (NL-08), `/cid/terms/` (NL-09), `/cid/biometric/`
+  (NL-10), `/cid/verified/` (NL-20). Those stay Lato, as their nodes specify.
+- The MyGovNL header, wizard title, progress bar, step labels, sub-step pill
+  and footer stay Lato on **all eleven** CID screens.
+
+Verified by computed style, not by eye —
+`design/responsive/cid-*-390-after-montserrat.png` were taken alongside a
+`getComputedStyle` probe showing `lato` on every chrome node and `montserrat`
+on every Yoti node of the same page.
+
+### The collapsed weights are restored
+
+Lato ships no 500 and no 600, so every `Montserrat:Medium` mapped to 400 and
+every `Montserrat:SemiBold` to 700. Four call sites carried that compromise and
+now carry the real weight:
+
+| Call site | Figma | Was | Now |
+|---|---|---|---|
+| `/cid/liveness/` `InstructionRow` label, 14px | `Montserrat:Medium` | `font-normal` (400) | **`font-medium` (500)** |
+| `/cid/country/` body `6056:15798`, 14px | `Montserrat:SemiBold` | `font-bold` (700) | **`font-semibold` (600)** |
+| `/cid/capture-intro/` `GuidelineRow` label, 13px | `Montserrat:SemiBold` | `font-bold` (700) | **`font-semibold` (600)** |
+| `/cid/document/` `RadioRow` label `6087:32275` et al, 16px | `Montserrat:SemiBold` | `font-bold` (700) | **`font-semibold` (600)** |
+
+No other weight changed. `Montserrat:Bold` was already 700 and
+`Montserrat:Regular` already 400.
+
+### What §11.8 predicted, measured
+
+§11.8 said two wraps were consequences of Lato being narrower and *"both
+disappear the moment Montserrat can be self-hosted."* They did. Measured by
+A/B-ing the family in one browser session:
+
+| Node | Figma | Lato | Montserrat | Verdict |
+|---|---|---|---|---|
+| `6056:20806` guideline row 3 | 36 | **34** (1 line) | **36** (2 lines) | **RESOLVED** — the row wraps where the design wraps |
+| `6056:20794` Guidelines Card | 192 | **190** | **193** | from 2 px under to 1 px over; the residual 1 px is `leading-[normal]` rounding on the 15 px title, not a wrap |
+| `6056:20796` guideline row 1 | 36 | 36 (2 lines) | 36 (2 lines) | **RESOLVED** — it wrapped in both, "one word later" in Lato; the break is now the design's |
+
+**A third one was never documented and is now mostly closed too.** §12 of this
+file records the liveness rows as "40 / 40 / 34… the first two labels wrap to
+two lines and the third does not". In Lato only the *second* did:
+
+| Node | Figma | Lato | Montserrat |
+|---|---|---|---|
+| `6056:13915` `InstructionRow` 1 | 40 | **34** (1 line) | **39.188** (2 lines) |
+| `6056:13920` `InstructionRow` 2 | 40 | 39.188 | 39.188 |
+| `6056:13925` `InstructionRow` 3 | 34 | 34 | 34 |
+| `6056:13914` `instructions-list` | 146 | 139.188 | **144.375** |
+
+The residual 0.812 px per wrapped row is leading arithmetic, not a wrap:
+14 px × 1.4 = 19.6 per line, so two lines are 39.2 where Figma rounds to 40.
+Nothing is forced.
+
+### Frame heights moved, and that is the correct outcome
+
+These screens had been rendering in the wrong family, so their rendered heights
+were wrong. Measured from the PNG headers, Lato → Montserrat:
+
+| Frame | Lato | Montserrat | Δ | Δ vs `frames.json` before → after |
+|---|---|---|---|---|
+| `cid-liveness` | 1283 | 1289 | +6 | 0 → **+6** |
+| `cid-liveness-capture` | 1239 | 1241 | +2 | +7 → **+9** |
+| `cid-country` | 1065 | 1066 | +1 | +4 → **+5** |
+| `cid-document` | 1173 | 1174 | +1 | +4 → **+5** |
+| `cid-capture-intro` | 1000 | 1004 | +4 | +5 → **+9** |
+| `cid-capture-front` | 1182 | 1183 | +1 | +7 → **+8** |
+| `cid-capture-back` | 1182 | 1183 | +1 | +7 → **+8** |
+| **all 12 non-Yoti frames** | — | — | **0** | unchanged |
+
+That last row is the important one: the four GNL-ramp CID frames
+(`cid-terms` +7, `cid-biometric` +7, `cid-verified` 0,
+`cid-continue-on-mobile` 0) did not move by a single pixel, which is the proof
+that the scoping is right and Montserrat did not leak into the portal.
+
+### `design/frames.json` was NOT changed, on purpose
+
+Every height in `frames.json` is the **Figma frame's own height**, rounded up —
+`cid-liveness` 1283 ← 1282.44091796875, `cid-document` 1169 ← 1168.810546875,
+and so on for all 19. It is a record of the design, not of the build.
+
+Montserrat changed how the build renders. It did not change the Figma frames.
+Overwriting those numbers with the new rendered heights would erase the only
+reference the deltas are measured against and turn the table into all-zeros
+that prove nothing. The deltas are recorded here instead.
+
+The heights are also not load-bearing for the gate: `scripts/visual-diff.ts`
+compares baseline PNG against shot PNG and never reads `frames.json` heights.
+They set the screenshot viewport (`Math.min(f.height, 2000)`) and document the
+target.
+
+## 13.2 `design/baselines/` — SELF-baselines, not Figma exports
+
+The folder was empty, so `npm run diff` reported `SKIP … missing baseline` for
+all 19 frames and exited `GATE: FAIL` (`DEMO_AUDIT.md` §1, Q-18). Real exports
+are still impossible here: `figma.com` is proxy-blocked and the
+`design-reference/` pack was never delivered.
+
+**Today's verified build is frozen as the baseline** — captured *after*
+Montserrat, so the right typeface is baked into the reference. `npm run diff`
+now returns **PASS on all 19 frames at 0.000 % differing**, and does so
+repeatably: two independent `npm run shots` runs produced byte-identical PNGs,
+including the three screens that fall back from a live camera.
+
+**What the gate is now worth, stated plainly:**
+
+- **It catches** drift from the verified state of 2026-09-23. That is exactly
+  what 13.4 needed.
+- **It cannot catch** a mismatch that already existed against Figma on
+  2026-09-23. Anything wrong then is frozen as correct now. A green
+  `npm run diff` means *"nothing moved"*, **not** *"matches Figma"*. Only the
+  per-node measurements in this file speak to fidelity.
+
+`npm run baseline` (`scripts/baseline.mjs`) regenerates them **deliberately**:
+it is a dry run by default, prints every frame whose bytes would change before
+it writes anything, and only writes with `--yes`. That exists because
+re-baselining is how a visual gate gets quietly switched off — a screen
+regresses, the diff goes red, and copying the shots over the baselines is the
+fastest way back to green. Each run also rewrites
+`design/baselines/PROVENANCE.md` with the same warning, so the folder explains
+itself to whoever opens it next.
+
+When real exports arrive: drop them in under the `frames.json` frame ids,
+delete `PROVENANCE.md`, and **do not run `npm run baseline` again**.
+
+## 13.3 The toast — one overlay, ~30 controls, zero pixels
+
+Brief §10.5 / §7.6 / §15. `DemoToast` (`src/components/ui/DemoToast.tsx`) is
+mounted once at the root of `layout.tsx`.
+
+**Styled from the brief's own tokens**, not invented: `#243746` (§11.2
+`primary`), white Bold 14 (§11.7's primary-button label scale), radius 6 (§11.4
+`card`), shadow `0 4px 16px rgba(0,0,0,.10)` (§11.4, the login card's). Bottom
+centre, clearing `env(safe-area-inset-bottom)`. `role="status"` +
+`aria-live="polite"` (§7.8) on a region that is **always** in the DOM, because
+a live region has to exist before content is inserted or nothing is announced.
+Auto-dismisses after 3.2 s; clicking it dismisses it early. A 150 ms rise-and-
+fade in — §13.2's ceiling for page transitions — removed entirely under
+`prefers-reduced-motion`. No external dependency.
+
+**Clicked twice, it replaces rather than stacks.** Every inert control sends
+the same string, so a second click removes the existing toast and re-adds it
+with a fresh id: the timer restarts, the live region sees a real insertion and
+announces again, and exactly one toast is on screen. Different messages do
+stack, capped at three, oldest dropped — the mechanism is general even though
+today there is one message.
+
+**Wired by ONE delegated listener on `[data-demo-inert="true"]`**, not by ~30
+`onClick` props. That is the constraint, not a shortcut: most of those controls
+are on screens §1.4 marks KEEP, and thirty handlers would have meant thirty
+edits to KEEP markup plus a client-component boundary on pages that are static
+today. **No markup on any control changed.** The only CSS added for them is
+`[data-demo-inert="true"] { cursor: pointer }`, which is unlayered so it
+outranks the Tailwind `cursor-default` utilities — and a cursor is not painted
+into a screenshot.
+
+**Proved to move nothing.** 147 inert controls across all 19 routes were
+clicked programmatically: 147 fired the toast, the on-screen count stayed at 1
+every time, and `document.documentElement.scrollHeight` was identical before
+and after on every route with a toast up. `npm run diff` stayed at 0.000 % on
+all 19 frames. Screenshots: `design/responsive/_toast-*.png`.
+
+**Residual, recorded not hidden:** the inert controls that are `<div>` /
+`<p>` / `<span>` (nav labels, dashboard cards, the two login links) are not
+focusable, so they are mouse-only. The ones that are native `<button>`s (every
+linked-item action and the wallet upsell) get Enter/Space for free, because
+delegation is on `click`. Making the rest keyboard-operable means turning them
+into real buttons — a markup change on KEEP screens, which belongs in its own
+pass with the gate green.
+
+## 13.4 `SERVICES` — the config, and the proof Flow A did not move
+
+`src/lib/data/service-config.ts`, brief §12.1, both entries, every field the
+brief lists. **No Flow B screen and no Flow B route was built.**
+
+**Two fields for one brief field, deliberately.** §12.1 lists `requirement`
+once. The design file spells that sentence two ways — U+0027 on the
+prerequisite-check frame `6031:6304`, U+2019 on the prerequisite-**confirmed**
+frame `6217:81644`, same words, same file (already logged in
+`token-exceptions-phase2b.md`). Collapsing them would be a visible glyph change
+and a gate failure in whichever direction it was done, so the config carries
+`requirement` and `requirementConfirmed`. Flow B's sentence has no apostrophe,
+so both fields hold the same string there.
+
+**Routes are the app's existing paths**, per §6's own "if the app already has a
+path for a screen, keep the existing one". `serviceRoutes(id)` reproduces
+`/services/<id>/`, `…/onboard/`, `…/prerequisite/`, `…/confirmation/` and
+`…/?verified=1`; `CID_ROUTES` and `APP_ROUTES` collect the rest. `?verified=1`
+is reproduced, not fixed — `DEMO_AUDIT.md` X-04 is right that it belongs in the
+persisted store, but that is a behaviour change and this pass was a refactor.
+
+**Where a service is resolved, and why it differs by file:**
+
+| Consumer | Resolves via | Why |
+|---|---|---|
+| pages under `src/app/services/driver-vehicle/` | the literal `"driver-vehicle"` | the route directory *is* the service; Flow B gets its own directory or a `[serviceId]` segment |
+| `src/lib/data/driver-vehicle.ts`, `onboarding.ts` | `getService("driver-vehicle")` | Flow-A-only content modules for those routes |
+| the ten shared `/cid/` screens and `cid.ts` | `CID_SERVICE` | one seam, documented in the config; Flow B replaces this single call |
+
+**Proof that `driver-vehicle` output is unchanged — three independent checks:**
+
+1. **Pixels.** `npm run diff` PASS, **0.000 % differing on all 19 frames**,
+   against baselines frozen before the refactor.
+2. **Destinations.** Every `href` in the built static export was extracted and
+   compared: all 19 pages resolve character-for-character to the literals they
+   spelled before, trailing slash and query string included.
+3. **Copy.** `Go to Service Driver’s License Renewal` still carries U+2019;
+   `Capture ID document (front)` / `(back)` unchanged; the step-5 sentence
+   still reads "securely access Driver and Vehicle services"; the selected
+   `RadioRow` is still row 7, Driver's License, with the 2 px `#27619b` ring.
+
+**Proof the parameterisation is real, not cosmetic.** Flipping the single
+constant `DEFAULT_SERVICE_ID` to `"studentaid"` and rebuilding turned all ten
+CertifiO ID screens into Flow B with no other edit: wizard title
+"StudentAidNL"; capture headings "Capture ID document" with "(front)" dropped
+per §10.1; the selected `RadioRow` moved from row 7 (Driver's License) to
+row 1 (**Passport**) with its 2 px ring and filled radio; the step-5 sentence
+and all four bullets replaced. That is `DEMO_AUDIT.md` §8's "eleven rows, zero
+new screens" demonstrated. The flip was reverted; it is a test, not a feature.
+
+**Still holding `driver-vehicle` literals, and why:**
+
+| Where | Why it stays |
+|---|---|
+| `src/app/services/driver-vehicle/**` (4 page files) | the App Router needs a literal directory. Flow B adds `studentaid/` or converts to `[serviceId]`. |
+| `@/lib/data/driver-vehicle` imports (3 files) | a module path, not a value — Flow-A persona, licence and vehicle data |
+| `service-config.ts` | the `ServiceId` union, the `SERVICES` key, `DEFAULT_SERVICE_ID` — declarations, which is where the name belongs |
+| `services.ts` dashboard card | Flow A's card is the only one with an `href`; StudentAidNL's stays inert until PP-03 exists (the safeguard in `DEMO_AUDIT.md` NL-02) |
+| `assets.ts`, `globals.css` and page headers | comments and Figma frame names |
+
+No route-literal `"/services/driver-vehicle/…"` string survives anywhere
+outside `serviceRoutes()`.

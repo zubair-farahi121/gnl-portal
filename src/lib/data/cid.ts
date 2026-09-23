@@ -22,10 +22,38 @@
  * Copy is character-for-character from `get_design_context`. None of the four
  * frames contains an apostrophe of either kind, so the U+0027 / U+2019 split
  * seen elsewhere in the file does not arise here.
+ *
+ * ====================================================================
+ * PARAMETERISED BY SERVICE — 2026-09-23. READ THIS BEFORE ADDING A CONSTANT.
+ *
+ * This module used to compute every string at MODULE SCOPE from the single
+ * constant `CID_SERVICE`, which always answered `driver-vehicle`. That was the
+ * seam documented at the foot of src/lib/data/service-config.ts, and it has now
+ * been cut the thorough way: the service is a PARAMETER, threaded from the
+ * route down through CidScreen into every screen component.
+ *
+ * So there is no module-level `CID_SERVICE`, no `CID_WIZARD_TITLE` and no
+ * `CID_VERIFIED` any more. `getCidCopy(service)` returns the object those
+ * constants used to describe, for whichever service the route names. Everything
+ * that does NOT vary between the two services is still a module constant below
+ * — spread into the returned object — so the copy stays in one place and only
+ * the five genuinely service-dependent values are computed per call:
+ *
+ *   wizardTitle              service.title
+ *   verified.description     service.successServiceLabel + service.availableServices
+ *   document.options[].selected  service.defaultDocument
+ *   captureFront.title       service.captureTitles.front
+ *   captureBack.title        service.captureTitles.back
+ *   actions.continue         service.successServiceLabel
+ *
+ * EVERY STRING BELOW IS STILL THE EXISTING STRING, CHARACTER FOR CHARACTER,
+ * including the design file's inconsistent apostrophes and its American
+ * "License". Nothing was harmonised on the way through the refactor; the pixel
+ * gate (`npm run diff`, 0.000 % on all 22 frames) is what proves it.
+ * ====================================================================
  */
 
-/** wizard-title, shared by all four frames. Figma 6039:8143 et al. */
-export const CID_WIZARD_TITLE = "Driver and Vehicle";
+import { DOCUMENT_LABEL, type ServiceConfig } from "@/lib/data/service-config";
 
 /**
  * step-bar-fill on the CID `wizard-header`, verbatim.
@@ -37,6 +65,10 @@ export const CID_WIZARD_TITLE = "Driver and Vehicle";
  * (6257:67902 / 6257:67919 / 6257:69751). CID_ID_success used to be the odd
  * one out — a #243746 step-bar TRACK, which read as a 100%-filled bar — and no
  * longer is, so it takes `current={2}` and this fill like the other two.
+ *
+ * SERVICE-INDEPENDENT: both journeys sit at the same point of the same GNL
+ * wizard when the CertifiO ID session runs, so the fill is a module constant
+ * rather than a field on the service.
  */
 export const CID_STEPPER_FILL = "278.869px";
 
@@ -66,6 +98,9 @@ export type CidDescriptionBlock =
  * imports this; kept only so the copy is not lost if it comes back. Its
  * `stepperLabel` belongs to the six-dot rail that no longer exists — the live
  * frames use `subStep` instead.
+ *
+ * Left at module scope rather than folded into `getCidCopy` for the same
+ * reason: nothing renders it, so nothing needs a service to read it.
  */
 export const CID_WELCOME = {
   title: "Welcome to GNL Identity Verification Service",
@@ -86,8 +121,11 @@ export const CID_WELCOME = {
  * case ("Terms of use", 6039:11321) after the rework; the inline link inside
  * the description is still title case ("Terms of Use", 6039:11341). Both are
  * verbatim — do not harmonise them.
+ *
+ * SERVICE-INDEPENDENT. §9 lists PP-10 as a straight instance of this frame:
+ * only the wizard title above it changes, and that comes from the service.
  */
-export const CID_TERMS = {
+const CID_TERMS = {
   title: "Terms of use",
   subStep: { label: "Terms of use", step: "step 1 of 5", nodeId: "6257:72178" },
   body: "Your identity documents will be used only to verify your identity and will be deleted after verification.",
@@ -98,8 +136,10 @@ export const CID_TERMS = {
 /**
  * CID_Biometric — Frame 5 is 6049:12239; card-description 6049:12262; Frame 6
  * is 6049:12264; pill 6257:67925.
+ *
+ * SERVICE-INDEPENDENT — PP-11 is an instance of this frame.
  */
-export const CID_BIOMETRIC = {
+const CID_BIOMETRIC = {
   title: "Biometric consent",
   subStep: { label: "Biometric consent", step: "step 2 of 5", nodeId: "6257:67925" },
   body: "A photo or video of your face will be used to verify your identity. It will be deleted after the verification process is complete.",
@@ -114,29 +154,37 @@ export const CID_BIOMETRIC = {
  * line and a four-item bulleted list. The blank line is a ZERO WIDTH SPACE
  * (U+200B) in the design file, not an empty paragraph — an empty `<p>` would
  * collapse and lose the 21px it occupies.
+ *
+ * THE ONLY CID SCREEN WHOSE BODY COPY IS THE SERVICE'S. §10.1 replaces the
+ * service name in the first sentence and all four bullets for Flow B, which is
+ * why this one is a function of `service` where CID_TERMS and CID_BIOMETRIC
+ * above are plain constants.
  */
-export const CID_VERIFIED = {
-  title: "Your identity has been verified",
-  subStep: { label: "Identity verified", step: "step 5 of 5", nodeId: "6257:72248" },
-  description: [
-    {
-      kind: "paragraph",
-      text: "You can now securely access Driver and Vehicle services and complete transactions online.",
-    },
-    { kind: "paragraph", text: "​" },
-    // The trailing space is in the design file.
-    { kind: "paragraph", text: "Available services include " },
-    {
-      kind: "bullets",
-      items: [
-        "licence and registration renewals",
-        "address changes",
-        "driving record purchases",
-        "road test payments, and more.",
-      ],
-    },
-  ] as readonly CidDescriptionBlock[],
-} as const;
+function cidVerified(service: ServiceConfig) {
+  return {
+    title: "Your identity has been verified",
+    subStep: { label: "Identity verified", step: "step 5 of 5", nodeId: "6257:72248" },
+    description: [
+      {
+        kind: "paragraph",
+        text: `You can now securely access ${service.successServiceLabel} services and complete transactions online.`,
+      },
+      { kind: "paragraph", text: "​" },
+      // The trailing space is in the design file.
+      { kind: "paragraph", text: "Available services include " },
+      {
+        kind: "bullets",
+        /*
+         * §10.1 replaces all four of these for Flow B, so the list is the
+         * service's, not this module's. Flow A's four are unchanged, verbatim,
+         * including the design's missing commas and the trailing full stop —
+         * raised as Q-06 in DEMO_AUDIT.md and reproduced, not fixed.
+         */
+        items: service.availableServices,
+      },
+    ] as readonly CidDescriptionBlock[],
+  } as const;
+}
 
 /**
  * ====================================================================
@@ -147,12 +195,14 @@ export const CID_VERIFIED = {
  *   /cid/capture-back/   CID_ID1   6057:20924   393 x 1174.81
  *
  * All three are named `CID_ID1` in Figma and sit on the y=779 row at
- * x=1591.367 / 3178.742 / 4251.617. They are OURS — the wizard-title on each
- * reads "Driver and Vehicle". Three more frames with the same name sit on the
- * y=2341 row (6217:66072 / 6217:76798 / 6217:66154) and are StudentAidNL's;
- * they are NOT used here. StudentAidNL's capture screen draws an empty
- * viewport with four corner brackets — ours draws the captured document in a
- * flat grey panel, which is why the two look nothing alike.
+ * x=1591.367 / 3178.742 / 4251.617. They are the DRIVER-AND-VEHICLE masters —
+ * the wizard-title on each reads "Driver and Vehicle". Three more frames with
+ * the same name sit on the y=2341 row (6217:66072 / 6217:76798 / 6217:66154)
+ * and are StudentAidNL's instances of them; §9 of BUILD_BRIEF.md lists those as
+ * PP-15 / PP-17 / PP-18, "reuse". StudentAidNL's capture screen draws an empty
+ * viewport with four corner brackets — the master draws the captured document
+ * in a flat grey panel, which is why the two look nothing alike. THAT
+ * DIFFERENCE IS NOT REPRODUCED HERE; see the note on `cidCaptureFront`.
  *
  * THE PILL SAYS "step 4 of 5" ON ALL THREE. So does StudentAidNL's.
  *
@@ -166,9 +216,9 @@ export const CID_VERIFIED = {
  * TYPEFACE. These frames are the Yoti/CertifiO vendor UI inside the GNL
  * wizard, and every text node on them is Montserrat on the Yoti colour ramp
  * (`Yoti app` #333b40, `Yoti gris` #546072, `Yoti CTA` #27619b) rather than
- * Lato on the GNL ramp. Montserrat is not self-hosted here and the Figma /
- * Google font hosts are both blocked by the proxy, so the type renders in
- * Lato. Colours ARE reproduced verbatim. See design/token-exceptions.md.
+ * Lato on the GNL ramp. Montserrat is self-hosted since 2026-09-23 (layout.tsx)
+ * and renders inside `.gnl-yoti-zone`. Colours ARE reproduced verbatim. See
+ * design/token-exceptions.md.
  * ====================================================================
  */
 
@@ -187,36 +237,59 @@ export type CidDocumentOption = {
   readonly label: string;
   /** Second line, 12px #4b5563. Only the Indian Status Card row has one. */
   readonly note?: string;
-  /** Exactly one row is selected in the design: Driver's License. */
+  /** Exactly one row is selected in the design; WHICH one is the service's. */
   readonly selected?: true;
 };
 
-export const CID_DOCUMENT = {
-  title: "Accepted documents:",
-  subStep: {
-    label: "ID document selection",
-    step: "step 4 of 5",
-    nodeId: "6257:72214",
+/**
+ * The seven rows, verbatim, in frame order — the part of the list that does not
+ * depend on the service. The apostrophe in "Driver's License" is U+0027 in the
+ * design file, and the American spelling "License" is the design's too — the
+ * rest of the portal says "licence". Reproduced, not harmonised.
+ */
+const CID_DOCUMENT_OPTIONS = [
+  { nodeId: "6087:32270", label: DOCUMENT_LABEL.PASSPORT },
+  {
+    nodeId: "6087:32276",
+    label: "Indian Status Card (SCIS)",
+    note: "Issued on or after 01/2010",
   },
-  /**
-   * Verbatim, in frame order. The apostrophe in "Driver's License" is U+0027
-   * in the design file, and the American spelling "License" is the design's
-   * too — the rest of the portal says "licence". Reproduced, not harmonised.
-   */
-  options: [
-    { nodeId: "6087:32270", label: "Passport" },
-    {
-      nodeId: "6087:32276",
-      label: "Indian Status Card (SCIS)",
-      note: "Issued on or after 01/2010",
+  { nodeId: "6087:32281", label: "Permanent Resident Card" },
+  { nodeId: "6087:32285", label: "NEXUS Card" },
+  { nodeId: "6087:32289", label: "Provincial or Territorial Identity Document" },
+  { nodeId: "6087:32293", label: "Health Insurance Card" },
+  { nodeId: "6087:32297", label: DOCUMENT_LABEL.DRIVERS_LICENCE },
+] as const;
+
+function cidDocument(service: ServiceConfig) {
+  return {
+    title: "Accepted documents:",
+    subStep: {
+      label: "ID document selection",
+      step: "step 4 of 5",
+      nodeId: "6257:72214",
     },
-    { nodeId: "6087:32281", label: "Permanent Resident Card" },
-    { nodeId: "6087:32285", label: "NEXUS Card" },
-    { nodeId: "6087:32289", label: "Provincial or Territorial Identity Document" },
-    { nodeId: "6087:32293", label: "Health Insurance Card" },
-    { nodeId: "6087:32297", label: "Driver's License", selected: true },
-  ] as readonly CidDocumentOption[],
-} as const;
+    options: CID_DOCUMENT_OPTIONS.map((o) => ({
+      ...o,
+      /*
+       * WHICH ROW IS PRE-SELECTED IS THE SERVICE'S, NOT THIS LIST'S — §12.1
+       * `defaultDocument`. Flow A selects "Driver's License" (NL-14), Flow B
+       * selects "Passport" (PP-15, 6217:66072); it is the SAME frame with a
+       * different row filled, which is why DEMO_AUDIT.md §8 counts PP-15 as a
+       * row rather than a screen.
+       *
+       * Before 2026-09-23 this read `DOCUMENT_LABEL[CID_SERVICE.defaultDocument]`
+       * off a module constant. It now reads the service the ROUTE names, which
+       * is the whole of the difference between /cid/document/ and
+       * /cid/studentaid/document/.
+       */
+      selected:
+        o.label === DOCUMENT_LABEL[service.defaultDocument]
+          ? (true as const)
+          : undefined,
+    })) as readonly CidDocumentOption[],
+  } as const;
+}
 
 /**
  * CID_ID1 (capture, front) — `Frame 5` is 6056:19131; the heading 6088:32304;
@@ -224,29 +297,45 @@ export const CID_DOCUMENT = {
  * 6056:19165; pill 6257:72233.
  *
  * The heading's brackets are round parentheses in the design file.
+ *
+ * §10.1: Flow B drops "(front)" on both capture states, because a passport has
+ * one page. Flow A's string is unchanged. The `??` fallback is a type-level
+ * necessity only — `captureTitles.front` is set on both services in §12.1 — and
+ * it deliberately spells the SHORTER string, so a service that forgot the field
+ * would render Flow B's wording rather than invent a third one.
  */
-export const CID_CAPTURE_FRONT = {
-  title: "Capture ID document (front)",
-  subStep: {
-    label: "ID document selection",
-    step: "step 4 of 5",
-    nodeId: "6257:72233",
-  },
-} as const;
+function cidCaptureFront(service: ServiceConfig) {
+  return {
+    title: service.captureTitles.front ?? "Capture ID document",
+    subStep: {
+      label: "ID document selection",
+      step: "step 4 of 5",
+      nodeId: "6257:72233",
+    },
+  } as const;
+}
 
 /**
  * CID_ID1 (capture, back) — `Frame 5` is 6057:20937; the heading 6088:32306;
  * `Frame 14` 6088:32333; `image 17` 6088:32336; `Frame 6` is 6057:20966;
  * pill 6257:72243.
+ *
+ * Flow B has no `back` entry in `captureTitles` at all and never links to this
+ * route — `captureSides` is `['front']`, and §9 says "no back capture" in so
+ * many words — so `/cid/studentaid/capture-back/` IS NOT GENERATED. See
+ * `cidVariantParams` in src/lib/data/service-config.ts. The fallback below is
+ * therefore still only a type-level necessity, never rendered.
  */
-export const CID_CAPTURE_BACK = {
-  title: "Capture ID document (back)",
-  subStep: {
-    label: "ID document selection",
-    step: "step 4 of 5",
-    nodeId: "6257:72243",
-  },
-} as const;
+function cidCaptureBack(service: ServiceConfig) {
+  return {
+    title: service.captureTitles.back ?? "Capture ID document",
+    subStep: {
+      label: "ID document selection",
+      step: "step 4 of 5",
+      nodeId: "6257:72243",
+    },
+  } as const;
+}
 
 /**
  * ====================================================================
@@ -262,7 +351,13 @@ export const CID_CAPTURE_BACK = {
  * instance" — is now settled: the master is `6217:66055`, and its
  * `progress-stepper` is `6257:69650`, exactly the id the frame map predicted
  * from the stepper-upgrade ordering. That is strong confirmation the three
- * left-cluster capture frames really are ours and really are current.
+ * left-cluster capture frames really are the Driver-and-Vehicle masters and
+ * really are current.
+ *
+ * ALL THREE ARE SERVICE-INDEPENDENT. §9 lists their StudentAidNL counterparts
+ * (PP-09 6217:62060, PP-14 6217:66071, PP-16 6217:66151) as instances marked
+ * "reuse": nothing on them changes but the wizard title above, which comes from
+ * the service. So they stay module constants.
  *
  * THE STEP COUNTER NO LONGER SKIPS 3 — corrected 2026-09-23. This block used to
  * say it did. `CID_ID1_Country`'s pill still reads `step 4 of 5`, verbatim and
@@ -291,7 +386,7 @@ export const CID_CAPTURE_BACK = {
  * the 12px between them is `mb-[12px]`, not a flex gap — the same arrangement
  * `IDV_STATUS` uses on /auth/loading/.
  */
-export const CID_MOBILE_HANDOFF = {
+const CID_MOBILE_HANDOFF = {
   heading: "Continue on a smartphone",
   paragraphs: [
     "For an optimal experience, we recommend continuing your identity verification on a smartphone.",
@@ -312,15 +407,15 @@ export const CID_MOBILE_HANDOFF = {
  * 6056:15796; `select-dropdown` 6076:31356; `PrivacyInfoCard` 6056:15803;
  * `Frame 6` 6056:15021; pill 6257:72205.
  *
- * Yoti vendor surface, so Montserrat on the Yoti ramp — rendered in Lato here,
- * as on every other ID-document screen. `Check box` (6056:15020) and `btn-back`
- * (6056:15024) are both hidden="true", so Continue is the only control.
+ * Yoti vendor surface, so Montserrat on the Yoti ramp. `Check box` (6056:15020)
+ * and `btn-back` (6056:15024) are both hidden="true", so Continue is the only
+ * control.
  *
  * DESPITE THE FRAME NAME, the heading is about the document TYPE and the only
  * control below it picks a COUNTRY. Both strings are verbatim; the mismatch is
  * the design file's, not a transcription error.
  */
-export const CID_COUNTRY = {
+const CID_COUNTRY = {
   title: "Select the type of identity document you want to add",
   body: "You will need to take a photo of your identity document at the next step. We will ask you to activate camera access for this.",
   subStep: {
@@ -365,6 +460,11 @@ export const CID_COUNTRY = {
  *
  * The apostrophe in `guidelinesTitle` is U+0027, and the heading's brackets are
  * round parentheses — both as in the design file.
+ *
+ * NOTE THE TITLE KEEPS "(front)" IN BOTH FLOWS. §10.1 drops the parenthetical
+ * from the CAPTURE headings (PP-17) and says nothing about this instruction
+ * screen, whose StudentAidNL counterpart PP-16 (6217:66151) is listed as a
+ * plain "reuse" instance. Not harmonised on a guess — flagged in the report.
  */
 export type CidGuideline = {
   readonly nodeId: string;
@@ -379,7 +479,7 @@ export type CidGuideline = {
   readonly align: "start" | "center";
 };
 
-export const CID_CAPTURE_INTRO = {
+const CID_CAPTURE_INTRO = {
   title: "Prepare to take a photo of your identity document (front)",
   subtitle: "We will try to get a clearer image this time using your phone camera.",
   subStep: {
@@ -439,15 +539,14 @@ export const CID_CAPTURE_INTRO = {
  *
  * NOT ABANDONED SKETCHES. Both have live instances on the StudentAidNL row in
  * the matching position (6217:66069 / 6217:66070, between that row's
- * `CID_Biometric` and its `CID_ID1_Country`), and the master/instance height
- * delta matches the other CID screens on that row.
+ * `CID_Biometric` and its `CID_ID1_Country`) — §9 lists them as PP-12 and
+ * PP-13, "reuse" — and the master/instance height delta matches the other CID
+ * screens on that row. SERVICE-INDEPENDENT, so both stay module constants.
  *
  * TYPE AND COLOUR, as on every other Yoti surface here: Montserrat on the Yoti
- * ramp (`Yoti app` #333b40, `Yoti gris` #546072, `Yoti CTA` #27619b), rendered
- * in Lato because Montserrat is not self-hosted and both font hosts are
- * blocked by the proxy. Colours verbatim. NOTE the new weight on these two
- * screens: Montserrat:Medium, which Lato also does not ship — it maps to 400.
- * Logged in design/token-exceptions.md.
+ * ramp (`Yoti app` #333b40, `Yoti gris` #546072, `Yoti CTA` #27619b),
+ * self-hosted since 2026-09-23. NOTE the weight on these two screens is
+ * Montserrat:Medium, i.e. a real 500. Logged in design/token-exceptions.md.
  * ====================================================================
  */
 
@@ -476,7 +575,7 @@ export type CidLivenessTip = {
   readonly text: string;
 };
 
-export const CID_LIVENESS = {
+const CID_LIVENESS = {
   title: "Prepare to scan your face",
   subStep: {
     label: "Liveness check",
@@ -520,8 +619,9 @@ export const CID_LIVENESS = {
  * THIS SCREEN HAS A REAL BACK CONTROL, which makes it the only Yoti screen in
  * the run that does. `Yoti_back` is a visible component instance, not a hidden
  * `btn-back` like the ones on /cid/country/, /cid/document/ and
- * /cid/capture-intro/. It points at /cid/liveness/ — one step back, which is
- * what a "Back" above a live camera viewport can only mean.
+ * /cid/capture-intro/. It points at the liveness prepare screen OF THE SAME
+ * SERVICE — one step back, which is what a "Back" above a live camera viewport
+ * can only mean.
  *
  * NOTE THE BUTTON IS NOT IN A `Frame 6`. On this frame the `Yoti ContinueButton`
  * (6076:31364) is a DIRECT child of `Main content` at y=760, where every other
@@ -531,7 +631,7 @@ export const CID_LIVENESS = {
  * frame." — and it lives INSIDE the viewport, in a white pill, not above it.
  * Both are the design's.
  */
-export const CID_LIVENESS_CAPTURE = {
+const CID_LIVENESS_CAPTURE = {
   /** 6076:31261, inside the white pill `Frame 7`. The full stop is in Figma. */
   title: "Position your face within the frame.",
   subStep: {
@@ -547,16 +647,55 @@ export const CID_LIVENESS_CAPTURE = {
  * Button labels. Both buttons in the CID_TU / CID_Biometric `Frame 6` are
  * named `btn-back` in Figma and styled identically; the right-hand one is the
  * forward action despite the name.
+ *
+ * `continue` names the service out loud — "Continue to Driver and Vehicle
+ * service" / "Continue to StudentAidNL service" — so it is the one label that
+ * has to be computed rather than declared.
  */
-export const CID_ACTIONS = {
-  decline: "I do not agree",
-  accept: "I agree",
-  continue: "Continue to Driver and Vehicle service",
-  logOut: "Log out",
-  /**
-   * The `Yoti ContinueButton` label on all three ID-document frames
-   * (6087:31454 / 6076:31376 / 6076:31382). Plain "Continue", unlike the long
-   * label CID_ID_success uses.
-   */
-  continueShort: "Continue",
-} as const;
+function cidActions(service: ServiceConfig) {
+  return {
+    decline: "I do not agree",
+    accept: "I agree",
+    continue: `Continue to ${service.successServiceLabel} service`,
+    logOut: "Log out",
+    /**
+     * The `Yoti ContinueButton` label on all three ID-document frames
+     * (6087:31454 / 6076:31376 / 6076:31382). Plain "Continue", unlike the long
+     * label CID_ID_success uses.
+     */
+    continueShort: "Continue",
+  } as const;
+}
+
+/**
+ * THE ONE ENTRY POINT. Every CID screen component takes a `ServiceConfig` and
+ * calls this; nothing in `src/app/cid/` or `src/components/cid/` reads a
+ * service from anywhere else.
+ *
+ * It is cheap (a few object literals and one seven-row `map`) and it runs at
+ * BUILD time — every `/cid/` route is prerendered by `output: export` — so
+ * there is no client read, no `useEffect`, and therefore no flash of the wrong
+ * service on stage. That is the whole reason the service is a parameter and
+ * not a store lookup; see the seam note in src/lib/data/service-config.ts.
+ */
+export function getCidCopy(service: ServiceConfig) {
+  return {
+    /** wizard-title, shared by all ten mobile frames. Figma 6039:8143 et al. */
+    wizardTitle: service.title,
+    stepperFill: CID_STEPPER_FILL,
+    terms: CID_TERMS,
+    biometric: CID_BIOMETRIC,
+    verified: cidVerified(service),
+    document: cidDocument(service),
+    captureFront: cidCaptureFront(service),
+    captureBack: cidCaptureBack(service),
+    mobileHandoff: CID_MOBILE_HANDOFF,
+    country: CID_COUNTRY,
+    captureIntro: CID_CAPTURE_INTRO,
+    liveness: CID_LIVENESS,
+    livenessCapture: CID_LIVENESS_CAPTURE,
+    actions: cidActions(service),
+  } as const;
+}
+
+export type CidCopy = ReturnType<typeof getCidCopy>;

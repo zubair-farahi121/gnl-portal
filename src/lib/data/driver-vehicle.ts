@@ -1,4 +1,19 @@
 import { ASSETS } from "@/lib/assets";
+import {
+  APP_ROUTES,
+  getService,
+  serviceRoutes,
+} from "@/lib/data/service-config";
+
+/**
+ * This module is the Driver-and-Vehicle service page's content. Everything on
+ * it that Flow B also needs — the title, the subtitle, the onboard
+ * destination — now comes from the shared config (BUILD_BRIEF.md §12.1)
+ * instead of being spelled out here. The rest of this file is genuinely
+ * Flow-A-only data (the persona, the licence, the vehicles) and stays.
+ */
+const SERVICE = getService("driver-vehicle");
+
 
 /**
  * Content for the Driver and Vehicle service page — Figma 6031:6244
@@ -32,21 +47,34 @@ export const BREADCRUMB = {
    * dashboard so the presenter is not thrown out of the flow mid-story.
    * Logged as a deliberate deviation.
    */
-  href: "/dashboard/",
+  href: APP_ROUTES.dashboard,
   nodeId: "6031:6249",
 } as const;
 
 export const SERVICE_HEADER = {
-  title: "Driver and Vehicle",
+  title: SERVICE.title,
   badgeLabel: "Confirmation required",
-  subtitle: "View and manage your driver and vehicle services",
+  subtitle: SERVICE.subtitle,
 } as const;
 
 export const VERIFICATION_CARD = {
   title: "To Use This Service We Need to Verify It Is You",
   body: 'Once you click the "Onboard" button you will be directed to the verification process which involves providing some information about yourself.',
   ctaLabel: "Onboard",
-  ctaHref: "/services/driver-vehicle/onboard/",
+  /*
+   * RE-POINTED 2026-09-23 from `.onboard` (NL-07, "Choose verification
+   * service") to `.summary` (NL-04).
+   *
+   * BUILD_BRIEF.md §5 gives the order: *"service page -> Onboard -> Summary ->
+   * Terms -> Confirm some details (Required) -> Choose verification service"*,
+   * and §8.1 NL-03 ends "…'Onboard' -> NL-04". It pointed at NL-07 only because
+   * the three screens between did not exist — DEMO_AUDIT.md X-09: *"25 % and
+   * 50 % are never rendered because NL-04 and NL-05 do not exist"*, the seam
+   * that made the four-step bar name two steps the demo could not show.
+   *
+   * The button's appearance is untouched; only its destination moved.
+   */
+  ctaHref: serviceRoutes(SERVICE.id).summary,
 } as const;
 
 export const FAVOURITE_CARD = {

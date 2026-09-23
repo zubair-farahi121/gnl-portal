@@ -7,7 +7,7 @@ import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { LinkedItemCard } from "@/components/service/LinkedItemCard";
 import { ASSETS } from "@/lib/assets";
-import { useDemoState } from "@/lib/demo-state";
+import { isTrusted, useDemoState } from "@/lib/demo-state";
 import {
   ACTIONS_SECTION,
   BREADCRUMB,
@@ -633,12 +633,29 @@ function VerifiedPage() {
 }
 
 function ServicePageBody() {
-  const { verified } = useDemoState();
   /*
-   * ?verified=1 lets the presenter deep-link straight to the end state, and is
-   * what the confirmation screen's primary button navigates to. Under static
-   * export useSearchParams() forces client-side rendering up to the nearest
-   * Suspense boundary, which is why the default export wraps this.
+   * "Confirmation required" until `onboarded`, then "Trusted" — BUILD_BRIEF.md
+   * §12.2, last line. Read from the persisted `gnl-demo:v1` store, which is
+   * what DEMO_AUDIT.md X-04 / NL-25(a) asked for: the old source of truth was a
+   * `sessionStorage` boolean, so Trusted did not survive a browser restart.
+   *
+   * HYDRATION: `useDemoState()` returns the empty store until its effect has
+   * run, i.e. the first client render matches the server HTML exactly and the
+   * Trusted state appears a frame later. That is why `ready` exists and why
+   * `isTrusted` on an empty store must answer false. See src/lib/demo-state.tsx
+   * — layout.tsx has no `suppressHydrationWarning` and a mismatch here would
+   * surface as a real error.
+   */
+  const { service } = useDemoState();
+  const verified = isTrusted(service("driver-vehicle"));
+  /*
+   * ?verified=1 is KEPT as a presenter deep-link to the end state, and it is
+   * what the confirmation screen's primary button still navigates to — it is
+   * also the route `design/frames.json` pins the `service-verified` baseline
+   * to. It is no longer the STORE: the store now carries the real transition,
+   * and the query param is a shortcut on top of it. Under static export
+   * useSearchParams() forces client-side rendering up to the nearest Suspense
+   * boundary, which is why the default export wraps this.
    */
   const searchParams = useSearchParams();
   const showVerified = verified || searchParams.get("verified") === "1";

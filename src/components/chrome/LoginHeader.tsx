@@ -54,7 +54,15 @@ export function LoginHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt="MyGovNL"
-            className="absolute top-0 left-0 block size-full max-w-none max-[1440px]:object-contain"
+            /*
+             * `object-contain` at EVERY width, not just below 1440.
+             *
+             * The real artwork landed 2026-09-22 and its aspect is 3.907
+             * against this box's 3.963 — a 1.4% difference. `size-full` alone
+             * would stretch it to fill, so the lockup is letterboxed by that
+             * 1.4% instead. Invisible, and it cannot distort the crest.
+             */
+            className="absolute top-0 left-0 block size-full max-w-none object-contain"
             src={ASSETS.mygovnlHeaderLogo}
           />
         </div>

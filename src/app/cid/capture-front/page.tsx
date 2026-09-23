@@ -1,195 +1,29 @@
-import { CameraViewport } from "@/components/cid/CameraViewport";
-import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
-import { ASSETS } from "@/lib/assets";
-import { CID_ACTIONS, CID_CAPTURE_FRONT } from "@/lib/data/cid";
+import { CidCaptureFrontScreen } from "@/components/cid/screens/CidCaptureFrontScreen";
+import { DEFAULT_SERVICE_ID, getService } from "@/lib/data/service-config";
 
 /*
- * CID_ID1 (capture, front) — Figma 6056:19118, 393 x 1174.810546875.
- *
- * ADDED 2026-09-22 with /cid/document/ and /cid/capture-back/. See the
- * provenance block on /cid/document/ for how the seven `CID_ID1` frames were
- * told apart; the short version is that this one's `wizard-title` reads
- * "Driver and Vehicle", so it is ours, and the three on the y=2341 row read
- * "StudentAidNL" and are not.
- *
- * NOT THE CORNER-BRACKET SCREEN. StudentAidNL's capture frame (6217:76798)
- * draws an empty viewport with four corner brackets. The Driver-and-Vehicle
- * frames do not: they draw the captured document itself inside a flat
- * rgba(17,22,37,0.05) panel, and there are two of them — front and back. The
- * brackets are reproduced nowhere in this build because no D&V frame has them.
+ * /cid/capture-front/ — FLOW A's binding of CID_ID1 6056:19118 (capture, front).
  *
  * ====================================================================
- * MEASURED (Figma). Geometry verbatim from get_metadata / get_design_context
- * on 6056:19118 and 6056:19131:
- *   top-nav actions    393 x 145        at y=0
- *   Main content       393 x 764        at y=145   px-[16px] py-[24px] gap-[8px]
- *     wizard-header    361 x 121        at y=24    gap-[24px]
- *       wizard-title       361 x 29     at y=0
- *       progress-stepper   361 x 68     at y=53    gap-[8px]
- *         step-bar           361 x 8    at y=0     fill 278.869
- *         step-labels        361 x 18   at y=16    current = Prerequisite Check
- *         sub-step-readout   208 x 26   at y=42    6257:72233
- *     Frame 5            361 x 542      at y=153   py-[24px] gap-[16px]
- *       heading            361 x 78     at y=24    32px Bold #333b40, 2 lines
- *       Frame 14           361 x 400    at y=118   px-[16px], justify-center
- *         image 16         329 x 204.111 at y=97.944  radius 2
- *     Frame 6            361 x 37       at y=703
- *       Yoti ContinueButton 361 x 37    at y=0     #27619b, full width
- *   footer verified    393 x 265.810546875 at y=909
+ * THIS FILE IS A BINDING, NOT A SCREEN — 2026-09-23.
  *
- * 24 + 121 + 8 + 542 + 8 + 37 + 24 = 764, and 145 + 764 + 265.81 = 1174.81.
+ * All the markup, the Figma geometry and the provenance notes live in
+ * src/components/cid/screens/CidCaptureFrontScreen.tsx. This file exists only to
+ * say WHICH SERVICE this URL renders, and it says it once, explicitly.
  *
- * THE VIEWPORT IS A LIVE CAMERA PREVIEW OVER THE STATIC MOCK — 2026-09-22.
+ * Its Flow B twin is /cid/studentaid/capture-front/ (§9 PP-17, Figma 6217:76798),
+ * generated from the SAME component by src/app/cid/[serviceId]/capture-front/page.tsx.
  *
- * It used to be a picture and nothing else. The user asked for the camera to
- * open here so the dry run is more convincing on stage ("regrading the photo
- * vierication and id, can we make open the camera so it will more attractive
- * to show"), so `image 16` now hosts `CameraViewport`, which shows a live
- * `<video>` when it can and renders THIS MOCK, unchanged, when it cannot.
+ * WHY THE BARE PATH STAYS FLOW A's: these eleven /cid/ URLs are frozen
+ * baseline frames (design/frames.json) and `npm run diff` measures them, and
+ * BUILD_BRIEF.md §6 says to keep an existing path. Moving them under
+ * /cid/driver-vehicle/ for symmetry would move nineteen frames and buy nothing.
  *
- * WHAT DID NOT CHANGE. The Figma geometry: `Frame 14` is still the 400px
- * panel, `image 16` is still the same box at the same aspect with the same
- * `rounded-[2px]` clip, and the video fills that box with `object-cover`
- * exactly as the picture does. The server-rendered HTML is still the mock —
- * the video appears only after mount — so there is no hydration mismatch, and
- * the fallback render is byte-identical to the pre-camera build.
- *
- * NOTHING IS CAPTURED. No frame is read, stored or uploaded; there is still no
- * backend and no network call. Continue still just advances. Video only, never
- * audio. The camera is requested on THIS screen and /cid/capture-back/ and
- * nowhere else in the flow.
- *
- * FORCING THE MOCK: `?mock=1` on either capture screen (sticky — it is
- * remembered in localStorage until `?mock=0`). getUserMedia also needs a
- * SECURE CONTEXT, so on an http:// deployment the camera silently never
- * starts and the mock shows. Full failure list and rationale in the header of
- * src/components/cid/CameraViewport.tsx, and in design/token-exceptions.md.
- *
- * WHY THE IMAGE LANDS AT y=97.944 ON ITS OWN. `Frame 14` is a 400px-tall
- * column with `justify-center` and 16px of side padding, so the image is
- * 361 - 32 = 329 wide, and `aspect-[725.828125/450.30224609375]` makes it
- * 329 / 1.611856 = 204.111 tall. (400 - 204.111) / 2 = 97.944 — the offset is
- * produced by the centring, it is not a hardcoded number.
- *
- * THE IMAGE IS SLIGHTLY OVERSIZED INSIDE ITS OWN BOX, as designed: Figma
- * places the PNG at left -2.62%, top -2.31%, width 105.4%, height 104.6%
- * inside a `rounded-[2px]` clip, i.e. a small centre crop. Reproduced
- * verbatim, so dropping the real export in changes nothing about the layout.
- *
- * HIDDEN LAYER NOT RENDERED: `Check box` (6056:19164) is hidden="true" in
- * Figma, the same as on every other CID frame. `Frame 6` on this frame holds
- * the Continue button and nothing else — there is no Back button in the
- * design. Reverse navigation is the presenter's ArrowLeft (src/lib/flow.ts)
- * and the browser's back button.
- *
- * THE PILL SAYS "step 4 of 5" — the same value the document-selection screen
- * before it and the back-capture screen after it carry. See
- * design/token-exceptions.md.
- *
- * TYPE AND COLOUR. Montserrat:Bold #333b40 in the design. The colour is
- * reproduced; the typeface renders in Lato because Montserrat is not
- * self-hosted here and both font hosts are blocked by the proxy. Note the
- * heading is `leading-[normal]` (~1.2, giving the measured 39px lines and a
- * 78px two-line block), NOT the `leading-[1.5]` the GNL-ramp CID headings on
- * /cid/terms/, /cid/biometric/ and /cid/verified/ use. Figma says normal here.
+ * `getService(DEFAULT_SERVICE_ID)` is spelled out rather than left to
+ * `getService()`'s default argument so that a reader of this file can see the
+ * answer without opening another one.
  * ====================================================================
- *
- * ------------------------------------------------------------------------
- * DESKTOP LAYOUT — INVENTED; NOT IN FIGMA.
- *
- * Mobile-only frame, same as every CID frame; at and above 768 CidScreen drops
- * the content into the onboard page's wizard chrome. See CidScreen for the
- * full provenance note. Every `md:` class below is part of that invention.
- *
- *   Frame 5  `md:py-0` — the 24px pads are the mobile frame's spacing to the
- *                        header and to Frame 6; the card's own 32px gap does
- *                        that at desktop and the two would stack to 56.
- *   Frame 14 `md:items-center` and the image `md:max-w-[644px]` — the panel
- *                        keeps its MEASURED 400px height at every width, so
- *                        the image has to be stopped from outgrowing it. At
- *                        1440 the panel's content box is 708px wide, which at
- *                        this aspect would make the picture 439px tall and
- *                        burst the panel. 644px is 400 x 1.611856 rounded
- *                        down — the widest this image can be and still fit —
- *                        and `items-center` then centres it, where the mobile
- *                        `items-start` is a no-op because the image is
- *                        full-width at 393.
- *   Frame 6  the onboard actions-row: right aligned, natural width, 16px above.
- * The 32px heading and the 400px panel are UNCHANGED at every width.
- * ------------------------------------------------------------------------
  */
 export default function CidCaptureFrontPage() {
-  return (
-    <CidScreen mainNodeId="6056:19120" subStep={CID_CAPTURE_FRONT.subStep}>
-      {/* Frame 5 — 6056:19131 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"
-        data-node-id="6056:19131"
-      >
-        <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
-          data-node-id="6088:32304"
-        >
-          {CID_CAPTURE_FRONT.title}
-        </p>
-
-        {/* Frame 14 — 6088:32330. The camera viewport: the measured flat panel,
-            now hosting the live preview (or the mock — see the header). */}
-        <div
-          className="flex h-[400px] w-full shrink-0 flex-col items-start justify-center px-[16px] md:items-center"
-          style={{ backgroundColor: "rgba(17, 22, 37, 0.05)" }}
-          data-node-id="6088:32330"
-        >
-          {/* image 16 — 6056:19942 */}
-          <div
-            className="relative w-full shrink-0 overflow-hidden rounded-[2px] md:max-w-[644px] aspect-[725.828125/450.30224609375]"
-            data-node-id="6056:19942"
-            data-name="image 16"
-          >
-            {/*
-             * The live camera fills this box; its child is the fallback, which
-             * is the mock exactly as it was authored — the oversized placement
-             * below (left -2.62%, top -2.31%, 105.4% x 104.6%) is still
-             * Figma's own small centre crop, untouched.
-             */}
-            <CameraViewport>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="pointer-events-none absolute left-[-2.62%] top-[-2.31%] block h-[104.6%] w-[105.4%] max-w-none"
-                src={ASSETS.idDocFront}
-              />
-            </CameraViewport>
-          </div>
-        </div>
-      </div>
-
-      {/* Frame 6 — 6056:19165 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6056:19165"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6076:31376 is an instance of `Yoti ContinueButton`
-         * (6076:31361). In production this capture step is rendered by the
-         * identity provider inside GNL chrome — GNL owns the nav, wizard
-         * header, stepper and footer; Yoti owns the body and this button. The
-         * #27619b fill is the Yoti CTA blue, not the GNL navy; reproduce it,
-         * do not harmonise it, and do not mistake this for the shared GNL
-         * primary. See design/verification-frame-map.md §7.
-         */}
-        <BtnPrimary
-          href="/cid/capture-back/"
-          tone="yoti"
-          nodeId="6076:31376"
-          className="w-full md:w-auto"
-        >
-          {CID_ACTIONS.continueShort}
-        </BtnPrimary>
-      </div>
-    </CidScreen>
-  );
+  return <CidCaptureFrontScreen service={getService(DEFAULT_SERVICE_ID)} />;
 }
