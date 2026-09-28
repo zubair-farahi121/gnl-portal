@@ -204,7 +204,11 @@ export function ServiceCard({
   /*
    * Without an href the card is a plain <div> — not a disabled link, not a
    * button with a no-op handler. Nothing to click means nothing can strand the
-   * presenter on an unbuilt screen. Only "Driver and Vehicle" passes an href.
+   * presenter on an unbuilt screen. Only "Driver and Vehicle" and — since
+   * 2026-09-28 — "StudentAidNL" pass an href. The two branches render the same
+   * classes (`cursor-default select-none` aside, neither of which paints) and
+   * the same children, so flipping a card from inert to linked changes no
+   * pixel: the whole card becomes the link, with no visual change.
    */
   if (!href) {
     return (

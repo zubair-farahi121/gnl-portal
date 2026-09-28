@@ -526,3 +526,386 @@ this pass:
 One thing the audit flagged as a Tier 2 dependency is now closed: **PP-07's
 "optional Back"** is no longer hypothetical — the method step has a visible Back
 and it points at NL-06, which is exactly the arrangement PP-07 draws.
+
+---
+
+## Yoti zone audit
+
+**Pass date:** 2026-09-27. **Scope:** the seven Yoti-zone screens plus one new
+one. **Source of truth:** `design/YOTI_OBSERVED.md`, transcribed from
+photographs of a REAL CertifiO/Yoti verification, which outranks Tatyana's Figma
+recreation everywhere the two disagree. No Figma tool was used in this pass and
+nothing in Figma was changed.
+
+### The rule this pass applied
+
+The Yoti face-scan and document screens are an **embed** — an iframe we do not
+control. So:
+
+* **Inside the Yoti zone** (exactly the `children` of `CidScreen` when
+  `yotiZone` is true): show only what the real Yoti shows.
+* **Outside it** — the MyGovNL header, the service title, the C1 progress bar,
+  the sub-step pill, the MyGovNL footer — change nothing.
+
+The second half is not an intention, it is a measurement: **the fifteen non-Yoti
+frames read 0.000 % differing after this pass and were not re-baselined.** See
+"Gate results" below.
+
+### Marks
+
+| Mark | Meaning |
+|---|---|
+| **REAL** | in the real screenshots — keep |
+| **FIGMA** | only in Tatyana's recreation — keep, styled with the real tokens |
+| **MINE** | in neither — removed |
+
+### Y1 — `/cid/liveness/` "Prepare to scan your face" (6127:50680)
+
+| Element | Mark | What happened |
+|---|---|---|
+| Circled "?" help icon, top right | REAL | **Added.** Was absent from the build entirely. Own right-aligned row above the heading, `YotiHelpIcon`, 18px `YOTI_COLOR.muted`. |
+| Heading, wraps to 2 lines | REAL | Kept. **32px → `YOTI_TEXT.headingLarge` (27px)**, leading `1.2`. The one place the token scale is *smaller* than the recreation — see open question **Y-05**. |
+| Pale-blue illustration panel, ~square, radius 16 | REAL | Kept unchanged. Artwork is still a placeholder. |
+| Three tip rows `[outline icon | text]` | REAL | Kept. **14px → `YOTI_TEXT.tip` (17px)** at leading 1.4 — YOTI_OBSERVED: "noticeably LARGER than normal body copy". |
+| In-flow `BtnPrimary tone="yoti"`, 37px, radius 4, no chevron | FIGMA | **Replaced** by `YotiActionBar` + `YotiContinue`: pinned white bar, shadow above, 48px button, radius 6, `YOTI_COLOR.button`, white chevron 18px from the right. Destination unchanged. |
+| `md:` right-aligned desktop actions row | MINE | **Removed.** The bar is full width at every breakpoint because it is Yoti's bar, not the onboard page's actions row. |
+
+### Y2 — `/cid/liveness-capture/` "Position your face within the frame." (6127:50648)
+
+| Element | Mark | What happened |
+|---|---|---|
+| "‹ Back", top left | REAL | Kept. **14.054px `Yoti gris` → `YOTI_TEXT.back` (15px) in `YOTI_COLOR.back`.** |
+| White instruction chip near the top of the camera area | REAL | Kept. **14.054px grey → `YOTI_TEXT.body` (16px) bold in `YOTI_COLOR.ink`** — YOTI_OBSERVED: "bold dark centred text". `h-[51px]` → `min-h-[51px]` so it can grow below 384 where the label wraps. |
+| Camera area filling the remaining height | REAL | Kept at its measured 522px. |
+| Head-with-ears window, **sharp inside** | REAL | **Built.** Single masked overlay: `rgba(255,255,255,0.65)` + `backdrop-filter: blur(3px)`, masked opaque everywhere except the head. The media element is untouched, so there is still exactly one camera track. |
+| …**washed and blurred outside** | REAL | **Built**, same overlay. Works over the live `<video>` and over the `?mock=1` flat panel with no branch, because `backdrop-filter` does not know what is behind it. |
+| Dark window outline | REAL | Kept, now `YOTI_MASK.outline` / `outlineWidth` instead of a baked `#333b40` stroke-4 in the placeholder file. |
+| Thin band just inside the outline, **BEIGE `#d6cfcb`** | FIGMA | **Recoloured to `YOTI_MASK.bandColor`** — semi-transparent white, per §7 Y2 "make it white". Geometry changed too: it is one thick stroke clipped to the contour's interior, so it is exactly `bandWidth` wide everywhere instead of a separately scaled copy of the path. |
+| `liveness-face-guide.svg` `<img>` | FIGMA | **Replaced by inline SVG** (`YotiFaceOutline`). The file is kept and still indexed in `src/lib/assets.ts` as the record of what the recreation drew. |
+| Continue button | *open question* | **Kept, in the pinned bar.** The real screen has none — YOTI_OBSERVED: "NO Continue button and no pinned bar at all". §7 Y2 says keep it until confirmed. See **Y-01**. |
+| Green outline / progress ring / countdown / "Hold still…" / flash / sound / spinner | MINE | **None exist and none were added.** |
+
+### Y3 — `/cid/country/` "Select the type of identity document…" (6127:50649)
+
+| Element | Mark | What happened |
+|---|---|---|
+| Circled "?" help icon, top right | REAL | **Added.** |
+| Heading, 3 lines | REAL | **22px → `YOTI_TEXT.heading` (24px)** at 1.2. |
+| Body, 4 lines | REAL | **14px SemiBold → `YOTI_TEXT.body` (16px) REGULAR** — YOTI_OBSERVED: "regular, dark". |
+| Country field | REAL | **Restyled to the measured field:** height 52 → `YOTI_SIZE.fieldHeight` (46), radius 8 → 6, border 1px `#d1d5db` → `YOTI_SIZE.fieldBorder` (2px) in `YOTI_COLOR.border`. Still an inset box-shadow, still a `<div>`, still inert. |
+| Chevron ⌄ at the right | REAL | Kept. |
+| Grey privacy panel | REAL | Fill/radius already right, now from tokens; padding 16 → `YOTI_SIZE.panelPadding` (20), "roomy" per YOTI_OBSERVED. |
+| Panel title | REAL | **16px → `YOTI_TEXT.panelTitle` (18px)** — "larger than body". |
+| Panel body, 4 lines | REAL | **Left at 13px.** No token and no measurement; raising it would be a guess. See **Y-07**. |
+| "Privacy Policy" link | REAL | **`#27619b` → `YOTI_COLOR.link` (#355677)** — "a DARKER blue than the button blue". |
+| External-link ↗ after the link | REAL | **NOT BUILT.** Gap, logged as **Y-08**. |
+| "Powered by" + boxed YOTI badge | REAL | Kept. |
+| Magenta focus ring on the field | REAL | Not built — the build shows the resting state, not the focused one. `YOTI_COLOR.focus` exists for it. |
+| Pinned Continue | *open question* | **Added.** The real screen has no bar *before a country is chosen*; it appears only after. A resting state with no forward control is a dead end on stage. See **Y-02**. |
+| Session-expiry toast | REAL | Deliberately not built (§9). |
+
+### Y4 — `/cid/document/` "Accepted documents:" (6127:50650)
+
+| Element | Mark | What happened |
+|---|---|---|
+| Help icon | — | **Correctly absent.** `YOTI_HELP_SCREENS` is Y1/Y3/Y5 only. |
+| "Accepted documents:" title | REAL | **22px → `YOTI_TEXT.listTitle` (20px)**. Same direction as Y1's heading; see **Y-05**. |
+| Seven document rows | REAL | **Border 1px `#d1d5db` → 2px `YOTI_COLOR.border`; `minHeight` `YOTI_SIZE.rowMinHeight` (54)**. Radius already 8. |
+| Gap between rows | REAL | **10 → `YOTI_SIZE.rowGap` (15)** — "they read as separate cards, not a joined list". |
+| Row labels | REAL | **SemiBold → regular**, 16px (`YOTI_TEXT.body`, unchanged size). |
+| SCIS second line | REAL | Kept. |
+| Empty 20px radio, no fill, no dot | REAL | Kept (placeholder asset, correct geometry). |
+| **A pre-selected row** (2px `YOTI_COLOR.button`) | FIGMA | **Kept.** No real screenshot shows a selection — §6 says the selected style had to be invented. It is what tells Flow A from Flow B (`defaultDocument`), so removing it would delete DEMO_AUDIT §8's own example. Now marked `data-selected` so the gate can find it. |
+| In-flow Continue + `md:` actions row | FIGMA / MINE | **Replaced by the pinned bar**; the desktop row removed. |
+
+### Y5 — `/cid/capture-intro/` "Prepare to take a photo…" (6127:50653)
+
+| Element | Mark | What happened |
+|---|---|---|
+| Circled "?" help icon | REAL *(inferred)* | **Added.** In the real frame it is hidden behind the session-expiry toast, so its presence is inferred, not seen. See **Y-06**. |
+| Round pale badge (~110px) with ID-card-in-brackets glyph, LEFT-aligned | REAL | **NOT BUILT.** The largest single gap left on this screen. `YotiBadge` exists and Y8 uses it. Logged as **Y-09**. |
+| Heading, 3 lines | REAL | **22px → `YOTI_TEXT.heading` (24px)** at 1.2. |
+| Body, 3 lines | REAL | **14px/20px `#4b5563` → `YOTI_TEXT.body` (16px) at 1.4 in `YOTI_COLOR.ink`** — "regular, dark". |
+| "Don't forget:" card | REAL | Fill/radius from tokens; padding 16 → 20. |
+| Card title | REAL | **15px → `YOTI_TEXT.cardTitle` (16px)**. |
+| Three guideline rows | REAL | Kept at 13px/18px — no token, and the per-row `items-start`/`items-center` alignment that makes the card 192 is derived from the 18px line box. See **Y-07**. |
+| In-flow Continue + `md:` actions row | FIGMA / MINE | **Replaced by the pinned bar**; the desktop row removed. |
+
+### Y6 / Y7 — `/cid/capture-front/`, `/cid/capture-back/`
+
+| Element | Mark | What happened |
+|---|---|---|
+| Heading | REAL | **32px → `YOTI_TEXT.heading` (24px)** at 1.2. The measured 78px two-line block no longer holds — the frame is `w-full` with no pinned height, so the card is simply shorter. |
+| 400px viewport panel + live camera / specimen | REAL | Kept, geometry untouched. |
+| Specimen slide-in: tilt + blurred→sharp over 1.5s | REAL | **Added** (`gnl-yoti-specimen`). Runs on the MOCK only — a live feed does not slide in. `animation-fill-mode: both` with the resting state as the END state, so reduced-motion viewers and the pixel gate see the finished frame. `overflow-hidden` added to the back screen's box so the tilt cannot swing outside the window. |
+| Help icon | — | Correctly absent. |
+| In-flow Continue + `md:` actions row | FIGMA / MINE | **Replaced by the pinned bar**; the desktop row removed. |
+| Flash, sound, green outline, progress ring, "Hold still…", button spinner | MINE | **None exist and none were added.** |
+
+### Y8 — `/cid/upload/` and `/cid/studentaid/upload/` (6127:50651) — NEW
+
+There is **no Figma frame for this screen**. Tatyana's recreation goes straight
+from the last capture to step 5; the real verification does not.
+
+| Element | Mark | What happened |
+|---|---|---|
+| Round pale badge (~110px), **LEFT-aligned**, thin dark upload glyph (open tray, arrow up out of it) | REAL | **Built.** `YotiBadge` + inline SVG stroked `YOTI_COLOR.ink`. Not an `ASSETS` entry — there is no node to export from. |
+| Large bold dark copy naming the document | REAL | **Built.** `yotiUploadCopy(documentLabel)` from `yoti-tokens.ts`; `documentLabel` is `DOCUMENT_LABEL[service.defaultDocument]` — "Driver's License" in Flow A, "Passport" in Flow B. Never a literal. `YOTI_TEXT.headingLarge` (27px) at 1.2. |
+| Thin full-width progress bar, rounded ends, dark fill on a light track, ~2s | REAL | **Built.** `YOTI_SIZE.progressHeight` (5px), `YOTI_COLOR.ink` on `YOTI_COLOR.track`, `YOTI_SIZE.progressMs` (2000). Pure CSS keyframe; `prefers-reduced-motion: reduce` jumps to the full state. |
+| Button | — | **None.** |
+| Help icon | — | **None.** |
+| Pinned bar | — | **None.** |
+| The real card type from the photograph | — | **Deliberately not reproduced** (§10 privacy). |
+| Sub-step pill "ID document selection • step 4 of 5" | — | Ours, outside the zone. Unchanged value; Y8 makes step 4 one screen longer rather than renumbering anything. |
+
+**Routing.** Flow A `capture-back → upload → verified`; Flow B
+`capture-front → upload → verified`. The fork is `captureSides`, the same field
+that already decided whether the front capture links to a back capture — no
+screen tests a service id.
+
+### What was removed, plainly
+
+1. **The in-flow `BtnPrimary tone="yoti"` on all seven screens** — 37px tall,
+   radius 4, `#27619b`, no chevron, sitting in the page flow. It was Tatyana's
+   recreation of a control the real Yoti draws quite differently.
+2. **The `md:flex-row md:justify-end md:pt-[16px]` desktop actions row on six of
+   them, and `md:self-end md:w-auto` on Y2's button.** Invented desktop
+   alignment borrowed from `/services/driver-vehicle/onboard/`. The real bar is
+   full width.
+3. **The beige `#d6cfcb` band inside the Y2 head outline** — recoloured, not
+   deleted, per §7 Y2.
+4. **The `liveness-face-guide.svg` `<img>` on Y2** — replaced by inline SVG so
+   the colours come from `YOTI_MASK`. The file is kept as the record of the
+   recreation.
+5. **`shrink-0` on the Y2 chip label** — it made `max-xxs:whitespace-normal` a
+   no-op, so below 384 a 300px label hung out of both ends of a 248px chip.
+
+Nothing else was deleted. In particular **no Continue button was removed**, even
+on the two screens where the real Yoti has none (Y2, Y3) — see Y-01 and Y-02.
+
+### What was NOT done
+
+* **Y3 and Y4 were NOT merged.** The real Yoti shows the country field and the
+  accepted-documents list on one screen (frame 6127:50655 is the proof), and
+  YOTI_OBSERVED says so. That is a structural change the designer has to
+  confirm, and this is the day before code complete. Left as two screens; see
+  **Y-10**.
+* **Y5's round badge** — REAL, not built (**Y-09**).
+* **Y3's external-link ↗** — REAL, not built (**Y-08**).
+* **Y3's magenta focus ring** — REAL but belongs to a focused state this build
+  does not show.
+* **Panel/card body type on Y3 and Y5** — left at 13px; no token, no
+  measurement (**Y-07**).
+
+### Open questions
+
+| # | Question |
+|---|---|
+| **Y-01** | **Does Yoti capture the face by itself?** The real Y2 has no Continue and no pinned bar at all — the camera area runs to the bottom. If it auto-captures, our Continue should go and the screen should advance on its own. Kept per §7 Y2 until Zubair's English verification settles it. |
+| **Y-02** | **Does Y3 really have no Continue until a country is typed?** The "before" frame has no bar; the "after" frame does. Ours always has one. Is the resting state genuinely button-less, and if so what advances it? |
+| **Y-03** | **What is the exact English text on Y8?** Ours is a translation of the French frame, isolated in `yotiUploadCopy()`. Replace it wholesale once the English screen is photographed. |
+| **Y-04** | **Is Y5's body copy first-attempt or retry wording?** "cette fois-ci" / "this time" reads as a RETRY, but the screen sits in the happy path before any capture has been attempted. If it is retry copy, the happy path needs different words. |
+| **Y-05** | **Is `YOTI_TEXT.headingLarge` (27px) right for Y1, and `listTitle` (20px) for Y4?** These are the only two places the token scale is *smaller* than Tatyana's recreation (32 and 22). Applied because the tokens are the stated authority for every Yoti value, but it is a visible shrink on two screens and the measurement came from photographs, not from a spec. |
+| **Y-06** | **Is the help icon really on Y5?** In the real frame it is hidden behind the session-expiry toast. §6 hedges "probably Y5 too"; §13 requires it; it is drawn. Confirm or remove. |
+| **Y-07** | **What size is the body copy inside the grey panels (Y3) and cards (Y5)?** No token, and YOTI_OBSERVED records only colour and weight. Left at 13px, which is the recreation's — i.e. probably a step small, like everything else. |
+| **Y-08** | **The external-link ↗ after "Privacy Policy" on Y3** is in the real screenshot and is not built. Needs a Yoti-coloured glyph (the existing `icon-external-link.svg` is GNL `#004b87`). |
+| **Y-09** | **Y5's round badge** (110px pale circle, ID card in corner brackets, left-aligned) is in the real screenshot and is not built. `YotiBadge` already exists; it needs the glyph and a decision about whether the help icon then shares its row. |
+| **Y-10** | **Should Y3 and Y4 be one screen?** The real Yoti puts the country field and the accepted-documents list together. Deliberately not merged this pass. If they merge, the sub-step pill, `FLOW`, both click chains and two baselines all move. |
+| **Y-11** | **Is there an instruction screen before the BACK capture?** Flow A goes capture-front → capture-back with no equivalent of Y5 in between. No real screenshot covers it either way. |
+| **Y-12** | **Y8 re-arms its 2s advance when reached backwards.** ArrowLeft from step 5 lands on the upload screen, which then carries the presenter forward again if they pause. The real Yoti has no back path into this screen so there is nothing to copy. The one-shot-flag pattern `/auth/loading/` uses (D1/D2 in the click gate) is the fix if this bites in rehearsal. |
+| **Y-13** | **The Yoti bar is inset 16px by the MyGovNL `<main>` padding.** `YotiActionBar` is `w-full` inside our chrome, so it is not full-bleed the way the real embed's bar is. Making it bleed means reaching outside the zone, which §13 forbids. |
+
+### Gate results — 2026-09-27
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean, **35 route rows**, up from 33 — 2 new: `/cid/upload/` and `/cid/[serviceId]/upload/` (which prerenders `/cid/studentaid/upload/`) |
+| `npm run shots` | 22 passed |
+| **`npm run diff`** | **GATE: PASS — 0.000 % on all 22 frames** |
+| `npm run responsive` | exit 0 — no horizontal scroll at 320/375/393/768/1024/1280/1440/1920 on any of 35 routes; console clean |
+| `npm run clicks` | exit 0 — Flow A forward + backward and Flow B CID chain intact at 1440 / 768 / 390 |
+| `npm run camera` | exit 0 — live path OK, tracks cleaned up, mock forceable, the Y2 window verified as a real mask |
+
+**Re-baselined, deliberately:** the seven Yoti frames — `cid-liveness`,
+`cid-liveness-capture`, `cid-country`, `cid-document`, `cid-capture-intro`,
+`cid-capture-front`, `cid-capture-back`. Every one of them moved because the
+pinned bar replaced an in-flow button and the type moved onto the token scale;
+their heights changed by −7 to +125 px. **That is the point of the pass.**
+
+**NOT re-baselined, and none of them moved:** `login`, `dashboard`, `service`,
+`summary`, `terms`, `prereq-required`, `onboard`, `prereq-confirm`,
+`confirmation`, `service-verified`, `auth-loading`, `cid-continue-on-mobile`,
+`cid-terms`, `cid-biometric`, `cid-verified` — **all fifteen at 0.000 %, before
+and after.** That is the measurement that says the change stayed inside the
+zone; if one of them had moved, the fix would have been in the markup, never in
+the baseline.
+
+### One pre-existing defect surfaced, not caused, and not fixed
+
+`npm run responsive` went red on **`cid-b-terms` at every width** with a 404.
+The failing request is `/services/studentaid/onboard/` — the destination of
+"I do not agree" on Flow B's CID terms screen, prefetched by `next/link`. **That
+page has never existed**: Flow B's desktop wizard is another pass's work, and
+`scripts/click-through.mjs` already documents it at F1b, where it checks the
+href instead of following it "so this gate tests this pass's work and does not
+fail on someone else's unfinished route."
+
+It surfaces now because the ten `/cid/studentaid/…` routes joined the responsive
+gate on 2026-09-23 and the last recorded green run of that gate ("Gate results
+after Tier 1") covers **23 routes** — i.e. the run that recorded `exit 0` did
+not include them. So the gate has been red since Flow B was added and nothing
+re-ran it to say so.
+
+A **narrowly scoped exemption** was added: that route, that URL, that status,
+keyed on the recorded response URL rather than on the console text, so a 404 for
+anything else on that page still fails. **Delete it the day
+`/services/studentaid/onboard/` is built.**
+
+> **RESOLVED 2026-09-28.** `/services/studentaid/onboard/` is built (PP-07) and
+> the exemption is **deleted** from `scripts/responsive-check.mjs`. The gate
+> passes without it. See "Tier 2 — Flow B desktop wizard" below.
+
+### One behaviour change outside the zone's pixels
+
+`YotiContinue` was written with a bare `<a href>`. Switched to `next/link` —
+same rendered HTML, same accessible name, no pixel moves — because a bare `<a>`
+is a full document load, and `npm run camera` caught it: the gate records
+MediaStreamTracks on `window` to prove that leaving a capture screen stops the
+camera, and a full reload wiped that record, turning "the front screen's track
+is ended" into a pass-shaped failure. Client-side navigation also keeps the
+`gnl-demo:v1` store and the DemoNav key handler warm across seven consecutive
+screens.
+
+---
+
+## Tier 2 — Flow B desktop wizard: StudentAidNL end to end (2026-09-28)
+
+**Scope:** make Flow B (non-resident, passport) work from the dashboard to the
+Trusted service page, beside Flow A, with Flow A pixel-identical. Figma was
+**read only** (`get_metadata`, `get_design_context`, `get_screenshot` on
+6206:25424, 6206:27501, 6206:27601, 6217:35183, 6217:80071 and sub-nodes). No
+Figma write tool was called and no Figma asset was downloaded.
+
+### Mechanism — the CID precedent, applied to the desktop wizard
+
+* **Seven screen components** under `src/components/onboarding/screens/`
+  (`ServiceSummaryScreen`, `ServiceTermsScreen`, `ConfirmRequiredScreen`,
+  `ChooseMethodScreen`, `OtherVerificationScreen`, `ConfirmedScreen`,
+  `ReadyToUseScreen`), each taking `service: ServiceConfig`. Six of them are
+  Flow A's page bodies **moved, not rewritten** (a script did the move; the
+  only edits are service/routes/copy becoming props).
+* **Flow A's seven pages are now thin bindings** to `getService("driver-vehicle")`
+  — same URLs, same files.
+* **`src/app/services/[serviceId]/`** — eight route files with
+  `generateStaticParams` returning **only `studentaid`** (`serviceVariantParams`,
+  and `otherVerificationParams` for PP-08). The static `driver-vehicle` folder
+  wins every exact match. Every screen is a real prerendered HTML file; the
+  service is decided at build time, never read on the client.
+* **`src/lib/data/onboarding.ts`** became `getOnboardingCopy(service)`; the old
+  named exports (`WIZARD_TITLE`, `TERMS`, `IDV_OPTIONS`, …) are Flow A's result
+  of it, so their values are unchanged.
+* **The one exception: the service page.** PP-03 is a different design from
+  NL-03 (locked portal row, 7 scopes at 18px, a 374px contact card, and a
+  Trusted state with no Actions / linked items), so it is its own component,
+  `src/components/service/ServicePageScreen.tsx`. It imports every string the
+  two frames share from `driver-vehicle.ts`; Flow A's service page file was
+  **not touched**.
+
+**Proof Flow A did not move:** Flow A's prerendered HTML (scripts/links
+stripped) was compared before vs after for 21 routes — byte-identical except
+the **one intended change**, the StudentAidNL dashboard card (`<div
+data-demo-inert>` -> `<a href="/services/studentaid/">`, same classes). And
+`npm run diff` is 0.000% on all 22 frames. No frame was re-baselined.
+
+### The processing-screen trap — fixed
+
+`/auth/loading/` is shared. Its one-shot advance was wired to
+`takePendingAdvance("driver-vehicle")`, so when `/cid/studentaid/verified/`
+armed `studentaid` the screen **never advanced**. `takePendingAdvance()` now
+returns *which* service armed it (only a known one; unknown -> null -> stays
+put), and `ProcessingAdvance` routes to `serviceRoutes(thatService).prerequisite`.
+Still one-shot, consumed on mount, off the Back path. Asserted by `clicks`
+G14b (forward, lands on `/services/studentaid/prerequisite/` with the toast)
+and GB3b (Back from PP-21 stays put). A mutation test — re-pointing the advance
+at Flow A — made the Flow B chain fail, so the check has teeth.
+
+`MarkOnboarded` on `/services/studentaid/confirmation/` records `studentaid`
+only (the store is per service). `clicks` asserts both directions: G-ISO
+(Flow B done -> Driver and Vehicle NOT Trusted, page and store) and D3b
+(Flow A done -> StudentAidNL NOT Trusted).
+
+### Flow B screens — what was measured, what was derived
+
+| ID | Route | Source | Notes |
+|---|---|---|---|
+| PP-02 | `/dashboard/` | — | StudentAidNL card is now a link; looks identical |
+| PP-03 | `/services/studentaid/` | **measured** 6206:25424 | locked row, 7 scopes, contact block; icons are vendored Bootstrap stand-ins (bank, lock added) |
+| PP-04 | `.../summary/` | brief §9 | NL-04 with the title |
+| PP-05 | `.../terms/` | brief §9 | consent now `terms.consent` in the config; 7 scopes |
+| PP-06 | `.../confirm-details/` | 6206:27501 screenshot | "driver **license**" — no apostrophe, as the screenshot and §9 write it |
+| PP-07 | `.../onboard/` | **measured** 6206:27601 | 3 cards from `config.methods`; **larger type scale** (36/16/18/16); MCP + MRD inert -> toast |
+| PP-08 | `.../other-verification/` | **measured** 6217:35183 | NEW. Back + Continue, no Cancel (hidden in Figma) |
+| PP-21 | `.../prerequisite/` | **measured** 6217:80071 | requirement with U+2019 and a trailing full stop |
+| PP-22 | `.../confirmation/` | brief §10.1 | 6217:82447 is an unchanged D&V instance (Q-09) |
+| PP-23 | `.../` Trusted | **derived** (§9) | green badge, no verification card, white link row + external-link icon -> toast |
+
+### Deliberate deviations (log for Tatyana / André)
+
+* **PP-07 GNL IDV bullet**: Figma has a double space ("or␣␣have neither");
+  built with one, per §9.
+* **PP-07 bullets use three spellings**, reproduced: MCP `driver’s` (U+2019),
+  MRD `driver's`, GNL IDV `driver's`. PP-06 says "driver license"; PP-21 says
+  `driver’s … province.` Five spellings of one sentence across Flow B.
+* **PP-21 label is not pinned to 448px** (ConfirmDetailsCard's existing rule),
+  so the requirement fits on one line at 1440 and the page is 996 tall, not
+  1020. PP-03 renders ~19px shorter than 1469 because the Data & Privacy body
+  wraps to 7 lines in Chromium where Figma shows 8.
+* **PP-03 icons** (Envelope, Phone_call, User, Icons/Government, Dollar
+  sign_envelope, Lock) are not fetched from Figma; the repo's vendored
+  Bootstrap glyphs stand in, plus two new ones (`icon-bank.svg`,
+  `icon-lock-24.svg`). The postal row uses the envelope, not a dollar-envelope.
+* **PP-03 email is inert (toast), phone is a `tel:` link** — the same split as
+  Flow A's contact card and Terms email.
+* **PP-23 is invented**: row styling, underline and icon placement are the
+  smallest step from PP-03's measured row.
+* **`requirement` / `requirementConfirmed` for `studentaid` corrected** in the
+  config from the Figma reads above; a config comment that said the sentence
+  "contains no apostrophe" was wrong and was corrected.
+
+### Presenter arrows
+
+`FLOW_B` added to `src/lib/flow.ts`. DemoNav uses it only for a URL that is in
+Flow B and **not** in Flow A, so every Flow A URL and every shared URL behaves
+as before. Before this, both arrows were dead on every Flow B URL, and on the
+Yoti screens with no Back control Flow B had no reverse move at all.
+
+### Open questions (new)
+
+* **Q-24 — ArrowRight on `/auth/loading/` mid-Flow-B goes to Flow A's
+  prerequisite page**, because the URL is shared and DemoNav resolves shared
+  URLs to Flow A. Flow B does not need it (the advance is automatic), but a
+  presenter who presses it will jump flows. Likewise ArrowLeft there goes to
+  Flow A's `/cid/verified/`. Fix only if rehearsal shows it: resolve shared URLs
+  from the store's most recently active service.
+* **Q-25 — PP-23 needs a designer.** Not in Figma. The Trusted StudentAidNL page
+  is the least-sourced screen in the demo.
+* **Q-26 — MCP (P2) is a toast, not the MCP form.** §9 describes an MCP form
+  (MCP Number, Valid Date, Expiry Date, Last name) -> PP-21. Not built; MCP
+  behaves as Flow A's MRD card does.
+* **Q-27 — Should Flow B get baseline frames?** None were added to
+  `design/frames.json` (the task said keep the 22 at 0.000%). Flow B is covered
+  by `responsive` and `clicks` only. Self-baselining its nine screens now would
+  freeze today's build as "correct", the same caveat as PROVENANCE.md.
+* **Q-28 — Copy review for the five spellings** of the Flow B requirement
+  sentence (see deviations). All are reproduced from their own sources.
+
+### Gate results — 2026-09-28 (all run on the final build, served WITHOUT `-s`; three routes returned three different md5s)
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean, 45 static pages; **8 new routes**: `/services/studentaid/{,summary,terms,confirm-details,onboard,other-verification,prerequisite,confirmation}/` |
+| `npm run shots` | 22 passed |
+| **`npm run diff`** | **GATE: PASS — 0.000 % on all 22 frames.** No frame re-baselined. |
+| `npm run responsive` | exit 0 — **44 routes** (35 before + 9 Flow B desktop incl. `?verified=1`), no horizontal scroll at any width, console clean, **with the `cid-b-terms` exemption deleted** |
+| `npm run clicks` | exit 0 — Flow A chain, Flow B CID chain (F1b now follows the decline link), and the new Flow B full chain, at 1440 / 768 / 390 |
+| `npm run camera` | exit 0 |

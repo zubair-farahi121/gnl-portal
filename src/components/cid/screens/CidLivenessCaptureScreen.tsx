@@ -2,10 +2,15 @@ import Link from "next/link";
 
 import { CameraViewport } from "@/components/cid/CameraViewport";
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
+import {
+  YotiFaceOutline,
+  YotiFaceWash,
+} from "@/components/cid/yoti/YotiFaceWindow";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_Biometric (liveness, capture) — Figma 6217:65271, 393 x 1231.810546875.
@@ -74,9 +79,14 @@ import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
  *
  * THE CONTINUE BUTTON IS NOT IN A `Frame 6`. On this frame 6076:31364 is a
  * DIRECT child of `Main content` at y=760, where every other CID frame wraps it
- * in a `Frame 6` flex row. Reproduced as drawn — that is why the markup below
- * puts BtnPrimary straight into CidScreen's children with no wrapper, and why
- * its desktop alignment classes sit on the button itself.
+ * in a `Frame 6` flex row.
+ *
+ * THAT PECULIARITY IS NOW MOOT — 2026-09-27. Every Yoti screen puts its
+ * Continue in the shared `YotiActionBar`, so the bar IS the wrapper on all
+ * seven and this frame no longer differs from its neighbours here. The note
+ * stays because the Figma structure it describes is still what 6217:65271
+ * draws, and because a future reader comparing the two will otherwise wonder
+ * which of them was transcribed wrong.
  *
  * HIDDEN LAYER NOT RENDERED: `Check box` (6056:14081, 286 x 27 at y=577) is
  * hidden="true" in Figma, as on every other CID frame.
@@ -214,9 +224,21 @@ export function CidLivenessCaptureScreen({ service }: { service: ServiceConfig }
                 src={ASSETS.iconYotiBack}
               />
             </div>
-            {/* Montserrat:Bold. 14.054px is Figma's. */}
+            {/*
+             * Montserrat:Bold. RAISED 2026-09-27 from Figma's 14.054px to
+             * `YOTI_TEXT.back` (15px) and moved from `Yoti gris` #546072 to
+             * `YOTI_COLOR.back` (#68707b) — §6's own values for this one label.
+             * YOTI_OBSERVED.md Y2 describes it as "small chevron plus the word,
+             * grey, semi-bold", a touch lighter than the body grey, which is
+             * exactly the difference between the two tokens.
+             */}
             <p
-              className="shrink-0 text-[14.054px] font-bold leading-[normal] whitespace-nowrap text-[#546072]"
+              className="shrink-0 font-bold whitespace-nowrap"
+              style={{
+                fontSize: YOTI_TEXT.back,
+                lineHeight: YOTI_TEXT.headingLeading,
+                color: YOTI_COLOR.back,
+              }}
               data-node-id="6076:31258"
             >
               {copy.backLabel}
@@ -243,16 +265,70 @@ export function CidLivenessCaptureScreen({ service }: { service: ServiceConfig }
             <CameraViewport facingMode="user">{null}</CameraViewport>
 
             {/*
+             * THE WASH — added 2026-09-27. Everything OUTSIDE the head window
+             * paled toward white and slightly blurred, which is what the real
+             * screenshot shows and what the flat panel never did.
+             *
+             * IT GOES HERE, DIRECTLY AFTER THE VIDEO, AND THAT IS LOAD-BEARING.
+             * Nothing in this panel sets a z-index, so paint order is DOM
+             * order: the wash must follow the `<video>` (or it would be painted
+             * under the feed and do nothing) and must precede the pill and the
+             * outline (or it would pale them too). `npm run camera` asserts the
+             * same DOM-order rule for the other two.
+             *
+             * It is `absolute inset-0`, so it is out of this flex column's flow
+             * and the measured 522px height, the 65px gap and the produced
+             * offsets below are all untouched. See YotiFaceWindow for why the
+             * treatment is one masked overlay rather than two copies of the
+             * picture — the short version is that a second copy would mean a
+             * second camera track.
+             */}
+            <YotiFaceWash />
+
+            {/*
              * Frame 7 — 6076:31260. The instruction pill, INSIDE the viewport,
              * which is where the design puts it. `relative` so it paints above
-             * the absolutely-positioned video.
+             * the absolutely-positioned video and above the wash.
+             *
+             * `h-[51px]` became `min-h-[51px]` 2026-09-27: the label is now
+             * 16px rather than 14.054, so below the CID design width — where it
+             * is already released to wrap — the pill has to be allowed to grow
+             * instead of spilling its text. At 390 and above it is still
+             * exactly 51, which is what `npm run camera` measures.
              */}
             <div
-              className="relative flex h-[51px] w-full shrink-0 items-center justify-center rounded-[8px] bg-white p-[8px] md:max-w-[321px]"
+              className="relative flex min-h-[51px] w-full shrink-0 items-center justify-center rounded-[8px] bg-white p-[8px] md:max-w-[321px]"
               data-node-id="6076:31260"
             >
+              {/*
+               * RAISED 2026-09-27 from 14.054px `Yoti gris` to
+               * `YOTI_TEXT.body` (16px) in `YOTI_COLOR.ink`.
+               * YOTI_OBSERVED.md Y2: "A solid white chip … rounded (~8 px),
+               * BOLD DARK centred text on one line". The recreation's grey at
+               * 14px is §6's "smaller and lighter almost everywhere".
+               *
+               * THE `max-xxs:` RELAXATION STAYS, and stays at `xxs`: 393 is
+               * this frame's untouchable design width and a `max-xs:` rule
+               * (< 480) would fire on it. Below 384 the pill interior is too
+               * narrow for the sentence at any weight, so it wraps there and
+               * the pill grows with it.
+               */}
               <p
-                className="shrink-0 text-[14.054px] font-bold leading-[normal] whitespace-nowrap text-[#546072] max-xxs:whitespace-normal"
+                /*
+                 * `max-xxs:min-w-px` and NO `shrink-0` — corrected 2026-09-27.
+                 * `whitespace-normal` alone never wrapped anything: a `shrink-0`
+                 * flex item is its own max-content width whatever the wrapping
+                 * rule says, so below 384 the label simply hung out of both
+                 * ends of the pill. Measured at 320: a 300px label in a 248px
+                 * pill. Releasing the minimum width is what makes the
+                 * relaxation actually relax.
+                 */
+                className="font-bold whitespace-nowrap text-center max-xxs:min-w-px max-xxs:whitespace-normal"
+                style={{
+                  fontSize: YOTI_TEXT.body,
+                  lineHeight: YOTI_TEXT.headingLeading,
+                  color: YOTI_COLOR.ink,
+                }}
                 data-node-id="6076:31261"
               >
                 {copy.title}
@@ -260,53 +336,57 @@ export function CidLivenessCaptureScreen({ service }: { service: ServiceConfig }
             </div>
 
             {/*
-             * Group 6 — 6076:31262. The face-position guide.
+             * Group 6 — 6076:31262. The window's edge.
              *
-             * YOTI-OWNED ARTWORK; placeholder. The box is the group's measured
-             * size and the image is placed at `inset-[-0.76%_-1.03%]` because
-             * Figma draws the stroke overflowing the group by ~2px on each
-             * side. Reproduced verbatim — the asset's natural size is the
-             * overflowed one, so a real export drops in with no layout change.
-             * See src/lib/assets.ts.
+             * WAS AN `<img>` (public/assets/liveness-face-guide.svg), NOW AN
+             * INLINE SVG — see YotiFaceOutline. The box, the node id and the
+             * `inset-[-0.76%_-1.03%]` overflow are all unchanged, so nothing in
+             * this frame moved and `npm run camera` still finds the element by
+             * name and measures it at 193 x 263.
+             *
+             * THE ONE VISIBLE CHANGE IS THE BAND. The placeholder file draws
+             * the band in BEIGE (#d6cfcb), inherited from Tatyana's recreation.
+             * YOTI_BRIEF.md §7 Y2: "make it white." It is now
+             * `YOTI_MASK.bandColor`, a semi-transparent white, and it is
+             * geometrically tied to the outline instead of being a separately
+             * scaled copy of the path. The asset file is left in place and
+             * still indexed in src/lib/assets.ts — it is the record of what the
+             * recreation drew, and deleting it would lose that.
              */}
-            <div
-              className="relative h-[263.057861328125px] w-[193.27098083496094px] shrink-0"
-              data-node-id="6076:31262"
-              data-name="Group 6"
-            >
-              <div className="absolute inset-[-0.76%_-1.03%]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt=""
-                  className="block size-full max-w-none"
-                  src={ASSETS.livenessFaceGuide}
-                />
-              </div>
-            </div>
+            <YotiFaceOutline />
           </div>
         </div>
       </div>
 
       {/*
-       * Yoti ContinueButton — 6076:31364.
+       * Yoti ContinueButton — 6076:31364, now in the shared pinned bar.
        *
-       * NO `Frame 6` WRAPPER. Unique to this frame: Figma makes the button a
-       * direct child of `Main content` at y=760. Reproduced, which is why the
-       * desktop alignment lives on the button itself rather than on a row.
+       * ================================================================
+       * THIS BUTTON IS AN OPEN QUESTION, NOT A DEFECT. KEEP IT.
        *
-       * YOTI-OWNED CONTROL — NOT A GNL COMPONENT. An instance of
-       * `Yoti ContinueButton` (6076:31361); its #27619b fill is the Yoti CTA
-       * blue, not the GNL navy #243746. Reproduce it, do not harmonise it.
-       * See design/verification-frame-map.md §7.
+       * YOTI_OBSERVED.md Y2 is unambiguous about the real screen: "NO Continue
+       * button and no pinned bar at all — the camera area runs to the bottom.
+       * This is the evidence behind §12 open question 1: Yoti appears to
+       * capture by itself." If that is right, this control does not exist on
+       * the real Y2 and the screen advances on its own.
+       *
+       * It is kept anyway, because §7 Y2 says to keep Tatyana's "Continue ›"
+       * until that is confirmed, and because removing it the day before code
+       * complete would leave the ONE screen in the run whose only forward move
+       * is a behaviour nobody has verified — on a demo where a dead end is the
+       * worst outcome. Logged in DEMO_AUDIT.md "Open questions"; delete it the
+       * moment Zubair's English verification settles the question.
+       *
+       * The bar it now sits in is the same `YotiActionBar` every other Yoti
+       * screen uses, and the destination — this service's country screen — has
+       * not changed. The frame's peculiarity (no `Frame 6` wrapper; Figma makes
+       * the button a direct child of `Main content` at y=760) is moot now that
+       * the bar is the wrapper on all seven screens.
+       * ================================================================
        */}
-      <BtnPrimary
-        href={routes.country}
-        tone="yoti"
-        nodeId="6076:31364"
-        className="w-full md:mt-[16px] md:w-auto md:self-end"
-      >
-        {actions.continueShort}
-      </BtnPrimary>
+      <YotiActionBar>
+        <YotiContinue href={routes.country}>{actions.continueShort}</YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

@@ -51,6 +51,12 @@
  * WHAT THIS PASS DID **NOT** DO: no Flow B screen and no Flow B route was
  * built. The `studentaid` entry below is complete and inert — nothing renders
  * it yet. That is deliberate; see `DEFAULT_SERVICE_ID`.
+ *
+ * UPDATE 2026-09-28: that is no longer true. The CID screens have rendered
+ * `studentaid` since 2026-09-23 (src/app/cid/[serviceId]/), and Flow B's
+ * desktop wizard and service page render it from today
+ * (src/app/services/[serviceId]/). `terms.consent` and the `otherVerification`
+ * route were added for them; nothing about Flow A's values changed.
  */
 
 /** The two services in the demo. Route segment and config key are the same string. */
@@ -87,6 +93,26 @@ export type ServiceTerms = {
   lastModified: string;
   /** Rendered verbatim after "Version ". A string, because the design shows no unit. */
   version: string;
+  /**
+   * The consent paragraph in the Terms scroll box (NL-05 / PP-05).
+   *
+   * ADDED 2026-09-28 WITH FLOW B's DESKTOP WIZARD. DEMO_AUDIT.md "What Tier 2
+   * inherits", item 1: *"The Terms consent paragraph is still hardcoded for
+   * `driver-vehicle` … Flow B's paragraph (§9 PP-05) is a DIFFERENT TEXT, not a
+   * substitution. Add a `consent` field to `ServiceConfig` before building
+   * PP-05, or that screen will fork."* This is that field.
+   *
+   * THREE PARTS, NOT ONE STRING, because the email address inside the paragraph
+   * is drawn as a link (an inert <button> — see the Terms screen) and the two
+   * paragraphs put it in different places: Flow A's ENDS on the address, Flow
+   * B's has a full stop after it. `afterEmail` is "" for Flow A, and the screen
+   * renders nothing at all for an empty string, so Flow A's DOM is unchanged.
+   */
+  consent: {
+    beforeEmail: string;
+    email: string;
+    afterEmail: string;
+  };
 };
 
 export type ServiceConfig = {
@@ -113,8 +139,10 @@ export type ServiceConfig = {
    * purpose: substituting one for the other is a visible glyph change and a
    * pixel-gate failure in whichever direction it is done.
    *
-   * Flow B's requirement contains no apostrophe at all, so both fields carry
-   * the same string there.
+   * CORRECTED 2026-09-28. This used to say "Flow B's requirement contains no
+   * apostrophe at all, so both fields carry the same string there." It does
+   * contain one, and the two Flow B frames disagree with each other even more
+   * than Flow A's do — see the `studentaid` entry below.
    */
   requirementConfirmed: string;
   /** Options on NL-07 / PP-07, in the order the frames draw them. */
@@ -191,6 +219,21 @@ export function serviceRoutes(id: ServiceId) {
     confirmDetails: `${base}confirm-details/`,
     /** Choose verification service (NL-07 / PP-07). */
     onboard: `${base}onboard/`,
+    /**
+     * PP-08 "Other verification" — Figma 6217:35183. ADDED 2026-09-28.
+     *
+     * FLOW B ONLY. It is a path for every service (like `cidRoutes().captureBack`
+     * is) but a PAGE only for services with `otherVerificationStep: true` —
+     * `otherVerificationParams` below decides which, exactly as
+     * `cidBackCaptureParams` decides the back capture. So
+     * /services/driver-vehicle/other-verification/ is never generated and
+     * nothing links to it.
+     *
+     * Named for the screen's own heading rather than §6's suggested
+     * `.../prerequisites/other`, for the same reason `confirmDetails` is: the
+     * app's wizard paths are flat, one segment per screen.
+     */
+    otherVerification: `${base}other-verification/`,
     /** Confirm some details, **Confirmed** (NL-22 / PP-21). */
     prerequisite: `${base}prerequisite/`,
     /** Ready to Use: Success! (NL-23 / PP-22). */
@@ -213,6 +256,23 @@ const CID_ROUTE_SUFFIXES = {
   captureIntro: "capture-intro/",
   captureFront: "capture-front/",
   captureBack: "capture-back/",
+  /**
+   * Y8, the UPLOAD screen — added 2026-09-27.
+   *
+   * NOT A FIGMA FRAME. Tatyana's recreation has no upload step at all; this
+   * screen exists because the real verification does. design/YOTI_OBSERVED.md
+   * "Y8 — Upload (6127:50651)" transcribes it: a left-aligned badge, a large
+   * block of text naming the document, and a thin progress bar — no button, no
+   * help icon, no pinned bar.
+   *
+   * IT IS IN BOTH FLOWS, and it is the LAST Yoti screen in each, sitting
+   * between whichever capture screen the service ends on and step 5:
+   *   Flow A  … capture-back  -> upload -> verified
+   *   Flow B  … capture-front -> upload -> verified
+   * Which capture screen that is comes from `captureSides`, exactly as the
+   * forward link on /cid/capture-front/ already did — see that screen.
+   */
+  upload: "upload/",
   verified: "verified/",
 } as const;
 
@@ -263,6 +323,7 @@ export function cidRoutes(id: ServiceId) {
     captureIntro: `${base}${CID_ROUTE_SUFFIXES.captureIntro}`,
     captureFront: `${base}${CID_ROUTE_SUFFIXES.captureFront}`,
     captureBack: `${base}${CID_ROUTE_SUFFIXES.captureBack}`,
+    upload: `${base}${CID_ROUTE_SUFFIXES.upload}`,
     verified: `${base}${CID_ROUTE_SUFFIXES.verified}`,
   } as const;
 }
@@ -342,33 +403,55 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
       name: "Driver and Vehicle Services",
       lastModified: "2025-04-29",
       version: "4",
+      /*
+       * MOVED HERE 2026-09-28 from `TERMS.consentBody` in
+       * src/lib/data/onboarding.ts, character for character — the trailing
+       * space after "contact" is the join to the address. §8.1 NL-05 verbatim.
+       */
+      consent: {
+        beforeEmail:
+          "I consent to Government of Newfoundland and Labrador checking the information that I provide against the Motor Registration Division's system to make sure that I am who I say I am, validate my access to new services as they become available in MyGovNL, and receive personalized notifications regarding my upcoming renewals. For any questions related to how your information is being handled, please contact ",
+        email: "digitalgovernment@gov.nl.ca",
+        afterEmail: "",
+      },
     },
   },
 
   /*
-   * FLOW B — NOT BUILT. Nothing renders this entry yet.
+   * FLOW B — BUILT END TO END 2026-09-28. The CID screens have rendered this
+   * entry since 2026-09-23; the desktop wizard and the service page
+   * (src/app/services/[serviceId]/) render it from today.
    *
-   * Every value is from BUILD_BRIEF.md §9, §10.1 and §12.1, which is the only
-   * source available: DEMO_AUDIT.md marks eleven of the twenty StudentAidNL
-   * frames `[prior — name]`, meaning nobody has ever rendered them and their
-   * contents are inferred from frame names, sizes and canvas position. §9 of
-   * the audit is explicit that if Flow B is confirmed, "the first hour of that
-   * work should be screenshotting those frames, not coding them."
-   *
-   * So treat these strings as the brief's, not as Figma-verified — the whole
-   * point of putting them here now is that verifying them later is an edit to
-   * one object rather than a hunt through seven screens.
+   * Most values are from BUILD_BRIEF.md §9, §10.1 and §12.1. The two
+   * requirement strings were RE-READ FROM FIGMA on 2026-09-28 (read-only
+   * get_design_context / get_screenshot, no write) and corrected — see below.
    */
   studentaid: {
     id: "studentaid",
     title: "StudentAidNL",
     // §10.1 copy fix — the Figma frame's subtitle still says Driver and Vehicle.
     subtitle: "View and manage your StudentAidNL services",
+    /*
+     * PP-06 Confirm Some Details: REQUIRED. "driver license" — NO apostrophe
+     * and no "s". That is what §9 PP-06 writes and what the only source for the
+     * screen draws: 6206:27501 is a pasted screenshot of the live portal, read
+     * 2026-09-28, and it says "Must have a valid driver license, health card, or
+     * have neither because out of province". Reproduced, not corrected.
+     *
+     * WAS "driver's license" until 2026-09-28, copied from PP-07's card. PP-07's
+     * three cards do not use this field at all any more — they spell their own
+     * bullets, because the design gives them THREE different spellings; see
+     * `METHOD_OPTIONS` in src/lib/data/onboarding.ts.
+     */
     requirement:
-      "Must have a valid driver's license, health card, or have neither because out of province",
-    // No apostrophe in this sentence, so both spellings are the same string.
+      "Must have a valid driver license, health card, or have neither because out of province",
+    /*
+     * PP-21 Confirm some details: CONFIRMED — Figma 6217:80865, verbatim:
+     * TYPOGRAPHIC U+2019 in "driver’s" AND A TRAILING FULL STOP, which §9 PP-21
+     * also writes. It was the PP-07 string without the stop until 2026-09-28.
+     */
     requirementConfirmed:
-      "Must have a valid driver's license, health card, or have neither because out of province",
+      "Must have a valid driver’s license, health card, or have neither because out of province.",
     // PP-07 draws three cards: MCP, MRD, GNL IDV — GNL IDV selected.
     methods: ["mcp", "mrd", "gnl_idv"],
     defaultMethod: "gnl_idv",
@@ -391,6 +474,18 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
       name: "StudentAidNL",
       lastModified: "2026-08-26",
       version: "7",
+      /*
+       * §9 PP-05, verbatim. A DIFFERENT PARAGRAPH from Flow A's, not a
+       * substitution into it — "hereby", MCP as well as MRD, no "new services"
+       * clause — and it ends with a full stop AFTER the address, which is why
+       * `afterEmail` exists.
+       */
+      consent: {
+        beforeEmail:
+          "I hereby consent to the Government of Newfoundland and Labrador collecting, using, and verifying the information I provide by comparing it with records maintained by the Motor Registration Division and the Medical Care Plan (MCP). This verification is conducted for the purposes of confirming my identity and delivering personalized notifications where required. Any questions regarding the collection, use, or handling of my personal information may be directed to ",
+        email: "digitalgovernment@gov.nl.ca",
+        afterEmail: ".",
+      },
     },
   },
 };
@@ -498,5 +593,39 @@ export function cidVariantParams(): { serviceId: ServiceId }[] {
 export function cidBackCaptureParams(): { serviceId: ServiceId }[] {
   return cidVariantParams().filter(({ serviceId }) =>
     SERVICES[serviceId].captureSides.includes("back"),
+  );
+}
+
+/**
+ * The services that get their own `/services/[serviceId]/…` DESKTOP wizard and
+ * service page — added 2026-09-28 with Flow B's desktop screens.
+ *
+ * THE SAME LIST AS `cidVariantParams`, AND FOR THE SAME REASON. `driver-vehicle`
+ * owns the static folder src/app/services/driver-vehicle/, whose seven URLs are
+ * frozen baseline frames. A static segment beats a dynamic sibling on an exact
+ * match, so generating `driver-vehicle` here would not even be served — it
+ * would only be a second, dead prerender of seven frames. So it is excluded,
+ * and today this names exactly one service: `studentaid`.
+ *
+ * A separate name rather than a second call site of `cidVariantParams` so that
+ * a reader of src/app/services/[serviceId]/ is not sent to the CID seam to find
+ * out which services have a desktop wizard.
+ */
+export function serviceVariantParams(): { serviceId: ServiceId }[] {
+  return cidVariantParams();
+}
+
+/**
+ * The services whose wizard has PP-08 "Other verification" — i.e. the ones
+ * `/services/[serviceId]/other-verification/` should exist for.
+ *
+ * `otherVerificationStep` decides, exactly as `captureSides` decides the back
+ * capture in `cidBackCaptureParams`: a service without the step gets no page at
+ * that path, so there is no orphan screen for a presenter to type their way
+ * into. Today: `studentaid` only.
+ */
+export function otherVerificationParams(): { serviceId: ServiceId }[] {
+  return serviceVariantParams().filter(
+    ({ serviceId }) => SERVICES[serviceId].otherVerificationStep,
   );
 }

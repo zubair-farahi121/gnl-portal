@@ -2,16 +2,19 @@ import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { ProcessingAdvance } from "@/components/onboarding/ProcessingAdvance";
 import { IDV_STATUS } from "@/lib/data/driver-vehicle";
-import { serviceRoutes } from "@/lib/data/service-config";
 
 /*
- * `"driver-vehicle"` is a LITERAL, not `DEFAULT_SERVICE_ID`. This screen is
- * shared by both flows (PP-20 is an instance of it), so when Flow B lands the
- * service has to come from the store — the same seam every `/cid/` page has,
- * documented at the foot of src/lib/data/service-config.ts. Until then it is
- * spelled out rather than resolved, so the seam is visible.
+ * THIS SCREEN NAMES NO SERVICE — 2026-09-28.
+ *
+ * It used to say `serviceRoutes("driver-vehicle")` here, with a note that the
+ * literal marked a seam: "This screen is shared by both flows (PP-20 is an
+ * instance of it), so when Flow B lands the service has to come from the
+ * store." Flow B has landed and it now does. The screen's markup is the same
+ * for both flows (PP-20 is an unchanged instance of NL-21), and the only
+ * per-service thing on it — where the one-shot auto-advance goes — is decided
+ * inside ProcessingAdvance from the service that ARMED it. So the page has
+ * nothing left to say about services, and says nothing.
  */
-const ROUTES = serviceRoutes("driver-vehicle");
 
 /*
  * Provider page_IDV results status — Figma 6217:80871, 1440 x 1078.196.
@@ -56,6 +59,9 @@ const ROUTES = serviceRoutes("driver-vehicle");
  * control of any kind — its closing line is "You can close this window." The
  * forward move is the presenter's ArrowRight (DemoNav, driven by
  * src/lib/flow.ts), which now lands on /services/driver-vehicle/prerequisite/.
+ * (ArrowRight here is FLOW A's: this URL is in both flows' lists and DemoNav
+ * resolves a shared URL to Flow A. Flow B relies on the auto-advance, which is
+ * per-service. See src/lib/flow.ts, FLOW_B.)
  * It also contains a `Banner` instance (6236:46388) that is hidden="true" in
  * Figma — an error/delay state the design anticipates but does not show — and
  * hidden layers are not rendered.
@@ -103,10 +109,11 @@ export default function AuthLoadingPage() {
     <div className="gnl-desktop-shell">
       <TopNav />
       {/*
-       * Renders nothing. Fires ONCE, only when armed by /cid/verified/ — see
-       * the note above and ProcessingAdvance itself.
+       * Renders nothing. Fires ONCE, only when armed by /cid/verified/ or
+       * /cid/studentaid/verified/, and goes to THAT service's Confirmed screen
+       * — see the note above and ProcessingAdvance itself.
        */}
-      <ProcessingAdvance service="driver-vehicle" to={ROUTES.prerequisite} />
+      <ProcessingAdvance />
 
       {/*
        * main-content.

@@ -1,8 +1,13 @@
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import {
+  YotiActionBar,
+  YotiContinue,
+  YotiHelpIcon,
+} from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy, type CidLivenessTip } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_Biometric (liveness, prepare) — Figma 6217:65268, 393 x 1282.44091796875.
@@ -175,8 +180,22 @@ function InstructionRow({ tip }: { tip: CidLivenessTip }) {
        * Montserrat:Medium. REAL 500 since 2026-09-23 — Montserrat is now
        * self-hosted (layout.tsx) and this zone is `.gnl-yoti-zone`, so the
        * weight is no longer collapsed to Lato 400.
+       *
+       * SIZE RAISED 2026-09-27 from a hardcoded 14px to `YOTI_TEXT.tip` (17px).
+       * YOTI_OBSERVED.md Y1: "The text is noticeably LARGER than normal body
+       * copy — this is what §6 means by 'tips on Y1 about 17 px'." The 14px was
+       * Tatyana's recreation, which §6 says runs a step small almost
+       * everywhere. The colour was already `Yoti gris`; it is now spelled from
+       * the token so a later change to the ramp reaches it.
        */}
-      <p className="min-w-px flex-[1_0_0] text-[14px] font-medium leading-[1.4] text-[#546072] [word-break:break-word]">
+      <p
+        className="min-w-px flex-[1_0_0] font-medium [word-break:break-word]"
+        style={{
+          fontSize: YOTI_TEXT.tip,
+          lineHeight: YOTI_TEXT.bodyLeading,
+          color: YOTI_COLOR.muted,
+        }}
+      >
         {tip.text}
       </p>
     </div>
@@ -199,8 +218,44 @@ export function CidLivenessScreen({ service }: { service: ServiceConfig }) {
           className="flex w-full shrink-0 flex-col items-start gap-[16px] px-[8px]"
           data-node-id="6087:31395"
         >
+          {/*
+           * THE HELP ICON — Y1, Y3 and Y5 only (YOTI_HELP_SCREENS).
+           *
+           * YOTI_OBSERVED.md Y1: "thin circled '?', grey, ~18 px, hard against
+           * the right gutter, clearly ABOVE the heading with real space
+           * between." So it is its own row, right-aligned, not a float beside
+           * the heading — a float would sit ON the first line, which is what
+           * the photograph does not show. The 16px `Frame 13` gap supplies the
+           * "real space" without a margin of its own.
+           *
+           * NOT on Y2 (which has "‹ Back" in this position instead) and not on
+           * Y8 (which has nothing). See YOTI_HELP_SCREENS in yoti-tokens.ts.
+           */}
+          <div className="flex w-full shrink-0 justify-end" data-name="yoti-help-row">
+            <YotiHelpIcon />
+          </div>
+
+          {/*
+           * SIZE MOVED 2026-09-27 from a hardcoded 32px to
+           * `YOTI_TEXT.headingLarge` (27px), and this is the ONE place in the
+           * zone where the token scale is SMALLER than the recreation rather
+           * than larger. §6 measured Y1 and Y8 as a step above the other Yoti
+           * headings but still below Tatyana's 32; the tokens file is the
+           * authority for every Yoti value and this one is no exception.
+           * Flagged as an open question in DEMO_AUDIT.md rather than split
+           * either way on a guess.
+           *
+           * `leading-[normal]` became `YOTI_TEXT.headingLeading` (1.2), which
+           * is the same ~1.2 the browser's `normal` produced for Montserrat —
+           * now stated rather than inherited from a font metric.
+           */}
           <p
-            className="w-full shrink-0 text-[32px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
+            className="w-full shrink-0 font-bold [word-break:break-word]"
+            style={{
+              fontSize: YOTI_TEXT.headingLarge,
+              lineHeight: YOTI_TEXT.headingLeading,
+              color: YOTI_COLOR.ink,
+            }}
             data-node-id="6056:13105"
           >
             {copy.title}
@@ -259,35 +314,42 @@ export function CidLivenessScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6056:13131 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6056:13131"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6217:65267 is an instance of `Yoti ContinueButton`
-         * (6076:31361), the same second primary button every other Yoti screen
-         * in this run carries. Its #27619b fill is the Yoti CTA blue, not the
-         * GNL navy #243746 — deliberate, not drift. Reproduce its appearance;
-         * do not fold it into the shared GNL primary and do not "fix" its
-         * colour to match the rest of the wizard. `tone="yoti"` on BtnPrimary
-         * exists for exactly this.
-         *
-         * It is the ONLY control on this screen — `Check box` (6056:13130) is
-         * hidden and there is no Back — so if it is dead the flow stops here.
-         * scripts/click-through.mjs asserts this hop at all three widths.
-         */}
-        <BtnPrimary
-          href={routes.livenessCapture}
-          tone="yoti"
-          nodeId="6217:65267"
-          className="w-full md:w-auto"
-        >
+      {/*
+       * Frame 6 — 6056:13131, REPLACED BY THE PINNED BAR 2026-09-27.
+       *
+       * ================================================================
+       * WHAT CHANGED AND WHY IT IS NOT A RESTYLE OF A GNL CONTROL.
+       *
+       * This used to be a `BtnPrimary tone="yoti"` (Figma 6217:65267) sitting
+       * in the normal page flow: 37px tall, radius 4, #27619b, no chevron. That
+       * is Tatyana's recreation. YOTI_OBSERVED.md's "True on every Yoti screen"
+       * says the real thing is different in five ways at once — "Continue is
+       * pinned to the bottom in a white bar: full content width, blue, white
+       * bold centred label, and a white chevron › near the right edge. A faint
+       * horizontal shadow sits directly above the bar. Content scrolls
+       * underneath it."
+       *
+       * All five live in `YotiActionBar` / `YotiContinue` now, so every Yoti
+       * screen gets the same bar from one place and the next screen cannot be
+       * built with a differently sized button. The GNL `BtnPrimary` is
+       * untouched and still renders every control OUTSIDE the zone.
+       *
+       * THE DESTINATION IS UNCHANGED. It went to this service's liveness
+       * capture screen before and it goes there now; scripts/click-through.mjs
+       * asserts the hop at 1440 / 768 / 390. Nothing about the flow moved —
+       * only the box the control sits in.
+       *
+       * `md:` ALIGNMENT IS GONE, and that is deliberate: the bar is full width
+       * at every breakpoint because it is Yoti's own bar, not the onboard
+       * page's actions row. See the `position: sticky` note in YotiChrome for
+       * why it still comes to rest above the MyGovNL footer on a desktop card.
+       * ================================================================
+       */}
+      <YotiActionBar>
+        <YotiContinue href={routes.livenessCapture}>
           {actions.continueShort}
-        </BtnPrimary>
-      </div>
+        </YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

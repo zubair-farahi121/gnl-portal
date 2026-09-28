@@ -409,6 +409,107 @@ body {
 }
 
 /* ------------------------------------------------------------------ *
+ * .gnl-yoti-upload-fill — the Y8 progress bar, and ONLY Y8.
+ *
+ * design/YOTI_OBSERVED.md "Y8 — Upload": "a thin progress bar the full content
+ * width: rounded ends, only a few px tall, dark fill … on a light grey track."
+ * The colours, the height and the duration are all Yoti tokens and are passed
+ * in from src/components/cid/screens/CidUploadScreen.tsx — nothing here paints
+ * a colour, so no Yoti value leaks into the GNL stylesheet.
+ *
+ * WHY THE BASE STATE IS `width: 100%` AND THE ANIMATION RUNS BACKWARDS FROM IT.
+ *
+ * The bar has to be FULL, not empty, when the animation does not run — under
+ * `prefers-reduced-motion: reduce`, and in the static HTML before any script.
+ * Writing `width: 0` as the base and animating up would leave both of those
+ * viewers looking at an empty bar for ever. So the resting state is the FINISHED
+ * state and the keyframe is what makes it start empty.
+ *
+ * `animation-duration` is set inline by the screen from YOTI_SIZE.progressMs,
+ * so the fill and the navigation that follows it (YotiUploadAdvance) cannot
+ * drift apart — there is one number and it is in the token file.
+ *
+ * SCOPED BY CLASS, not by `.gnl-yoti-zone *`. Exactly one element in the build
+ * carries it. Nothing outside the Yoti zone can match this rule, which is what
+ * §13 ("Nothing outside the Yoti zone has changed") requires of any rule added
+ * to this file.
+ * ------------------------------------------------------------------ */
+@keyframes gnl-yoti-upload-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.gnl-yoti-upload-fill {
+  width: 100%;
+  animation-name: gnl-yoti-upload-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gnl-yoti-upload-fill {
+    animation-name: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .gnl-yoti-specimen — the document sliding into the capture window.
+ *
+ * THE ONLY MOVEMENT ANYWHERE IN THE YOTI ZONE, and it is deliberately
+ * contained: it happens INSIDE the camera window on /cid/capture-front/ and
+ * /cid/capture-back/ and nowhere else. The brief is explicit about what must
+ * NOT accompany it — no flash, no sound, no green outline, no progress ring, no
+ * "Hold still…" status text, no spinner in the button. None of those exists in
+ * this build; this rule is the whole of the animation.
+ *
+ * WHAT IT REPRODUCES: the specimen arriving slightly tilted and out of focus
+ * and settling sharp, over about 1.5s. That is the one thing a still frame
+ * cannot show and the thing a viewer reads as "the camera just took this".
+ *
+ * `animation-fill-mode: both` WITH THE RESTING STATE AS THE END STATE. The
+ * element's own CSS is the FINISHED position — untransformed, unblurred — so
+ * anything that does not run the animation (a reduced-motion viewer, the pixel
+ * gate, which injects `animation: none !important`, or a browser that never
+ * reaches this rule) shows the captured document exactly as it was drawn before
+ * this pass. The animation can only ever subtract from that, never leave the
+ * screen in a state nothing else produces.
+ *
+ * IT RUNS ON THE MOCK, NOT ON THE LIVE FEED. `CameraViewport` renders either a
+ * `<video>` or its `children`; the class is on the child, so when the camera is
+ * really running the viewer sees the camera and no animation at all — which is
+ * correct, because a live feed does not slide in.
+ * ------------------------------------------------------------------ */
+@keyframes gnl-yoti-specimen-in {
+  from {
+    transform: translate3d(0, 14%, 0) rotate(-3.5deg) scale(1.04);
+    filter: blur(6px);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+.gnl-yoti-specimen {
+  animation: gnl-yoti-specimen-in 1500ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gnl-yoti-specimen {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * RESPONSIVE UTILITIES
  *
  * A deliberately small set, for page bodies to apply. Everything here is

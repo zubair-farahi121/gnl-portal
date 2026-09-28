@@ -7,7 +7,7 @@ import {
   showDemoToast,
   TOAST_VERIFICATION_COMPLETE,
 } from "@/components/ui/DemoToast";
-import type { ServiceId } from "@/lib/data/service-config";
+import { serviceRoutes } from "@/lib/data/service-config";
 
 /* ====================================================================
  * NL-21 AUTO-ADVANCE — BUILD_BRIEF.md §8.3.
@@ -34,11 +34,11 @@ import type { ServiceId } from "@/lib/data/service-config";
  * ====================================================================
  * HOW IT IS KEPT OFF THE BACK PATH: A ONE-SHOT, ARMED ON THE WAY FORWARD.
  *
- * `/cid/verified/`'s Continue — the ONLY forward entry to this screen — calls
- * `markVerified(serviceId)`, which sets `pendingAdvance: serviceId` in the
- * `gnl-demo:v1` store. This component calls `takePendingAdvance(serviceId)` on
- * mount, which **reads and clears** it in one step, and starts the timer only
- * if it was armed.
+ * `/cid/verified/`'s Continue (and Flow B's `/cid/studentaid/verified/`) — the
+ * ONLY forward entries to this screen — call `markVerified(serviceId)`, which
+ * sets `pendingAdvance: serviceId` in the `gnl-demo:v1` store. This component
+ * calls `takePendingAdvance()` on mount, which **reads and clears** it in one
+ * step and says which service armed it, and starts the timer only if one did.
  *
  * So:
  *   forward   /cid/verified/ -> arm -> /auth/loading/ -> consume -> 3 s -> NL-22
@@ -67,17 +67,39 @@ import type { ServiceId } from "@/lib/data/service-config";
  * controls that would make it adjustable are P1 and were cut.
  * ==================================================================== */
 
+/* ====================================================================
+ * ONE SHARED SCREEN, TWO FLOWS — THE DESTINATION FOLLOWS THE ARMING SERVICE.
+ * 2026-09-28, with Flow B's desktop wizard.
+ *
+ * /auth/loading/ is shared: PP-20 is an instance of NL-21, and both flows'
+ * step-5 Continue lands here. Until today this component took a fixed
+ * `service="driver-vehicle"` and a fixed `to` from the page, so:
+ *
+ *   Flow B  /cid/studentaid/verified/ arms `studentaid`
+ *           -> /auth/loading/ asks "armed for driver-vehicle?" -> no
+ *           -> the screen never advanced. The presenter's ArrowRight would
+ *              then have jumped to FLOW A's prerequisite screen.
+ *
+ * Now it asks the store WHO armed it (`takePendingAdvance()` returns the
+ * service) and routes to THAT service's Confirmed screen:
+ *
+ *   driver-vehicle  -> /services/driver-vehicle/prerequisite/   NL-22, unchanged
+ *   studentaid      -> /services/studentaid/prerequisite/       PP-21
+ *
+ * The URL cannot carry the service — it is one prerendered page for both —
+ * and a query param was rejected for the whole CID seam (it shows on stage and
+ * forces a client render; see the seam note in service-config.ts). The store
+ * already knew: `markVerified(service.id)` wrote it one screen earlier. The
+ * destination is still decided by `serviceRoutes`, the one table of routes.
+ *
+ * Everything else below is unchanged: one-shot, consumed on mount, off the
+ * Back path, renders nothing.
+ * ==================================================================== */
+
 /** §12.3 `processingMinMs`. */
 export const PROCESSING_MIN_MS = 3000;
 
-export function ProcessingAdvance({
-  service,
-  to,
-}: {
-  service: ServiceId;
-  /** NL-22 for this service — the Confirm some details (Confirmed) screen. */
-  to: string;
-}) {
+export function ProcessingAdvance() {
   const router = useRouter();
   const { ready, takePendingAdvance } = useDemoState();
   /* Effects can run twice in development Strict Mode; the flag is consumed
@@ -86,8 +108,11 @@ export function ProcessingAdvance({
 
   useEffect(() => {
     if (!ready || armed.current) return;
-    if (!takePendingAdvance(service)) return;
+    const service = takePendingAdvance();
+    if (!service) return;
     armed.current = true;
+    /* NL-22 / PP-21 for the service that armed the advance. */
+    const to = serviceRoutes(service).prerequisite;
 
     const t = setTimeout(() => {
       /*
@@ -105,7 +130,7 @@ export function ProcessingAdvance({
     // `takePendingAdvance` closes over the store and changes identity on every
     // write; re-running on that would re-arm. The screen is the dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, service, to, router]);
+  }, [ready, router]);
 
   return null;
 }

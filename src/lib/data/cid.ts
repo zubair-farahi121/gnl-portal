@@ -338,6 +338,53 @@ function cidCaptureBack(service: ServiceConfig) {
 }
 
 /**
+ * Y8 — THE UPLOAD SCREEN. Added 2026-09-27.
+ *
+ * ====================================================================
+ * THERE IS NO FIGMA FRAME FOR THIS SCREEN, AND THAT IS THE POINT.
+ *
+ * Tatyana's recreation goes straight from the last capture to step 5. The REAL
+ * verification does not: design/YOTI_OBSERVED.md "Y8 — Upload (6127:50651)"
+ * records a left-aligned badge holding an upload glyph, a large bold block of
+ * text naming the document being uploaded, and a thin progress bar — and
+ * explicitly "No button, no help icon, no pinned bar."
+ *
+ * So this entry has no `nodeId` pair to quote and no measured geometry. The
+ * sub-step pill it carries IS ours (GNL chrome, outside the Yoti zone), and it
+ * repeats the value the four screens around it carry — "ID document selection
+ * • step 4 of 5" — because the upload belongs to that sub-step and renumbering
+ * the pill would make the counter disagree with every other frame in the file.
+ *
+ * `nodeId` is therefore spelled `derived:y8-upload` rather than borrowed from a
+ * neighbouring frame. A real Figma id in this slot would be a lie a later
+ * reader could not detect; a string that is obviously not an id is one they
+ * cannot miss. Replace it with the real one if Tatyana draws the screen.
+ *
+ * THE COPY IS NOT HERE. `yotiUploadCopy()` lives in src/lib/data/yoti-tokens.ts
+ * with the rest of the Yoti-owned values, because §7 Y8 asks for it in ONE
+ * constant that gets replaced wholesale after Zubair's English verification.
+ * What this module supplies is the one thing that is the SERVICE's rather than
+ * Yoti's: WHICH document is being uploaded.
+ * ====================================================================
+ */
+function cidUpload(service: ServiceConfig) {
+  return {
+    /**
+     * "Driver's License" in Flow A, "Passport" in Flow B — `defaultDocument`
+     * from §12.1, the same field that decides which row /cid/document/
+     * pre-selects. Never a literal: the real frame names a real person's health
+     * card and that is deliberately not reproduced (§10).
+     */
+    documentLabel: DOCUMENT_LABEL[service.defaultDocument],
+    subStep: {
+      label: "ID document selection",
+      step: "step 4 of 5",
+      nodeId: "derived:y8-upload",
+    },
+  } as const;
+}
+
+/**
  * ====================================================================
  * THE THREE SCREENS LOCATED 2026-09-22.
  *
@@ -689,6 +736,7 @@ export function getCidCopy(service: ServiceConfig) {
     document: cidDocument(service),
     captureFront: cidCaptureFront(service),
     captureBack: cidCaptureBack(service),
+    upload: cidUpload(service),
     mobileHandoff: CID_MOBILE_HANDOFF,
     country: CID_COUNTRY,
     captureIntro: CID_CAPTURE_INTRO,

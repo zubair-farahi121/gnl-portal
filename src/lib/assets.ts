@@ -120,6 +120,20 @@ export const ASSETS = {
   iconUserScope: "/assets/icon-user-scope.svg",
   /** Contact-card phone icon, 16 x 16. Figma 6031:6297. */
   iconPhone: "/assets/icon-phone.svg",
+
+  /* --- 2026-09-28: StudentAidNL service page (PP-03, 6206:25424) --- */
+  /**
+   * Contact-card "government building", drawn at 18 x 18. Figma 6206:26687
+   * `Icons/Government`. Bootstrap `bank` — a vendored stand-in, NOT the Figma
+   * glyph, which is not fetched (see the note in the SVG).
+   */
+  iconBank: "/assets/icon-bank.svg",
+  /**
+   * The 24 x 24 lock beside "Action locked" on the StudentAid portal row.
+   * Figma 6206:26620 `Lock`. Bootstrap `lock` outline in #5f6368 — a separate
+   * file from `iconLock`, which is 12px, white, and a placeholder.
+   */
+  iconLock24: "/assets/icon-lock-24.svg",
   /**
    * Horizontal rule inside data-privacy-card. Figma draws it as a vector, not a
    * CSS border: a zero-height box with the stroke offset 1px above it. 332 x 1,

@@ -80,6 +80,18 @@ const ROUTES = [
   ['cid-capture-intro', '/cid/capture-intro/'],
   ['cid-capture-front', '/cid/capture-front/'],
   ['cid-capture-back', '/cid/capture-back/'],
+  // Y8, THE UPLOAD SCREEN — added 2026-09-27. The one CID route with no Figma
+  // frame and no baseline in design/frames.json, so `npm run diff` cannot see
+  // it at all and THIS is its only mechanical cover for layout, along with the
+  // click chain for its behaviour. Two things make it worth a row of its own:
+  // its copy is the longest single text block in the zone (27px bold, five
+  // lines at 393) and it is the only screen whose width is not disciplined by a
+  // button or a panel, so a 320px overflow would show up here first.
+  //
+  // IT ADVANCES ITSELF after ~2s. This gate dwells 250ms after `networkidle`,
+  // so every measurement and every screenshot is taken on the upload screen and
+  // not on the step-5 screen it moves to.
+  ['cid-upload', '/cid/upload/'],
   ['cid-verified', '/cid/verified/'],
   // ====================================================================
   // FLOW B's CertifiO ID run — added 2026-09-23.
@@ -116,7 +128,35 @@ const ROUTES = [
   ['cid-b-document', '/cid/studentaid/document/'],
   ['cid-b-capture-intro', '/cid/studentaid/capture-intro/'],
   ['cid-b-capture-front', '/cid/studentaid/capture-front/'],
+  // Y8 IS IN BOTH FLOWS, unlike the back capture. The route is generated for
+  // `studentaid` with no `captureSides` filter, and the copy differs: this one
+  // names "your Passport" where Flow A names "your Driver's License". A
+  // different string at 27px is a different wrap, which is exactly the class of
+  // Flow B overflow this block of the list exists to catch.
+  ['cid-b-upload', '/cid/studentaid/upload/'],
   ['cid-b-verified', '/cid/studentaid/verified/'],
+  // ====================================================================
+  // FLOW B's DESKTOP WIZARD AND SERVICE PAGE — added 2026-09-28.
+  //
+  // Eight prerendered routes from src/app/services/[serviceId]/, plus the
+  // Trusted deep-link. NONE HAS A BASELINE in design/frames.json, so this gate
+  // and `npm run clicks` are their only mechanical cover. Listed in flow order.
+  // The ones most likely to overflow at 320, and why they are here:
+  //   b-service     PP-03's locked portal row ("Access the StudentAid Portal"
+  //                 at 24px is wider than the row on a phone — it steps down
+  //                 and wraps) and a 374px contact card of long lines.
+  //   b-onboard     PP-07's larger type scale: 36px heading, 18px card titles.
+  //   b-terms       the longer Flow B consent paragraph and SEVEN scope rows.
+  // ====================================================================
+  ['b-service', '/services/studentaid/'],
+  ['b-summary', '/services/studentaid/summary/'],
+  ['b-terms', '/services/studentaid/terms/'],
+  ['b-confirm-details', '/services/studentaid/confirm-details/'],
+  ['b-onboard', '/services/studentaid/onboard/'],
+  ['b-other-verification', '/services/studentaid/other-verification/'],
+  ['b-prerequisite', '/services/studentaid/prerequisite/'],
+  ['b-confirmation', '/services/studentaid/confirmation/'],
+  ['b-service-verified', '/services/studentaid/?verified=1'],
   // THE GNL 404 — added 2026-09-23 (Tier 1 item 1.6, brief §7.6). `/nope/` is
   // an unknown path on purpose: the static export serves out/404.html for it,
   // which is the page under test. It is in this gate because §7.6 says the demo
@@ -167,6 +207,14 @@ for (const [name, route] of ROUTES) {
     const msgs = [];
     page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') msgs.push(`${m.type()}: ${m.text()}`); });
     page.on('pageerror', e => msgs.push(`pageerror: ${e.message}`));
+    /*
+     * Every failing response, WITH ITS URL. Chromium's console line for a bad
+     * request says only "the server responded with a status of 404" and names
+     * nothing. These were recorded to scope the `cid-b-terms` exemption (now
+     * deleted — see below); they are kept so a failure names what 404'd.
+     */
+    const badUrls = [];
+    page.on('response', r => { if (r.status() >= 400) badUrls.push(r.url()); });
     await page.goto(BASE + route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(250);
     const m = await page.evaluate(() => {
@@ -191,12 +239,30 @@ for (const [name, route] of ROUTES) {
      * that route by name, so a stray 404 on any OTHER route (a missing icon, a
      * missing font) still fails this gate the way it always has.
      */
+    /*
+     * THE `cid-b-terms` EXEMPTION THAT USED TO SIT HERE WAS DELETED 2026-09-28.
+     *
+     * It forgave one 404 — the prefetch of /services/studentaid/onboard/ from
+     * "I do not agree" on /cid/studentaid/terms/ — because Flow B's desktop
+     * wizard did not exist yet, and it said: "DELETE THIS THE DAY
+     * /services/studentaid/onboard/ IS BUILT: the gate going red again is the
+     * signal that the link was left pointing somewhere else." That page is
+     * built (src/app/services/[serviceId]/onboard/), the exemption is gone,
+     * and this gate passing WITHOUT it is the proof the dead link is fixed.
+     *
+     * `badUrls` is still recorded: it is now printed with any console failure,
+     * so a future 404 names the URL instead of Chromium's anonymous "the server
+     * responded with a status of 404".
+     */
     const real = msgs.filter(
       (t) =>
         !/favicon|Download the React DevTools/i.test(t) &&
         !(name === 'not-found' && /status of 404/i.test(t)),
     );
-    if (real.length) consoleIssues.push(`${name} @${w}: ${real.join(' ;; ')}`);
+    if (real.length) {
+      const urls = badUrls.length ? ` [failed: ${badUrls.join(', ')}]` : '';
+      consoleIssues.push(`${name} @${w}: ${real.join(' ;; ')}${urls}`);
+    }
     await ctx.close();
   }
   for (const w of SHOT_WIDTHS) {

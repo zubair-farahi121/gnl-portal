@@ -1,8 +1,9 @@
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy, type CidDocumentOption } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_SIZE, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1 (ID document selection) — Figma 6087:31396, 393 x 1168.810546875.
@@ -136,13 +137,41 @@ import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
 function RadioRow({ option }: { option: CidDocumentOption }) {
   return (
     <div
-      className={`box-border flex w-full shrink-0 items-center gap-[12px] rounded-[8px] bg-white p-[16px] ${
-        option.selected
-          ? "shadow-[inset_0_0_0_2px_#27619b]"
-          : "shadow-[inset_0_0_0_1px_#d1d5db]"
-      }`}
+      /*
+       * RESTYLED TO THE REAL ROW 2026-09-27. YOTI_OBSERVED.md Y4: "white, full
+       * width, rounded (~8 px), 2 PX MUTED BLUE-GREY BORDER, ~54 px tall".
+       *
+       * So the UNSELECTED row goes from 1px #d1d5db to `YOTI_SIZE.rowBorder`
+       * (2) in `YOTI_COLOR.border` (#9ca5b4) and gains `rowMinHeight` (54),
+       * which the 16px padding alone did not reach. The SELECTED row keeps its
+       * 2px `YOTI_COLOR.button` — see the note in CidDocumentScreen's header on
+       * why selection is not removed even though no real screenshot shows it.
+       *
+       * `minHeight`, not `height`: two of the seven rows are taller than 54
+       * because their label wraps or carries a second line, and Figma measures
+       * them at 69 and 72. Pinning the height would clip both.
+       *
+       * STILL AN INSET BOX-SHADOW, NOT A `border` — Figma draws the stroke
+       * inside the box, and at 2px a real border would make every row 4px
+       * taller and move the whole list.
+       *
+       * `data-selected` is how scripts/click-through.mjs finds the pre-selected
+       * row now. It used to read the Tailwind class name
+       * (`inset_0_0_0_2px`), which stopped telling the two states apart the
+       * moment BOTH borders became 2px — a check that would have kept passing
+       * while measuring nothing.
+       */
+      className="box-border flex w-full shrink-0 items-center gap-[12px] bg-white p-[16px]"
+      style={{
+        minHeight: YOTI_SIZE.rowMinHeight,
+        borderRadius: YOTI_SIZE.rowRadius,
+        boxShadow: `inset 0 0 0 ${YOTI_SIZE.rowBorder} ${
+          option.selected ? YOTI_COLOR.button : YOTI_COLOR.border
+        }`,
+      }}
       data-node-id={option.nodeId}
       data-name="RadioRow"
+      data-selected={option.selected ? "true" : undefined}
     >
       <div className="relative size-[20px] shrink-0" data-name="radio-circle">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -165,7 +194,16 @@ function RadioRow({ option }: { option: CidDocumentOption }) {
          * Montserrat is self-hosted (layout.tsx) and this zone is
          * `.gnl-yoti-zone`, so it is no longer collapsed to Lato 700.
          */}
-        <p className="w-full shrink-0 text-[16px] font-semibold leading-[normal] text-[#546072] [word-break:break-word]">
+        {/*
+         * The label keeps 16px — `YOTI_TEXT.body`, which the recreation already
+         * matched, so this is a re-spelling rather than a change. The WEIGHT
+         * drops from SemiBold to regular: YOTI_OBSERVED.md Y4 describes "an
+         * empty circle radio … and a REGULAR-WEIGHT dark label".
+         */}
+        <p
+          className="w-full shrink-0 font-normal leading-[normal] [word-break:break-word]"
+          style={{ fontSize: YOTI_TEXT.body, color: YOTI_COLOR.muted }}
+        >
           {option.label}
         </p>
         {option.note && (
@@ -190,16 +228,31 @@ export function CidDocumentScreen({ service }: { service: ServiceConfig }) {
         data-node-id="6087:32267"
         data-name="accepted-documents"
       >
+        {/*
+         * RAISED 2026-09-27: 22px -> `YOTI_TEXT.listTitle` (20px)?  No — this
+         * one goes the other way and the token says so: §6 gives
+         * "Accepted documents:" its own `listTitle` value of 20px, below the
+         * 24px heading scale and below Tatyana's 22. YOTI_OBSERVED.md Y4 places
+         * it as "bold, dark, LARGER THAN THE ROW LABELS" (16px) and says
+         * nothing stronger. The token is the authority; logged as an open
+         * question with Y1's heading, which moves the same way.
+         */}
         <p
-          className="w-full shrink-0 text-[22px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
+          className="w-full shrink-0 font-bold leading-[normal] [word-break:break-word]"
+          style={{ fontSize: YOTI_TEXT.listTitle, color: YOTI_COLOR.ink }}
           data-node-id="6087:32268"
         >
           {copy.title}
         </p>
 
-        {/* documents-list — 6087:32269 */}
+        {/*
+         * documents-list — 6087:32269. Gap raised 10 -> `YOTI_SIZE.rowGap`
+         * (15): YOTI_OBSERVED.md Y4, "Generous gap between rows (~15 px): they
+         * read as separate cards, not a joined list."
+         */}
         <div
-          className="flex w-full shrink-0 flex-col items-start gap-[10px]"
+          className="flex w-full shrink-0 flex-col items-start"
+          style={{ gap: YOTI_SIZE.rowGap }}
           data-node-id="6087:32269"
           data-name="documents-list"
         >
@@ -209,43 +262,17 @@ export function CidDocumentScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6087:31453 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6087:31453"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6087:31454 is an instance of `Yoti ContinueButton`
-         * (6076:31361), a second primary button that exists only on the four
-         * ID-document frames. In production this step is rendered by the
-         * identity provider inside GNL chrome: GNL supplies the top nav, the
-         * wizard header, the stepper and the footer; Yoti supplies the body
-         * and THIS button. Its #27619b fill is the Yoti CTA blue, not the
-         * GNL navy #243746 — the two are deliberate, not drift.
-         *
-         * So: reproduce its appearance, do not fold it into the GNL primary,
-         * and do not "fix" its colour to match the rest of the wizard. The
-         * `tone="yoti"` variant on BtnPrimary exists for exactly this reason.
-         * See design/verification-frame-map.md §7.
-         */}
-        {/*
-         * RE-POINTED 2026-09-22 from /cid/capture-front/ to
-         * /cid/capture-intro/ (Figma 6217:66055), the capture-instruction
-         * screen that was gap G2 / conflict C2 in the frame map — it was known
-         * to exist but had no addressable node id until now. It is step 4b and
-         * sits between this screen and the front capture.
-         */}
-        <BtnPrimary
-          href={routes.captureIntro}
-          tone="yoti"
-          nodeId="6087:31454"
-          className="w-full md:w-auto"
-        >
+      {/*
+       * Frame 6 — 6087:31453, REPLACED BY THE PINNED BAR 2026-09-27. Same
+       * change and same reasoning as on Y1; see the long note on
+       * CidLivenessScreen. The destination is unchanged: /cid/capture-intro/,
+       * this service's copy of it.
+       */}
+      <YotiActionBar>
+        <YotiContinue href={routes.captureIntro}>
           {actions.continueShort}
-        </BtnPrimary>
-      </div>
+        </YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

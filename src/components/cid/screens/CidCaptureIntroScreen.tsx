@@ -1,8 +1,13 @@
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import {
+  YotiActionBar,
+  YotiContinue,
+  YotiHelpIcon,
+} from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy, type CidGuideline } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_SIZE, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1_Front_instruction — Figma 6217:66055, 393 x 994.810546875.
@@ -164,7 +169,19 @@ function GuidelineRow({ guideline }: { guideline: CidGuideline }) {
        * self-hosted (layout.tsx) and this zone is `.gnl-yoti-zone`, so the
        * weight is no longer collapsed to Lato 700.
        */}
-      <p className="min-w-px flex-[1_0_0] text-[13px] font-semibold leading-[18px] text-[#546072] [word-break:break-word]">
+      {/*
+       * The row label keeps its 13px/18px. §6 gives no token for card rows and
+       * YOTI_OBSERVED.md Y5 records only "[thin outline icon | text], all
+       * grey-blue, comfortably spaced" with no size, so raising it would be a
+       * guess dressed as a measurement — and the per-row `items-start` /
+       * `items-center` alignment that makes this card measure 192 is derived
+       * from the 18px line box. The COLOUR is now the token. Logged as an open
+       * question alongside Y3's panel body, which is the same situation.
+       */}
+      <p
+        className="min-w-px flex-[1_0_0] text-[13px] font-semibold leading-[18px] [word-break:break-word]"
+        style={{ color: YOTI_COLOR.muted }}
+      >
         {guideline.text}
       </p>
     </div>
@@ -183,20 +200,57 @@ export function CidCaptureIntroScreen({ service }: { service: ServiceConfig }) {
         data-node-id="6056:20786"
         data-name="Screen 7 - id-photo-instructions"
       >
+        {/*
+         * THE HELP ICON — Y1, Y3 and Y5 (YOTI_HELP_SCREENS), in its own
+         * right-aligned row above the heading; see the longer note on Y1.
+         *
+         * Y5 IS THE ONE WHERE ITS PRESENCE IS INFERRED RATHER THAN SEEN.
+         * YOTI_OBSERVED.md Y5 item 1: "The help icon belongs at the right of
+         * this same row; here it is HIDDEN UNDER THE SESSION-EXPIRY TOAST,
+         * which is why §6 hedges 'probably Y5 too'." §13 requires it, so it is
+         * drawn, and the inference is logged as an open question rather than
+         * left implicit in the markup.
+         *
+         * "THIS SAME ROW" IS THE BADGE'S ROW, and the badge is not built — see
+         * the audit row for it. When the badge lands, this becomes a
+         * `justify-between` row with the badge on the left and nothing else
+         * changes.
+         */}
+        <div className="flex w-full shrink-0 justify-end" data-name="yoti-help-row">
+          <YotiHelpIcon />
+        </div>
+
         {/* Instruction Header — 6056:20791 */}
         <div
           className="flex w-full shrink-0 flex-col items-start gap-[8px]"
           data-node-id="6056:20791"
           data-name="Instruction Header"
         >
+          {/* RAISED 2026-09-27: 22px -> `YOTI_TEXT.heading` (24px), leaded 1.2. */}
           <p
-            className="w-full shrink-0 text-[22px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
+            className="w-full shrink-0 font-bold [word-break:break-word]"
+            style={{
+              fontSize: YOTI_TEXT.heading,
+              lineHeight: YOTI_TEXT.headingLeading,
+              color: YOTI_COLOR.ink,
+            }}
             data-node-id="6056:20792"
           >
             {copy.title}
           </p>
+          {/*
+           * RAISED 2026-09-27: 14px/20px -> `YOTI_TEXT.body` (16px) at
+           * `bodyLeading` (1.4). YOTI_OBSERVED.md Y5 item 3: "Body, 3 lines,
+           * regular, DARK" — so the colour moves too, from the recreation's
+           * #4b5563 to `YOTI_COLOR.ink`.
+           */}
           <p
-            className="w-full shrink-0 text-[14px] font-normal leading-[20px] text-[#4b5563] [word-break:break-word]"
+            className="w-full shrink-0 font-normal [word-break:break-word]"
+            style={{
+              fontSize: YOTI_TEXT.body,
+              lineHeight: YOTI_TEXT.bodyLeading,
+              color: YOTI_COLOR.ink,
+            }}
             data-node-id="6056:20793"
           >
             {copy.subtitle}
@@ -215,13 +269,28 @@ export function CidCaptureIntroScreen({ service }: { service: ServiceConfig }) {
          * palette and do not mistake this card for a GNL component.
          * See design/verification-frame-map.md §7.
          */}
+        {/*
+         * RESTYLED TO THE REAL CARD 2026-09-27 — YOTI_OBSERVED.md Y5 item 4:
+         * "light grey (#f3f4f6), rounded (~8 px), ROOMY PADDING". Fill and
+         * radius already matched and are now spelled from `YOTI_COLOR.panel`
+         * and `YOTI_SIZE.panelRadius`; the padding moves 16 ->
+         * `YOTI_SIZE.panelPadding` (20). Identical treatment to the privacy
+         * panel on Y3, which is the same component in the real UI.
+         */}
         <div
-          className="box-border flex w-full shrink-0 flex-col items-start gap-[12px] rounded-[8px] bg-[#f3f4f6] p-[16px]"
+          className="box-border flex w-full shrink-0 flex-col items-start gap-[12px]"
+          style={{
+            background: YOTI_COLOR.panel,
+            borderRadius: YOTI_SIZE.panelRadius,
+            padding: YOTI_SIZE.panelPadding,
+          }}
           data-node-id="6056:20794"
           data-name="Guidelines Card"
         >
+          {/* RAISED 2026-09-27: 15px -> `YOTI_TEXT.cardTitle` (16px). */}
           <p
-            className="w-full shrink-0 text-[15px] font-bold leading-[normal] text-[#546072] [word-break:break-word]"
+            className="w-full shrink-0 font-bold leading-[normal] [word-break:break-word]"
+            style={{ fontSize: YOTI_TEXT.cardTitle, color: YOTI_COLOR.muted }}
             data-node-id="6056:20795"
           >
             {copy.guidelinesTitle}
@@ -232,30 +301,17 @@ export function CidCaptureIntroScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6056:20001 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6056:20001"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6076:31370 is an instance of `Yoti ContinueButton` (6076:31361)
-         * — the very instance design/verification-frame-map.md §7 listed under
-         * "front-instruction master" before that master had an id. Its #27619b
-         * fill is the Yoti CTA blue, not the GNL navy #243746. Reproduce its
-         * appearance; do not fold it into the GNL primary and do not "fix" its
-         * colour to match the rest of the wizard.
-         */}
-        <BtnPrimary
-          href={routes.captureFront}
-          tone="yoti"
-          nodeId="6076:31370"
-          className="w-full md:w-auto"
-        >
+      {/*
+       * Frame 6 — 6056:20001, REPLACED BY THE PINNED BAR 2026-09-27. Same
+       * change and same reasoning as on Y1; see the long note on
+       * CidLivenessScreen. The destination is unchanged: this service's
+       * capture-front screen.
+       */}
+      <YotiActionBar>
+        <YotiContinue href={routes.captureFront}>
           {actions.continueShort}
-        </BtnPrimary>
-      </div>
+        </YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

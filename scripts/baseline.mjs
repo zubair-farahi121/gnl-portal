@@ -154,6 +154,15 @@ Taken **after** Montserrat was self-hosted for the Yoti zone (\`BUILD_BRIEF.md\`
 400/500/600/700 and the rest of the portal in Lato. Baselining before that
 change would have frozen the wrong typeface into the reference.
 
+Also taken **after** the 2026-09-27 Yoti-zone pass (\`DEMO_AUDIT.md\` →
+"Yoti zone audit"), which replaced the in-flow Continue with the pinned
+\`YotiActionBar\`, raised the type to the \`YOTI_TEXT\` scale, and rebuilt the Y2
+camera window. All **seven** Yoti frames moved in that pass and were
+re-baselined deliberately; the other fifteen did not move at all, and that —
+not the seven — is what proves the change stayed inside the zone. If a
+non-Yoti frame ever needs re-baselining after a Yoti change, something has
+leaked and the right fix is in the markup, not here.
+
 ## When the real exports arrive
 
 Drop them into this folder under the frame ids in \`design/frames.json\`, delete

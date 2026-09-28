@@ -1,6 +1,6 @@
 # design/baselines/ — SELF-BASELINES, NOT FIGMA EXPORTS
 
-**Generated:** 2026-09-23 by `npm run baseline` (`scripts/baseline.mjs`)
+**Generated:** 2026-09-27 by `npm run baseline` (`scripts/baseline.mjs`)
 **Source:** `design/shots/` — screenshots of this repo's own static export,
 taken by `npm run shots` against `serve out`.
 
@@ -16,8 +16,8 @@ by this container's egress proxy, so no export could be produced. See
 
 | | |
 |---|---|
-| **Catches** | drift from the verified state of 2026-09-23 — which is what the `SERVICES` config refactor (§12.1) needs, since it touches KEEP screens and the only available proof is that their output did not move |
-| **Cannot catch** | a mismatch that already existed against Figma on 2026-09-23. Anything wrong then is frozen as correct now. |
+| **Catches** | drift from the verified state of 2026-09-27 — which is what the `SERVICES` config refactor (§12.1) needs, since it touches KEEP screens and the only available proof is that their output did not move |
+| **Cannot catch** | a mismatch that already existed against Figma on 2026-09-27. Anything wrong then is frozen as correct now. |
 
 So `GATE: PASS` means *"nothing moved"*. It does **not** mean *"matches Figma"*.
 The per-node Figma measurements in `design/token-exceptions.md` are the only
@@ -29,6 +29,15 @@ Taken **after** Montserrat was self-hosted for the Yoti zone (`BUILD_BRIEF.md`
 §11.1 / §11.9), so the seven Yoti-zone frames are baselined in Montserrat
 400/500/600/700 and the rest of the portal in Lato. Baselining before that
 change would have frozen the wrong typeface into the reference.
+
+Also taken **after** the 2026-09-27 Yoti-zone pass (`DEMO_AUDIT.md` →
+"Yoti zone audit"), which replaced the in-flow Continue with the pinned
+`YotiActionBar`, raised the type to the `YOTI_TEXT` scale, and rebuilt the Y2
+camera window. All **seven** Yoti frames moved in that pass and were
+re-baselined deliberately; the other fifteen did not move at all, and that —
+not the seven — is what proves the change stayed inside the zone. If a
+non-Yoti frame ever needs re-baselining after a Yoti change, something has
+leaked and the right fix is in the markup, not here.
 
 ## When the real exports arrive
 

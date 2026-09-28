@@ -2,6 +2,7 @@ import {
   APP_ROUTES,
   CID_ROUTES,
   DEFAULT_SERVICE_ID,
+  cidRoutes,
   serviceRoutes,
 } from "@/lib/data/service-config";
 
@@ -165,6 +166,28 @@ export const FLOW = [
   CID_ROUTES.captureIntro,
   CID_ROUTES.captureFront,
   CID_ROUTES.captureBack,
+  /*
+   * Y8, THE UPLOAD SCREEN — added 2026-09-27. /cid/upload/.
+   *
+   * IT IS NOT IN FIGMA AND THAT IS WHY IT WAS MISSING. Every other entry in
+   * this list was placed by reading the canvas; there is nothing on the canvas
+   * to read for this one. It comes from design/YOTI_OBSERVED.md, transcribed
+   * from photographs of a REAL verification — "Y8 — Upload (6127:50651)" —
+   * which is the higher authority wherever the recreation and the real thing
+   * disagree, and here the recreation simply does not have the screen.
+   *
+   * WHERE IT GOES IS NOT A JUDGEMENT CALL: an upload happens after the last
+   * photograph and before the result, in both flows. Flow A reaches it from
+   * /cid/capture-back/ and Flow B from /cid/capture-front/ — see `captureSides`
+   * on CidCaptureFrontScreen.
+   *
+   * IT IS THE ONE SCREEN IN THIS LIST WITH NO ON-SCREEN CONTROL AT ALL — no
+   * Continue, no Back, no help icon; YOTI_OBSERVED.md says so in those words.
+   * It advances itself after YOTI_SIZE.progressMs. So ArrowRight here is a
+   * convenience rather than the only forward move (unlike /auth/loading/), and
+   * ArrowLeft is the only reverse move, as on the four screens before it.
+   */
+  CID_ROUTES.upload,
   CID_ROUTES.verified,
   /*
    * /auth/loading/ (6217:80871) has NO buttons in Figma — its closing line is
@@ -187,4 +210,58 @@ export const FLOW = [
   R.prerequisite,
   R.confirmation,
   R.pageVerified,
+] as const;
+
+/*
+ * ====================================================================
+ * FLOW B — StudentAidNL — the same idea, added 2026-09-28.
+ *
+ * §5 / §9 order: dashboard -> PP-03 -> Onboard -> PP-04 Summary -> PP-05 Terms
+ * -> PP-06 Required -> PP-07 method -> PP-08 Other verification -> PP-09
+ * hand-off -> PP-10..PP-19 (the CID run, NO back capture) -> PP-20 processing
+ * -> PP-21 Confirmed -> PP-22 Success -> PP-23 Trusted.
+ *
+ * WHY IT MATTERS MORE THAN IT LOOKS: until today every /services/studentaid/…
+ * and /cid/studentaid/… URL was absent from FLOW, so DemoNav's `findIndex`
+ * returned -1 and BOTH arrows did nothing there. On the Yoti screens that have
+ * no Back control (country, document, capture-intro, capture-front, upload),
+ * ArrowLeft is the only reverse move — so Flow B had none.
+ *
+ * SHARED URLS RESOLVE TO FLOW A. `/`, `/dashboard/` and `/auth/loading/` are in
+ * both lists; DemoNav picks FLOW_B only for a path that is in FLOW_B and NOT
+ * in FLOW, so every arrow press on every Flow A URL behaves exactly as it did.
+ * The cost, stated plainly: ArrowRight on /auth/loading/ is Flow A's hop even
+ * mid-Flow-B. Flow B does not need it — its processing screen advances itself
+ * to the Flow B prerequisite page (ProcessingAdvance) — and ArrowLeft from
+ * PP-21 is reached by its on-screen Back instead.
+ * ====================================================================
+ */
+const B = serviceRoutes("studentaid");
+const CID_B = cidRoutes("studentaid");
+
+export const FLOW_B = [
+  APP_ROUTES.login,
+  APP_ROUTES.dashboard,
+  B.page,
+  B.summary,
+  B.terms,
+  B.confirmDetails,
+  B.onboard,
+  B.otherVerification,
+  CID_B.handoff,
+  CID_B.terms,
+  CID_B.biometric,
+  CID_B.liveness,
+  CID_B.livenessCapture,
+  CID_B.country,
+  CID_B.document,
+  CID_B.captureIntro,
+  CID_B.captureFront,
+  /* No CID_B.captureBack — §9 "no back capture"; the route is not generated. */
+  CID_B.upload,
+  CID_B.verified,
+  APP_ROUTES.processing,
+  B.prerequisite,
+  B.confirmation,
+  B.pageVerified,
 ] as const;

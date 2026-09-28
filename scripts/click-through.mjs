@@ -69,6 +69,14 @@
  *       old build cleared it on Log Out and carried Trusted in a `?verified=1`
  *       query param, so neither property held.
  *
+ * EXTENDED AGAIN 2026-09-28 with FLOW B END TO END (`runFlowB`, at the foot of
+ * this file): dashboard -> StudentAidNL card -> PP-03 … PP-23 Trusted, every
+ * Flow B Back / Cancel, the shared processing screen routing to FLOW B's
+ * Confirmed screen, and the two isolation checks — finishing Flow B does not
+ * make Flow A Trusted (G-ISO) and finishing Flow A does not make Flow B
+ * Trusted (D3b). `runFlowBCid`'s F1b now FOLLOWS the decline link instead of
+ * reading its href, because the page it points at exists.
+ *
  * Needs the static build served first (WITHOUT `serve -s`, which rewrites
  * every route to index.html and would make every assertion below pass while
  * testing only the login page):  npm run build && npm run serve
@@ -232,7 +240,24 @@ async function run(width) {
   await step('11 Documents -> capture instructions', click('Continue'), '/cid/capture-intro');
   await step('12 Capture instructions -> capture front', click('Continue'), '/cid/capture-front');
   await step('13 Capture front -> capture back', click('Continue'), '/cid/capture-back');
-  await step('14 Capture back -> verified', click('Continue'), '/cid/verified');
+  /*
+   * Y8, THE UPLOAD SCREEN — inserted 2026-09-27 between the last capture and
+   * step 5. design/YOTI_OBSERVED.md "Y8 — Upload (6127:50651)"; there is no
+   * Figma frame for it, so this gate and `npm run responsive` are the only
+   * mechanical checks it has.
+   *
+   * IT IS THE ONLY SCREEN IN THE CHAIN WITH NO ON-SCREEN CONTROL — "No button,
+   * no help icon, no pinned bar" — so the hop INTO it is a click and the hop
+   * OUT of it is not. That makes it the same shape as the /auth/loading/
+   * auto-advance (D1 below) and it is asserted the same way: the arrival first,
+   * then a wait LONGER than YOTI_SIZE.progressMs (2000), then the destination.
+   * A shorter wait would pass against the very bug it exists to catch — a
+   * timer that never fires leaves the presenter stranded on a screen with
+   * nothing to click.
+   */
+  await step('14 Capture back -> upload', click('Continue'), '/cid/upload');
+  await p.waitForTimeout(2800);
+  at('14b Upload advances to CID verified on its own', '/cid/verified');
   await step(
     '15 CID verified -> provider status',
     click('Continue to Driver and Vehicle service'),
@@ -285,7 +310,19 @@ async function run(width) {
    * screens, and a route inserted in the wrong slot there produces a forward
    * chain that still passes while the reverse chain silently skips a screen.
    */
-  await step('B5 CID verified -> capture back (ArrowLeft)', arrow('ArrowLeft'), '/cid/capture-back');
+  /*
+   * B5 / B5b — THE UPLOAD SCREEN, BACKWARDS. Added 2026-09-27 with Y8.
+   *
+   * It has no Back control (it has no control at all), so ArrowLeft is the only
+   * reverse move both into it and out of it. Note that arriving here backwards
+   * re-arms its 2s advance: the presenter who stops on this screen on the way
+   * back WILL be carried forward again. That is a known behaviour, logged as an
+   * open question in DEMO_AUDIT.md — the real Yoti has no back path into this
+   * screen at all, so there is nothing to reproduce and nothing to copy. The
+   * two steps below leave it well inside 2s, so this chain is not racing it.
+   */
+  await step('B5 CID verified -> upload (ArrowLeft)', arrow('ArrowLeft'), '/cid/upload');
+  await step('B5b Upload -> capture back (ArrowLeft)', arrow('ArrowLeft'), '/cid/capture-back');
   await step('B6 Capture back -> capture front (ArrowLeft)', arrow('ArrowLeft'), '/cid/capture-front');
   await step('B7 Capture front -> capture instructions (ArrowLeft)', arrow('ArrowLeft'), '/cid/capture-intro');
   await step('B8 Capture instructions -> documents (ArrowLeft)', arrow('ArrowLeft'), '/cid/document');
@@ -420,6 +457,22 @@ async function run(width) {
     }
   }
   await sees('D3 Trusted badge', 'Trusted');
+
+  /*
+   * D3b — FINISHING FLOW A DOES NOT MAKE FLOW B TRUSTED. Added 2026-09-28.
+   * The store is keyed per service; this is the mirror of G-ISO in
+   * runFlowB below, which asserts the other direction.
+   */
+  await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  {
+    const trusted = await p.evaluate(
+      () => document.querySelector('.gnl-desktop-shell')?.getAttribute('data-verified'),
+    );
+    if (trusted === '1') {
+      fails.push(`@${width} D3b: completing Flow A made StudentAidNL Trusted — the store leaked across services`);
+    }
+  }
 
   /*
    * D4 — LOG OUT KEEPS ONBOARDING PROGRESS (§7.1, Q-17).
@@ -570,12 +623,9 @@ async function run(width) {
  *       path that starts /cid/studentaid/, so a single link that forgot its
  *       service would land on Flow A's copy of the next screen and fail here.
  *
- * NOT ASSERTED, ON PURPOSE: the decline path. "I do not agree" on Flow B's
- * terms screen points at /services/studentaid/onboard/, which is correct by
- * construction (`serviceRoutes(service.id)`) but is a Flow B desktop screen
- * another pass is building. The HREF is checked instead of the navigation, so
- * this gate tests this pass's work and does not fail on someone else's
- * unfinished route.
+ * THE DECLINE PATH IS NOW FOLLOWED (F1b). Until 2026-09-28 it was checked as
+ * an href only, because /services/studentaid/onboard/ did not exist; Flow B's
+ * desktop wizard now does, so the click is made and the landing asserted.
  * ======================================================================
  */
 async function runFlowBCid(width) {
@@ -633,16 +683,19 @@ async function runFlowBCid(width) {
     '/cid/studentaid/terms',
   );
 
-  /* The decline destination, checked as an href — see the note above. */
-  {
-    const href = await p
-      .getByRole('link', { name: 'I do not agree', exact: true })
-      .first()
-      .getAttribute('href');
-    if (href !== '/services/studentaid/onboard/') {
-      fails.push(`@${width} F1b: decline href is "${href}", expected /services/studentaid/onboard/`);
-    }
-  }
+  /*
+   * F1b — THE DECLINE PATH, NOW FOLLOWED. Changed 2026-09-28.
+   *
+   * This used to read the HREF instead of clicking, "so this gate tests this
+   * pass's work and does not fail on someone else's unfinished route" —
+   * /services/studentaid/onboard/ did not exist. It does now (PP-07,
+   * src/app/services/[serviceId]/onboard/), so the link is clicked and the
+   * landing page is asserted to be FLOW B's method step, not Flow A's and not
+   * the 404. Then back to Flow B's Terms of use to carry on the chain.
+   */
+  await step('F1b B terms -> B method step (I do not agree)', click('I do not agree'), '/services/studentaid/onboard');
+  await sees('F1b B method step is StudentAidNL\'s', 'Medical Care Plan (MCP)');
+  await p.goto(BASE + '/cid/studentaid/terms/', { waitUntil: 'networkidle' });
 
   await step('F2 B terms -> consent', click('I agree'), '/cid/studentaid/biometric');
   await step('F3 B consent -> liveness prepare', click('I agree'), '/cid/studentaid/liveness');
@@ -657,9 +710,18 @@ async function runFlowBCid(width) {
    * selected row carries the 2px #27619b inset shadow.
    */
   {
+    /*
+     * READ OFF `data-selected`, NOT OFF THE CLASS NAME — changed 2026-09-27.
+     *
+     * This used to look for the Tailwind class `inset_0_0_0_2px`, which told
+     * the two states apart only because the UNSELECTED row had a 1px border.
+     * YOTI_OBSERVED.md Y4 measures the real unselected row at "2 px muted
+     * blue-grey border", so both are 2px now and that filter would have matched
+     * all seven rows — a check that keeps passing while measuring nothing.
+     * CidDocumentScreen marks the selected row explicitly instead.
+     */
     const selected = await p.evaluate(() =>
-      [...document.querySelectorAll('[data-name="RadioRow"]')]
-        .filter((el) => el.className.includes('inset_0_0_0_2px'))
+      [...document.querySelectorAll('[data-name="RadioRow"][data-selected="true"]')]
         .map((el) => el.textContent.trim()),
     );
     if (selected.length !== 1 || selected[0] !== 'Passport') {
@@ -679,8 +741,28 @@ async function runFlowBCid(width) {
     }
   }
 
-  /* THE HOP THAT PROVES `captureSides`. Front capture -> step 5, not -> back. */
-  await step('F9 B capture front -> verified (NO back capture)', click('Continue'), '/cid/studentaid/verified');
+  /*
+   * THE HOP THAT PROVES `captureSides`. Front capture -> the UPLOAD screen,
+   * not -> a back capture.
+   *
+   * RE-POINTED 2026-09-27 with Y8. The assertion is unchanged in substance —
+   * if this ever lands on a back-capture screen, `captureSides` has stopped
+   * driving the link and Flow B has grown a screen §9 says it does not have —
+   * but the destination is now the screen where the two flows rejoin.
+   */
+  await step('F9 B capture front -> upload (NO back capture)', click('Continue'), '/cid/studentaid/upload');
+  /*
+   * F9a — AND THE UPLOAD SCREEN NAMES *THIS FLOW'S* DOCUMENT. `yotiUploadCopy`
+   * takes the label from `defaultDocument`, so Flow B must say "Passport" here
+   * and must not say "Driver's License". This is the only place either string
+   * is asserted on a rendered page, and it is what proves the real card type
+   * from the photographs was not reproduced.
+   */
+  await sees('F9a B upload names the passport', 'your Passport');
+  await p.waitForTimeout(2800);
+  if (!new URL(p.url()).pathname.startsWith('/cid/studentaid/verified')) {
+    fails.push(`@${width} F9b: B upload did not advance to step 5 on its own (at ${new URL(p.url()).pathname})`);
+  }
   await sees('FA B step-5 copy is §10.1’s', 'Apply for student financial assistance');
   await sees('FA B step-5 names the service', 'securely access StudentAidNL services');
 
@@ -692,7 +774,7 @@ async function runFlowBCid(width) {
   );
 
   /*
-   * F9b — the back-capture route is NOT GENERATED for this service, so the
+   * F9c — the back-capture route is NOT GENERATED for this service, so the
    * static export answers with out/404.html. Asserted on the 404 page's own
    * heading rather than on a status code, because `serve` returns 404.html with
    * a 404 and Playwright's `goto` does not throw on it.
@@ -700,19 +782,323 @@ async function runFlowBCid(width) {
   await p.goto(BASE + '/cid/studentaid/capture-back/', { waitUntil: 'networkidle' });
   await p.waitForTimeout(300);
   if (!(await p.getByText('We can’t find that page', { exact: false }).count())) {
-    fails.push(`@${width} F9b: /cid/studentaid/capture-back/ resolved to a real page; it must not be generated`);
+    fails.push(`@${width} F9c: /cid/studentaid/capture-back/ resolved to a real page; it must not be generated`);
   }
+
+  await ctx.close();
+}
+
+/*
+ * ======================================================================
+ * FLOW B END TO END — StudentAidNL — added 2026-09-28.
+ *
+ * The whole §9 chain, from the dashboard card to the Trusted service page,
+ * clicked control by control at each width — the Flow B twin of `run` above:
+ *
+ *   dashboard -> StudentAidNL card -> PP-03 -> Onboard -> PP-04 Summary ->
+ *   PP-05 Terms (unticked refuses, ticked consents) -> PP-06 Required ->
+ *   PP-07 method (3 cards, GNL IDV selected, MCP inert) -> PP-08 Other
+ *   verification -> PP-09 hand-off -> PP-10..PP-19 (no back capture) ->
+ *   PP-20 processing AUTO-ADVANCES TO FLOW B's PP-21 -> PP-22 Success ->
+ *   "Go to Service StudentAidNL" -> PP-23 Trusted, surviving a reload.
+ *
+ * FOUR ASSERTIONS HERE EXIST BECAUSE THE FAILURE IS INVISIBLE ELSEWHERE:
+ *
+ *   G14b  THE SHARED PROCESSING SCREEN ROUTES PER SERVICE. /auth/loading/ is
+ *         one page for both flows. Before 2026-09-28 its advance was wired to
+ *         `driver-vehicle` only, so Flow B's armed flag was ignored and the
+ *         screen sat still. It must now land on /services/studentaid/
+ *         prerequisite/ — NOT Flow A's — with the completion toast.
+ *   G-ISO FINISHING FLOW B DOES NOT MAKE FLOW A TRUSTED. The store is keyed per
+ *         service; Driver and Vehicle's page must still read
+ *         "Confirmation required" after StudentAidNL is onboarded, and its
+ *         stored record must not be `onboarded`.
+ *   GB    EVERY Back / Cancel ON A FLOW B SCREEN LANDS ON A FLOW B SCREEN (or
+ *         on the one SHARED processing screen, which is where PP-21's Back
+ *         points by design). A Flow B control that forgot its service would
+ *         land on /services/driver-vehicle/… and fail here.
+ *   GH    HYDRATION WITH A POPULATED FLOW B STORE — `run`'s D6 for the eight
+ *         new routes.
+ * ======================================================================
+ */
+async function runFlowB(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 900 } });
+  const p = await ctx.newPage();
+  const consoleErrors = [];
+  p.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleErrors.push(m.text());
+  });
+  p.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
+
+  const step = async (label, action, expect) => {
+    await action(p);
+    await p.waitForTimeout(400);
+    const u = new URL(p.url()).pathname;
+    if (!u.startsWith(expect)) fails.push(`@${width} ${label}: expected ${expect} got ${u}`);
+  };
+  const click = (name) => async (pg) => {
+    const link = pg.getByRole('link', { name, exact: true }).first();
+    if (await link.count()) return link.click();
+    return pg.getByRole('button', { name, exact: true }).first().click();
+  };
+  const arrow = (key) => (pg) => pg.keyboard.press(key);
+  const at = (label, expect) => {
+    const u = new URL(p.url()).pathname;
+    if (!u.startsWith(expect)) fails.push(`@${width} ${label}: expected ${expect} got ${u}`);
+  };
+  const sees = async (label, text) => {
+    if (!(await p.getByText(text, { exact: false }).count())) {
+      fails.push(`@${width} ${label}: expected to see "${text}"`);
+    }
+  };
+  const verifiedAttr = () =>
+    p.evaluate(() => document.querySelector('.gnl-desktop-shell')?.getAttribute('data-verified'));
+
+  /* ===================== FORWARD ======================================== */
+  await p.goto(BASE + '/', { waitUntil: 'networkidle' });
+  await step('G1  Log in', click('Log in'), '/dashboard');
+  /* PP-02: the whole card is the link, like Driver and Vehicle's. */
+  await step(
+    'G2  StudentAidNL card -> PP-03',
+    (pg) => pg.getByRole('link', { name: /StudentAidNL/ }).first().click(),
+    '/services/studentaid',
+  );
+  if ((await verifiedAttr()) !== '0') fails.push(`@${width} G2b: PP-03 should open unverified`);
+  await sees('G2c PP-03 badge', 'Confirmation required');
+  await sees('G2d PP-03 subtitle is §10.1\'s', 'View and manage your StudentAidNL services');
+  await sees('G2e PP-03 locked portal row', 'Action locked');
+  await sees('G2f PP-03 contact block', 'P.O. Box 8700');
+
+  await step('G3  Onboard -> PP-04 summary', click('Onboard'), '/services/studentaid/summary');
+  await sees('G3b PP-04 heading', 'Welcome to StudentAidNL');
+  await step('G4  Summary -> PP-05 terms', click('Continue'), '/services/studentaid/terms');
+  await sees('G4b PP-05 version', 'Version 7');
+  await sees('G4c PP-05 date', 'Last modified: 2026-08-26');
+  await sees('G4d PP-05 consent is Flow B\'s paragraph', 'I hereby consent to the Government of Newfoundland and Labrador');
+  await sees('G4e PP-05 has the seven scopes', 'View when your phone number has been verified');
+
+  /* The §7.4 checkbox rule, negative then positive — as 3b / 3c in `run`. */
+  await p.getByRole('button', { name: 'I Consent', exact: true }).first().click();
+  await p.waitForTimeout(400);
+  at('G5  PP-05 I Consent unticked must not navigate', '/services/studentaid/terms');
+  await sees('G5b PP-05 validation message', 'To continue, you must agree to the terms and conditions.');
+  await step(
+    'G6  Terms -> PP-06 confirm details (ticked)',
+    async (pg) => {
+      await pg.getByLabel('I have read and accept terms and condition').check();
+      await pg.getByRole('button', { name: 'I Consent', exact: true }).first().click();
+    },
+    '/services/studentaid/confirm-details',
+  );
+  await sees('G6b PP-06 requirement', 'Must have a valid driver license, health card');
+  await sees('G6c PP-06 status', 'Required');
+
+  await step('G7  PP-06 -> PP-07 method step', click('Continue'), '/services/studentaid/onboard');
+  /*
+   * G7b — THREE cards from `config.methods`, in order, GNL IDV the only
+   * selected one. Read off the radio image each card draws.
+   */
+  {
+    const cards = await p.evaluate(() =>
+      [...document.querySelectorAll('[data-node-id="6217:30593"] > *')].map((el) => ({
+        title: el.querySelector('p')?.textContent?.trim(),
+        selected: !!el.querySelector('img[src*="radio-selected"]'),
+        link: el.tagName === 'A',
+      })),
+    );
+    const titles = cards.map((c) => c.title);
+    const want = ['Medical Care Plan (MCP)', 'Motor Registration Division (MRD)', 'GNL Identity Verification Service'];
+    if (JSON.stringify(titles) !== JSON.stringify(want)) {
+      fails.push(`@${width} G7b: PP-07 cards are ${JSON.stringify(titles)}, expected ${JSON.stringify(want)}`);
+    }
+    const sel = cards.filter((c) => c.selected).map((c) => c.title);
+    if (sel.length !== 1 || sel[0] !== 'GNL Identity Verification Service') {
+      fails.push(`@${width} G7c: PP-07 selected card(s) ${JSON.stringify(sel)}, expected GNL IDV only`);
+    }
+    const links = cards.filter((c) => c.link).map((c) => c.title);
+    if (links.length !== 1 || links[0] !== 'GNL Identity Verification Service') {
+      fails.push(`@${width} G7d: PP-07 navigable card(s) ${JSON.stringify(links)}, expected GNL IDV only`);
+    }
+  }
+  /* G7e — MCP is not in the demo: it must show the toast and stay put. */
+  await p.locator('[data-node-id="6217:30594"]').click();
+  await p.waitForTimeout(400);
+  at('G7e PP-07 MCP card must not navigate', '/services/studentaid/onboard');
+  await sees('G7f PP-07 MCP card shows the toast', 'Not part of this demo');
+
+  await step('G8  PP-07 -> PP-08 other verification', click('Continue'), '/services/studentaid/other-verification');
+  await sees('G8b PP-08 option', 'This option is for users who do not have a valid MCP number or MRD-issued ID.');
+  if (await p.getByRole('link', { name: 'Cancel', exact: true }).count()) {
+    fails.push(`@${width} G8c: PP-08 draws a Cancel — Figma hides it (6217:35241)`);
+  }
+  await step('G9  PP-08 -> PP-09 hand-off', click('Continue'), '/cid/studentaid/continue-on-mobile');
+  await step('G10 hand-off -> terms', click('Continue on my computer'), '/cid/studentaid/terms');
+  await step('G11 terms -> consent', click('I agree'), '/cid/studentaid/biometric');
+  await step('G11b consent -> liveness', click('I agree'), '/cid/studentaid/liveness');
+  await step('G11c liveness -> liveness capture', click('Continue'), '/cid/studentaid/liveness-capture');
+  await step('G11d liveness capture -> country', click('Continue'), '/cid/studentaid/country');
+  await step('G11e country -> documents', click('Continue'), '/cid/studentaid/document');
+  await step('G11f documents -> capture instructions', click('Continue'), '/cid/studentaid/capture-intro');
+  await step('G11g instructions -> capture front', click('Continue'), '/cid/studentaid/capture-front');
+  await step('G12 capture front -> upload (no back capture)', click('Continue'), '/cid/studentaid/upload');
+  await p.waitForTimeout(2800);
+  at('G12b upload advances to step 5', '/cid/studentaid/verified');
+  await step('G13 step 5 -> processing', click('Continue to StudentAidNL service'), '/auth/loading');
+
+  /* G14 — THE TRAP. The shared screen must advance, and to FLOW B's PP-21. */
+  await p.waitForTimeout(4200);
+  at('G14b processing auto-advances to FLOW B\'s Confirmed screen', '/services/studentaid/prerequisite');
+  await sees('G14c completion toast', 'Identity verification complete');
+  await sees('G14d PP-21 requirement', 'or have neither because out of province.');
+  await sees('G14e PP-21 status', 'Confirmed');
+
+  await step('G15 PP-21 -> PP-22 success', click('Continue'), '/services/studentaid/confirmation');
+  await step('G16 PP-22 -> PP-23 Trusted', click('Go to Service StudentAidNL'), '/services/studentaid');
+  {
+    const q = new URL(p.url()).search;
+    if (q !== '?verified=1') fails.push(`@${width} G16b: expected ?verified=1 got "${q}"`);
+  }
+
+  /* G17 — Trusted SURVIVES A RELOAD with no query string: it is in the store. */
+  await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  if ((await verifiedAttr()) !== '1') fails.push(`@${width} G17: StudentAidNL is not Trusted after a reload`);
+  await sees('G17b Trusted badge', 'Trusted');
+  if (await p.getByText('Action locked', { exact: true }).count()) {
+    fails.push(`@${width} G17c: the Trusted page still shows "Action locked"`);
+  }
+  /* G17d — the unlocked portal row is external to the demo -> toast. */
+  await p.getByRole('button', { name: 'Access the StudentAid Portal' }).click();
+  await p.waitForTimeout(400);
+  at('G17d unlocked portal row must not navigate', '/services/studentaid');
+  await sees('G17e unlocked portal row shows the toast', 'Not part of this demo');
+
+  /* G-ISO — and Driver and Vehicle is NOT Trusted. Both the page and the store. */
+  await p.goto(BASE + '/services/driver-vehicle/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  if ((await verifiedAttr()) === '1') {
+    fails.push(`@${width} G-ISO: completing Flow B made Driver and Vehicle Trusted`);
+  }
+  {
+    const dv = await p.evaluate(() => {
+      try {
+        return JSON.parse(localStorage.getItem('gnl-demo:v1') || '{}').services?.['driver-vehicle']?.status ?? null;
+      } catch {
+        return 'unreadable';
+      }
+    });
+    if (dv === 'onboarded') fails.push(`@${width} G-ISO b: driver-vehicle is "onboarded" in the store after Flow B`);
+  }
+
+  /* ===================== BACKWARD — every Flow B reverse control ========= */
+  await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
+  await step('GB1 PP-23 -> dashboard (breadcrumb)', click('← Back to Services'), '/dashboard');
+  await p.goto(BASE + '/services/studentaid/confirmation/', { waitUntil: 'networkidle' });
+  await step('GB2 PP-22 -> PP-21 (Back)', click('Back'), '/services/studentaid/prerequisite');
+  await step('GB3 PP-21 -> processing (Back)', click('Back'), '/auth/loading');
+  /* The flag was spent at G14: arriving by Back must NOT bounce forward. */
+  await p.waitForTimeout(4200);
+  at('GB3b processing must STAY PUT when reached by Back', '/auth/loading');
+
+  await p.goto(BASE + '/services/studentaid/other-verification/', { waitUntil: 'networkidle' });
+  await step('GB4 PP-08 -> PP-07 (Back)', click('Back'), '/services/studentaid/onboard');
+  await step('GB5 PP-07 -> PP-06 (Back)', click('Back'), '/services/studentaid/confirm-details');
+  await step('GB6 PP-06 -> PP-05 (Back)', click('Back'), '/services/studentaid/terms');
+  await step('GB7 PP-05 -> PP-04 (Back)', click('Back'), '/services/studentaid/summary');
+  await step('GB8 PP-04 -> PP-03 (Cancel)', click('Cancel'), '/services/studentaid');
+
+  for (const [label, route, control] of [
+    ['GB9  PP-07 Cancel', '/services/studentaid/onboard/', 'Cancel'],
+    ['GB10 PP-05 Cancel', '/services/studentaid/terms/', 'Cancel'],
+    ['GB11 PP-05 I Do Not Consent', '/services/studentaid/terms/', 'I Do Not Consent'],
+    ['GB12 PP-06 Cancel', '/services/studentaid/confirm-details/', 'Cancel'],
+    ['GB13 PP-21 Cancel', '/services/studentaid/prerequisite/', 'Cancel'],
+  ]) {
+    await p.goto(BASE + route, { waitUntil: 'networkidle' });
+    await step(label, click(control), '/services/studentaid');
+  }
+  /* A Cancel on an ONBOARDED service must not un-onboard it (§7.4). */
+  await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  if ((await verifiedAttr()) !== '1') fails.push(`@${width} GB14: a Cancel un-onboarded StudentAidNL`);
+
+  /*
+   * GB15 — THE PRESENTER'S ARROWS ON FLOW B URLS (FLOW_B in src/lib/flow.ts).
+   * Until today these URLs were in no list and both arrows did nothing. The
+   * hand-off has no Back control; the Yoti country screen has none either.
+   */
+  await p.goto(BASE + '/cid/studentaid/continue-on-mobile/', { waitUntil: 'networkidle' });
+  await step('GB15 B hand-off -> PP-08 (ArrowLeft)', arrow('ArrowLeft'), '/services/studentaid/other-verification');
+  await p.goto(BASE + '/cid/studentaid/country/', { waitUntil: 'networkidle' });
+  await step('GB16 B country -> B liveness capture (ArrowLeft)', arrow('ArrowLeft'), '/cid/studentaid/liveness-capture');
+  await p.goto(BASE + '/services/studentaid/onboard/', { waitUntil: 'networkidle' });
+  await step('GB17 PP-07 -> PP-08 (ArrowRight)', arrow('ArrowRight'), '/services/studentaid/other-verification');
+
+  /* GB18 — PP-08 exists ONLY for services with the step: no Flow A copy. */
+  await p.goto(BASE + '/services/driver-vehicle/other-verification/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(300);
+  if (!(await p.getByText('We can’t find that page', { exact: false }).count())) {
+    fails.push(`@${width} GB18: /services/driver-vehicle/other-verification/ resolved to a real page`);
+  }
+
+  /* ===================== GH — hydration with a populated Flow B store ===== */
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        'gnl-demo:v1',
+        JSON.stringify({
+          v: 1,
+          services: {
+            studentaid: {
+              status: 'onboarded',
+              step: 'ready',
+              method: 'gnl_idv',
+              otherVerificationConfirmed: true,
+              termsAcceptedAt: '2026-09-28T10:00:00.000Z',
+              verifiedAt: '2026-09-28T10:05:00.000Z',
+            },
+          },
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  });
+  consoleErrors.length = 0;
+  for (const r of [
+    '/services/studentaid/',
+    '/services/studentaid/summary/',
+    '/services/studentaid/terms/',
+    '/services/studentaid/confirm-details/',
+    '/services/studentaid/onboard/',
+    '/services/studentaid/other-verification/',
+    '/services/studentaid/prerequisite/',
+    '/services/studentaid/confirmation/',
+    '/auth/loading/',
+  ]) {
+    await p.goto(BASE + r, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(350);
+  }
+  {
+    const real = consoleErrors.filter((t) => !/favicon|Download the React DevTools/i.test(t));
+    if (real.length) fails.push(`@${width} GH hydration/console with a populated Flow B store: ${real.join(' ;; ')}`);
+  }
+  await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  if ((await verifiedAttr()) !== '1') fails.push(`@${width} GH: the seeded Flow B store was not read back`);
 
   await ctx.close();
 }
 
 for (const w of [1440, 768, 390]) await run(w);
 for (const w of [1440, 768, 390]) await runFlowBCid(w);
+for (const w of [1440, 768, 390]) await runFlowB(w);
 await b.close();
 
 console.log(
   fails.length
     ? 'CLICK FAILURES:\n' + fails.join('\n')
-    : 'click-through: Flow A forward + backward chain and Flow B CID chain intact at 1440 / 768 / 390',
+    : 'click-through: Flow A forward + backward chain, Flow B CID chain and Flow B full chain (dashboard -> Trusted) intact at 1440 / 768 / 390',
 );
 if (fails.length) process.exit(1);

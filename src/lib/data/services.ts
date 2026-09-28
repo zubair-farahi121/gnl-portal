@@ -26,8 +26,9 @@ export type ServiceCardData = {
    */
   body: string;
   /**
-   * Only "Driver and Vehicle" has one. Every other card is inert on purpose:
-   * the presenter must not be able to click into an unbuilt screen on stage.
+   * "Driver and Vehicle" and — since 2026-09-28 — "StudentAidNL" have one.
+   * Every other card is inert on purpose: the presenter must not be able to
+   * click into an unbuilt screen on stage.
    */
   href?: string;
   /**
@@ -116,7 +117,8 @@ export const SERVICE_COLUMNS: readonly (readonly ServiceCardData[])[] = [
   // grid-column-3 6031:6129 — 976 tall
   [
     {
-      // service-card-c3-0 6031:6130 — the ONLY navigable card in the demo.
+      // service-card-c3-0 6031:6130 — one of the TWO navigable cards (with
+      // StudentAidNL below, since 2026-09-28).
       title: "Driver and Vehicle",
       body: "Renew your vehicle or drivers licence\nChange your address with Motor Registration\nPurchase your driving record (abstract)\nRenew your vehicle registration\nNotify Motor Registration when you no longer own a vehicle\nPay for your road test\nRequest a vehicle registration reprint\nTake your commercial driver test (Class 1-4 & 9)",
       href: serviceRoutes("driver-vehicle").page,
@@ -127,9 +129,16 @@ export const SERVICE_COLUMNS: readonly (readonly ServiceCardData[])[] = [
       body: "Renew your MCP card\nRenew your child's MCP card\nUpdate your organ and tissue donor status\nChange your address with MCP\nReplace a lost or stolen MCP card",
     },
     {
-      // service-card-c3-2 6031:6202
+      // service-card-c3-2 6031:6202 — NAVIGABLE since 2026-09-28 (PP-02:
+      // "Dashboard, StudentAidNL clickable"). DEMO_AUDIT.md PP-02 called this
+      // "one line, blocked on PP-03 existing"; PP-03 exists now, at
+      // /services/studentaid/, so this is that line. The card LOOKS exactly
+      // as it did — ServiceCard renders the same classes and children for a
+      // Link as for the inert <div>; only the element and the handler differ,
+      // which is why the `dashboard` frame cannot move.
       title: "StudentAidNL",
       body: "Apply for student financial assistance\nCheck your application status\nReceive messages about your application\nDownload tax documents",
+      href: serviceRoutes("studentaid").page,
     },
   ],
 ];

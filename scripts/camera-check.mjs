@@ -143,6 +143,46 @@ const live0 = await page.evaluate(() => {
     guideBox: [Math.round(guideR.width), Math.round(guideR.height)],
     pillBox: [Math.round(pillR.width), Math.round(pillR.height)],
     mockImgs: document.querySelectorAll('[data-name="liveness-viewport"] img').length,
+    /*
+     * THE WASH — added 2026-09-27 with the head-window rework.
+     *
+     * Checked structurally, for the same reason `above()` is structural: the
+     * overlay is `pointer-events-none` and masked, so it cannot be hit-tested
+     * and its effect cannot be read off the video. What CAN be asserted is:
+     *   - it covers the whole viewport panel;
+     *   - it carries a backdrop-filter, i.e. the blur survived;
+     *   - it carries a mask-image, i.e. THE WINDOW EXISTS AT ALL. Chromium
+     *     drops an unparsable mask silently, and the panel then looks evenly
+     *     washed with no window — a failure that fails OPEN and is easy to miss
+     *     in a screenshot unless you know to look for it;
+     *   - it paints above the feed and below the pill and the outline.
+     */
+    washBox: (() => {
+      const el = document.querySelector('[data-name="yoti-face-wash"]');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)];
+    })(),
+    washBackdrop: (() => {
+      const el = document.querySelector('[data-name="yoti-face-wash"]');
+      if (!el) return '';
+      const cs = getComputedStyle(el);
+      return cs.backdropFilter || cs.webkitBackdropFilter || '';
+    })(),
+    washMask: (() => {
+      const el = document.querySelector('[data-name="yoti-face-wash"]');
+      if (!el) return '';
+      const cs = getComputedStyle(el);
+      return cs.maskImage || cs.webkitMaskImage || '';
+    })(),
+    washAboveVideo: (() => {
+      const el = document.querySelector('[data-name="yoti-face-wash"]');
+      return !!el && !!(v.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })(),
+    washBelowGuide: (() => {
+      const el = document.querySelector('[data-name="yoti-face-wash"]');
+      return !!el && !!(el.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING);
+    })(),
   };
 });
 console.log('liveness video:', JSON.stringify(live0));
@@ -162,8 +202,24 @@ ok(
 // Frame 7 is 321 x 51 at the 393 design width; this run is 390 wide, so the
 // w-full pill is 3px narrower. Height is what must not move.
 ok(live0.pillBox[1] === 51, `liveness: instruction pill still 51px tall while live (${live0.pillBox.join('x')})`);
-// The face guide is the only <img> in the panel — there is no mock photo here.
-ok(live0.mockImgs === 1, `liveness: no mock photo in the panel, just the face guide (${live0.mockImgs} img)`);
+// No mock photo here, and since 2026-09-27 no <img> at all: the face window
+// is drawn inline so its outline and its (now white, not beige) inner band
+// come from YOTI_MASK rather than from a placeholder file.
+ok(live0.mockImgs === 0, `liveness: no <img> in the panel at all — the window is inline SVG (${live0.mockImgs})`);
+ok(
+  JSON.stringify(live0.washBox) === JSON.stringify(live0.p),
+  `liveness: the wash covers the whole viewport panel ${JSON.stringify(live0.washBox)} vs ${JSON.stringify(live0.p)}`,
+);
+ok(
+  /blur\(/.test(live0.washBackdrop),
+  `liveness: the wash blurs what is behind it (backdrop-filter "${live0.washBackdrop}")`,
+);
+ok(
+  live0.washMask.startsWith('url('),
+  `liveness: the head window survived as a mask — WITHOUT IT THE PANEL IS EVENLY WASHED AND HAS NO WINDOW ("${live0.washMask.slice(0, 40)}")`,
+);
+ok(live0.washAboveVideo, 'liveness: the wash paints ABOVE the live feed (after the video in DOM)');
+ok(live0.washBelowGuide, 'liveness: the wash paints BELOW the window outline (before Group 6 in DOM)');
 
 const constraints0 = await page.evaluate(() => window.__gnlConstraints || []);
 console.log('liveness constraints:', JSON.stringify(constraints0));
@@ -263,15 +319,35 @@ console.log('back video:', JSON.stringify(back));
 ok(!back.paused && back.readyState >= 2 && back.videoWidth > 0, 'back: <video> is playing');
 ok(JSON.stringify(back.v) === JSON.stringify(back.b), `back: video fills the image box ${JSON.stringify(back.v)} vs ${JSON.stringify(back.b)}`);
 
-/* ---------- 4. leave the capture screens entirely ---------- */
+/* ---------- 4. leave the capture screens entirely ----------
+ *
+ * Y8 NOW SITS BETWEEN THE LAST CAPTURE AND STEP 5 (added 2026-09-27), so
+ * Continue here lands on /cid/upload/ and that screen advances itself to
+ * /cid/verified/ after ~2s. Both hops are asserted, and the ORDER matters:
+ * the camera has to be down the moment the capture screen unmounts, not two
+ * seconds later when the upload finishes. If the tracks were still live on
+ * /cid/upload/, the camera light would stay on through a screen that does not
+ * even show a viewport.
+ */
 await page.getByRole('link', { name: 'Continue', exact: true }).first().click();
+await page.waitForURL('**/cid/upload/**', { timeout: 10000 });
+await page.waitForTimeout(400);
+ok(await liveCount() === 0, `upload: ZERO live tracks as soon as the capture screen unmounts (${(await trackStates()).join(',')})`);
+ok((await page.locator('video').count()) === 0, 'upload: no <video> on the upload screen');
 await page.waitForURL('**/cid/verified/**', { timeout: 10000 });
 await page.waitForTimeout(800);
 const states2 = await trackStates();
 ok(await liveCount() === 0, `verified: ZERO live tracks after leaving (${states2.join(',')})`);
 ok((await page.locator('video').count()) === 0, 'verified: no <video> on the next screen');
 
-/* ---------- 5. back-button return, then away again ---------- */
+/* ---------- 5. back-button return, then away again ----------
+ *
+ * TWO goBack()s, not one — Y8 is in the history between step 5 and the back
+ * capture. The second one follows immediately, well inside the upload screen's
+ * own 2s advance, so this walk is not racing it.
+ */
+await page.goBack();
+await page.waitForURL('**/cid/upload/**', { timeout: 10000 });
 await page.goBack();
 await page.waitForSelector('video[data-gnl-camera="live"]', { timeout: 10000 });
 await page.waitForTimeout(600);

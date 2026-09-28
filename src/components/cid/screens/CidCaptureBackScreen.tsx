@@ -1,9 +1,10 @@
 import { CameraViewport } from "@/components/cid/CameraViewport";
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1 (capture, back) — Figma 6057:20924, 393 x 1174.810546875.
@@ -83,8 +84,9 @@ import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
  * mismatch and the fallback render is byte-identical to the pre-camera build.
  *
  * NOTHING IS CAPTURED: no frame is read, stored or uploaded, there is still no
- * backend and no network call, and Continue just advances to /cid/verified/.
- * Video only, never audio.
+ * backend and no network call, and Continue just advances — to /cid/upload/
+ * since 2026-09-27, which then advances to /cid/verified/ on its own. Video
+ * only, never audio.
  *
  * FORCING THE MOCK: `?mock=1` on either capture screen (sticky until
  * `?mock=0`). getUserMedia also needs a SECURE CONTEXT, so on an http://
@@ -134,8 +136,15 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
         className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"
         data-node-id="6057:20937"
       >
+        {/* MOVED TO THE TOKEN SCALE 2026-09-27 — see the identical note on
+            /cid/capture-front/. 32px -> `YOTI_TEXT.heading` (24px) at 1.2. */}
         <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
+          className="w-full shrink-0 font-bold [word-break:break-word]"
+          style={{
+            fontSize: YOTI_TEXT.heading,
+            lineHeight: YOTI_TEXT.headingLeading,
+            color: YOTI_COLOR.ink,
+          }}
           data-node-id="6088:32306"
         >
           {copy.title}
@@ -150,7 +159,13 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
         >
           {/* image 17 — 6088:32336. No radius and no crop, unlike the front. */}
           <div
-            className="relative w-full shrink-0 mix-blend-multiply md:max-w-[633px] aspect-[288.001953125/181.80224609375]"
+            /* `overflow-hidden` added 2026-09-27 WITH THE SPECIMEN ANIMATION,
+               and only because of it: the image is tilted and scaled while it
+               slides in, so without a clip its corners would swing outside the
+               window box for 1.5s. It adds NO radius and NO crop — the image
+               still fills this box exactly at rest, which is difference 2 from
+               the front frame and is unchanged. */
+            className="relative w-full shrink-0 overflow-hidden mix-blend-multiply md:max-w-[633px] aspect-[288.001953125/181.80224609375]"
             data-node-id="6088:32336"
             data-name="image 17"
           >
@@ -158,9 +173,11 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
                 mock exactly as it was authored — same box, same object-cover. */}
             <CameraViewport>
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* `gnl-yoti-specimen` — see the identical note on
+                  /cid/capture-front/ and the rule in globals.css. */}
               <img
                 alt=""
-                className="pointer-events-none absolute inset-0 block size-full max-w-none object-cover"
+                className="gnl-yoti-specimen pointer-events-none absolute inset-0 block size-full max-w-none object-cover"
                 src={ASSETS.idDocBack}
               />
             </CameraViewport>
@@ -168,33 +185,20 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6057:20966 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6057:20966"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6076:31382 is an instance of `Yoti ContinueButton`
-         * (6076:31361). In production this capture step is rendered by the
-         * identity provider inside GNL chrome — GNL owns the nav, wizard
-         * header, stepper and footer; Yoti owns the body and this button. The
-         * #27619b fill is the Yoti CTA blue, not the GNL navy; reproduce it,
-         * do not harmonise it, and do not mistake this for the shared GNL
-         * primary. It is also the LAST Yoti-owned control in the journey —
-         * /cid/verified/ is back on plain GNL buttons.
-         * See design/verification-frame-map.md §7.
-         */}
-        <BtnPrimary
-          href={routes.verified}
-          tone="yoti"
-          nodeId="6076:31382"
-          className="w-full md:w-auto"
-        >
-          {actions.continueShort}
-        </BtnPrimary>
-      </div>
+      {/*
+       * Frame 6 — 6057:20966, REPLACED BY THE PINNED BAR 2026-09-27. Same
+       * change and same reasoning as on Y1; see the long note on
+       * CidLivenessScreen.
+       *
+       * THE DESTINATION MOVED, and this is the one place in Flow A where Y8
+       * inserts itself: Continue used to go straight to /cid/verified/ and now
+       * goes to /cid/upload/, which advances to step 5 on its own. So this is
+       * no longer the LAST Yoti-owned control in the journey — it is the last
+       * control of any kind before the zone hands over, because Y8 has none.
+       */}
+      <YotiActionBar>
+        <YotiContinue href={routes.upload}>{actions.continueShort}</YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

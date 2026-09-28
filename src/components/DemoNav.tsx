@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { FLOW } from "@/lib/flow";
+import { FLOW, FLOW_B } from "@/lib/flow";
 import { useDemoState } from "@/lib/demo-state";
 
 /**
@@ -22,12 +22,21 @@ export function DemoNav() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const i = FLOW.findIndex((r) => r.split("?")[0] === pathname);
-      if (e.key === "ArrowRight" && i >= 0 && i < FLOW.length - 1) {
-        router.push(FLOW[i + 1]);
+      /*
+       * WHICH FLOW — added 2026-09-28. FLOW_B only for a path that is in
+       * FLOW_B and NOT in FLOW; every Flow A URL and every shared URL resolves
+       * to FLOW exactly as before. See the FLOW_B note in src/lib/flow.ts.
+       */
+      const at = (list: readonly string[]) =>
+        list.findIndex((r) => r.split("?")[0] === pathname);
+      const list: readonly string[] =
+        at(FLOW) < 0 && at(FLOW_B) >= 0 ? FLOW_B : FLOW;
+      const i = at(list);
+      if (e.key === "ArrowRight" && i >= 0 && i < list.length - 1) {
+        router.push(list[i + 1]);
       }
       if (e.key === "ArrowLeft" && i > 0) {
-        router.push(FLOW[i - 1]);
+        router.push(list[i - 1]);
       }
       if (e.key === "Escape") {
         resetAll();

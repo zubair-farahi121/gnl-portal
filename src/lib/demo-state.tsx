@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { IdvMethod, ServiceId } from "@/lib/data/service-config";
+import { SERVICES, type IdvMethod, type ServiceId } from "@/lib/data/service-config";
 
 /* ====================================================================
  * THE DEMO STORE — `gnl-demo:v1` in localStorage.
@@ -165,10 +165,20 @@ type DemoStateApi = {
   /** NL-23 on open — §8.3 "mark the service onboarded". */
   markOnboarded: (id: ServiceId) => void;
   /**
-   * Reads AND clears `pendingAdvance`. Returns true at most once per arming,
-   * which is what keeps the NL-21 auto-advance off the Back path.
+   * Reads AND clears `pendingAdvance`, returning WHICH SERVICE armed it — or
+   * null if nothing is armed. Returns a service at most once per arming, which
+   * is what keeps the NL-21 auto-advance off the Back path.
+   *
+   * CHANGED 2026-09-28 from `(id) => boolean`. The old shape asked "is the
+   * advance armed for THIS service?", and its one caller, /auth/loading/,
+   * asked it about the literal "driver-vehicle" — so when Flow B's
+   * /cid/studentaid/verified/ armed `studentaid`, the answer was "no" and the
+   * shared processing screen sat still forever. That screen is shared by both
+   * flows and cannot know the service from its URL, so the store has to TELL
+   * it; the service that armed the flag is the service whose prerequisite
+   * screen comes next. See ProcessingAdvance.
    */
-  takePendingAdvance: (id: ServiceId) => boolean;
+  takePendingAdvance: () => ServiceId | null;
   /** "Reset demo" / `/reset` — the ONLY thing that clears the store (§7.1). */
   resetAll: () => void;
 };
@@ -261,20 +271,29 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
           };
         }),
 
-      takePendingAdvance: (id) => {
+      takePendingAdvance: () => {
         /*
          * Read the PERSISTED value, not React state: the arming write may have
          * happened on the previous screen microseconds ago, and this call has
          * to see it even if a re-render has not landed yet.
          */
         const live = typeof window === "undefined" ? store : readStore();
-        if (live.pendingAdvance !== id) return false;
+        const armed = live.pendingAdvance;
+        if (!armed) return null;
+        /* Consumed either way — a stale or foreign value must not linger and
+           fire on some later visit. */
         update((prev) => {
           const { pendingAdvance: _drop, ...rest } = prev;
           void _drop;
           return rest as DemoStore;
         });
-        return true;
+        /*
+         * Only a KNOWN service is returned. The store is hand-editable
+         * localStorage that survives redeploys; routing on an unknown string
+         * would build a URL to a page that does not exist. Unknown -> null ->
+         * the screen stays put, which is the safe failure.
+         */
+        return armed in SERVICES ? armed : null;
       },
 
       resetAll: () => {

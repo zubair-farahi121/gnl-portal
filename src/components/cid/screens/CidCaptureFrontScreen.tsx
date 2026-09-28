@@ -1,9 +1,10 @@
 import { CameraViewport } from "@/components/cid/CameraViewport";
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1 (capture, front) — Figma 6056:19118, 393 x 1174.810546875.
@@ -20,10 +21,17 @@ import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
  *           applied in `getCidCopy`.
  *   FORWARD LINK. §9 says of PP-09..PP-19: "**no back capture**". So Continue
  *           goes to the back-capture screen only when the service photographs a
- *           back; otherwise it goes straight to step 5. That is the `next`
- *           constant below, and it is driven by `captureSides` rather than by
- *           an `if (service.id === …)`, so a third service would work without
+ *           back; otherwise it goes to Y8, the UPLOAD screen, which is where
+ *           both flows rejoin before step 5. That is the `next` constant below,
+ *           and it is driven by `captureSides` rather than by an
+ *           `if (service.id === …)`, so a third service would work without
  *           touching this file.
+ *
+ *           UPDATED 2026-09-27. This used to read `routes.verified` for the
+ *           no-back case, because /cid/upload/ did not exist. Flow B now runs
+ *           capture-front -> upload -> verified and Flow A runs
+ *           capture-back -> upload -> verified; the fork is still one line and
+ *           still `captureSides`.
  *
  * Flow B therefore never links to the back capture, and — see
  * `cidBackCaptureParams` in src/lib/data/service-config.ts — that route is not
@@ -166,7 +174,7 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
    */
   const next = service.captureSides.includes("back")
     ? routes.captureBack
-    : routes.verified;
+    : routes.upload;
 
   return (
     <CidScreen service={service} mainNodeId="6056:19120" subStep={copy.subStep} yotiZone>
@@ -175,8 +183,25 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
         className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"
         data-node-id="6056:19131"
       >
+        {/*
+         * MOVED TO THE TOKEN SCALE 2026-09-27: a hardcoded 32px becomes
+         * `YOTI_TEXT.heading` (24px) at `headingLeading` (1.2). 24 is §6's
+         * value for every Yoti heading except Y1 and Y8, which get
+         * `headingLarge`. Tatyana's 32 is the recreation's.
+         *
+         * THE MEASURED 78px TWO-LINE BLOCK IN THE HEADER ABOVE NO LONGER
+         * HOLDS — at 24/1.2 the two lines are 58. That is expected: the frame
+         * is `w-full` with no pinned height, so the card simply gets shorter,
+         * and the Yoti baselines were re-taken in the same pass. Nothing
+         * OUTSIDE the zone moved.
+         */}
         <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[normal] text-[#333b40] [word-break:break-word]"
+          className="w-full shrink-0 font-bold [word-break:break-word]"
+          style={{
+            fontSize: YOTI_TEXT.heading,
+            lineHeight: YOTI_TEXT.headingLeading,
+            color: YOTI_COLOR.ink,
+          }}
           data-node-id="6088:32304"
         >
           {copy.title}
@@ -203,9 +228,17 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
              */}
             <CameraViewport>
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/*
+               * `gnl-yoti-specimen` added 2026-09-27 — the specimen slides in
+               * with a slight tilt and goes blurred -> sharp over 1.5s, then
+               * holds the captured state. The animation's RESTING state is
+               * this element's own CSS, so the Figma placement below is
+               * untouched and anything that does not run the animation shows
+               * exactly what shipped before. See globals.css.
+               */}
               <img
                 alt=""
-                className="pointer-events-none absolute left-[-2.62%] top-[-2.31%] block h-[104.6%] w-[105.4%] max-w-none"
+                className="gnl-yoti-specimen pointer-events-none absolute left-[-2.62%] top-[-2.31%] block h-[104.6%] w-[105.4%] max-w-none"
                 src={ASSETS.idDocFront}
               />
             </CameraViewport>
@@ -213,31 +246,20 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6056:19165 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6056:19165"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6076:31376 is an instance of `Yoti ContinueButton`
-         * (6076:31361). In production this capture step is rendered by the
-         * identity provider inside GNL chrome — GNL owns the nav, wizard
-         * header, stepper and footer; Yoti owns the body and this button. The
-         * #27619b fill is the Yoti CTA blue, not the GNL navy; reproduce it,
-         * do not harmonise it, and do not mistake this for the shared GNL
-         * primary. See design/verification-frame-map.md §7.
-         */}
-        <BtnPrimary
-          href={next}
-          tone="yoti"
-          nodeId="6076:31376"
-          className="w-full md:w-auto"
-        >
-          {actions.continueShort}
-        </BtnPrimary>
-      </div>
+      {/*
+       * Frame 6 — 6056:19165, REPLACED BY THE PINNED BAR 2026-09-27. Same
+       * change and same reasoning as on Y1; see the long note on
+       * CidLivenessScreen.
+       *
+       * `next` IS UNCHANGED IN SHAPE AND CHANGED IN DESTINATION, and the
+       * change is Y8's: the flow that photographs a back now goes on to it,
+       * and the flow that does not goes to the UPLOAD screen rather than
+       * straight to step 5. The test is still on `captureSides`, not on a
+       * service id.
+       */}
+      <YotiActionBar>
+        <YotiContinue href={next}>{actions.continueShort}</YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }

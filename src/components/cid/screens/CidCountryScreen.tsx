@@ -1,8 +1,13 @@
 import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
+import {
+  YotiActionBar,
+  YotiContinue,
+  YotiHelpIcon,
+} from "@/components/cid/yoti/YotiChrome";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { YOTI_COLOR, YOTI_SIZE, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1_Country — Figma 6217:66054, 393 x 1060.810546875.
@@ -137,25 +142,47 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
         data-node-id="6056:15795"
         data-name="document-type-select"
       >
+        {/*
+         * THE HELP ICON — Y1, Y3 and Y5 (YOTI_HELP_SCREENS). Its own
+         * right-aligned row above the heading, exactly as on Y1; see the longer
+         * note there. YOTI_OBSERVED.md Y3 lists it as item 1 on this screen,
+         * before the heading.
+         */}
+        <div className="flex w-full shrink-0 justify-end" data-name="yoti-help-row">
+          <YotiHelpIcon />
+        </div>
+
         {/* Main-Text — 6056:15796 */}
         <div
-          className="flex w-full shrink-0 flex-col items-start gap-[12px] text-[#333b40]"
+          className="flex w-full shrink-0 flex-col items-start gap-[12px]"
           data-node-id="6056:15796"
           data-name="Main-Text"
+          style={{ color: YOTI_COLOR.ink }}
         >
+          {/* RAISED 2026-09-27: 22px -> `YOTI_TEXT.heading` (24px), leaded 1.2. */}
           <p
-            className="w-full shrink-0 text-[22px] font-bold leading-[normal] [word-break:break-word]"
+            className="w-full shrink-0 font-bold [word-break:break-word]"
+            style={{
+              fontSize: YOTI_TEXT.heading,
+              lineHeight: YOTI_TEXT.headingLeading,
+            }}
             data-node-id="6056:15797"
           >
             {copy.title}
           </p>
           {/*
-           * Montserrat:SemiBold. REAL 600 since 2026-09-23 — Montserrat is now
-           * self-hosted (layout.tsx) and this zone is `.gnl-yoti-zone`, so the
-           * weight is no longer collapsed to Lato 700.
+           * Montserrat. RAISED 2026-09-27 from 14px SemiBold to
+           * `YOTI_TEXT.body` (16px) REGULAR — YOTI_OBSERVED.md Y3 item 3 reads
+           * "Body, 4 lines, REGULAR, dark", and §6's "smaller and lighter"
+           * correction is about size, not weight: the recreation is a step
+           * small AND a step heavy here, in opposite directions.
            */}
           <p
-            className="w-full shrink-0 text-[14px] font-semibold leading-[1.4] [word-break:break-word]"
+            className="w-full shrink-0 font-normal [word-break:break-word]"
+            style={{
+              fontSize: YOTI_TEXT.body,
+              lineHeight: YOTI_TEXT.bodyLeading,
+            }}
             data-node-id="6056:15798"
           >
             {copy.body}
@@ -175,14 +202,40 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
          *
          * A DIV, NOT A `<select>`. Static reproduction — see the note above.
          */}
+        {/*
+         * RESTYLED TO THE REAL FIELD 2026-09-27. YOTI_OBSERVED.md Y3 item 4:
+         * "white, full width, clearly TALLER than a normal input (~46 px),
+         * rounded (~6 px), visible ~2 px muted blue-grey border, grey
+         * placeholder … chevron ⌄ at the right."
+         *
+         * So four values move at once, and all four come from the token file:
+         * `fieldHeight` 46 (the recreation's box was 52, produced by p-16),
+         * `fieldRadius` 6 (was 8), `fieldBorder` 2 (was 1) and `YOTI_COLOR.border`
+         * #9ca5b4 (was #d1d5db, a lighter grey with no blue in it).
+         *
+         * STILL AN INSET BOX-SHADOW, NOT A `border`. Figma draws the stroke
+         * INSIDE the box; a CSS border would add 4px to the height at 2px and
+         * push everything below it down. Same technique as the rows on
+         * /cid/document/, WizardCard and TopNav.
+         *
+         * STILL A DIV, NOT A `<select>` — see the note above.
+         */}
         <div
-          className="box-border flex w-full shrink-0 cursor-default items-center justify-between rounded-[8px] bg-white p-[16px] shadow-[inset_0_0_0_1px_#d1d5db] select-none"
+          className="box-border flex w-full shrink-0 cursor-default items-center justify-between bg-white px-[16px] select-none"
+          style={{
+            height: YOTI_SIZE.fieldHeight,
+            borderRadius: YOTI_SIZE.fieldRadius,
+            boxShadow: `inset 0 0 0 ${YOTI_SIZE.fieldBorder} ${YOTI_COLOR.border}`,
+          }}
           data-node-id="6076:31356"
           data-name="select-dropdown"
           data-demo-inert="true"
           aria-disabled="true"
         >
-          <p className="min-w-px shrink-0 text-[16px] font-normal leading-[normal] whitespace-nowrap text-[#546072] max-xxs:whitespace-normal">
+          <p
+            className="min-w-px shrink-0 font-normal leading-[normal] whitespace-nowrap max-xxs:whitespace-normal"
+            style={{ fontSize: YOTI_TEXT.body, color: YOTI_COLOR.muted }}
+          >
             {copy.selectLabel}
           </p>
           <div className="relative size-[16px] shrink-0" data-name="chevron-down">
@@ -204,8 +257,21 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
          * GNL card: the #f3f4f6 fill is `Yoti gris pâle` and the #27619b link
          * is `Yoti CTA`, neither of which appears in the GNL token set.
          */}
+        {/*
+         * RESTYLED TO THE REAL PANEL 2026-09-27 — "light grey (#f3f4f6),
+         * rounded (~8 px), ROOMY PADDING" (YOTI_OBSERVED.md Y3 item 5). The
+         * fill and the radius already matched (`YOTI_COLOR.panel`,
+         * `YOTI_SIZE.panelRadius`) and are now spelled from the tokens; the
+         * padding moves 16 -> `YOTI_SIZE.panelPadding` (20), which is the
+         * "roomy" the transcription measures.
+         */}
         <div
-          className="box-border flex w-full shrink-0 flex-col items-start gap-[12px] rounded-[8px] bg-[#f3f4f6] p-[16px]"
+          className="box-border flex w-full shrink-0 flex-col items-start gap-[12px]"
+          style={{
+            background: YOTI_COLOR.panel,
+            borderRadius: YOTI_SIZE.panelRadius,
+            padding: YOTI_SIZE.panelPadding,
+          }}
           data-node-id="6056:15803"
           data-name="PrivacyInfoCard"
         >
@@ -215,16 +281,33 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
             data-node-id="6056:15804"
             data-name="yoti-header"
           >
+            {/*
+             * RAISED 2026-09-27: 16px -> `YOTI_TEXT.panelTitle` (18px).
+             * YOTI_OBSERVED.md: "title 'Votre vie privée et Yoti', bold,
+             * grey-blue, LARGER THAN BODY".
+             */}
             <p
-              className="shrink-0 text-[16px] font-bold leading-[normal] text-[#546072] [word-break:break-word]"
+              className="shrink-0 font-bold leading-[normal] [word-break:break-word]"
+              style={{
+                fontSize: YOTI_TEXT.panelTitle,
+                color: YOTI_COLOR.muted,
+              }}
               data-node-id="6056:15807"
             >
               {copy.privacy.title}
             </p>
           </div>
 
+          {/*
+           * The panel body keeps its 13px. §6 gives no token for it and
+           * YOTI_OBSERVED.md records only "body, 4 lines, regular, same
+           * grey-blue" with no size, so raising it would be a guess dressed as
+           * a measurement. Left as the recreation draws it and logged as an
+           * open question instead. The COLOUR is now the token.
+           */}
           <p
-            className="w-full shrink-0 text-[13px] font-normal leading-[1.4] text-[#546072] [word-break:break-word]"
+            className="w-full shrink-0 text-[13px] font-normal leading-[1.4] [word-break:break-word]"
+            style={{ color: YOTI_COLOR.muted }}
             data-node-id="6056:15808"
           >
             {copy.privacy.body}
@@ -242,8 +325,16 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
              * flow mid-demo. Same treatment as the Terms of Use link on
              * /cid/terms/.
              */}
+            {/*
+             * COLOUR CORRECTED 2026-09-27: #27619b -> `YOTI_COLOR.link`
+             * (#355677). YOTI_OBSERVED.md Y3: "'Politique de confidentialité' —
+             * bold, a DARKER BLUE THAN THE BUTTON BLUE". The recreation used
+             * the button blue for both; the tokens file keeps them apart and
+             * says in so many words that the difference is not a mistake.
+             */}
             <p
-              className="shrink-0 cursor-default text-[13px] font-bold leading-[normal] whitespace-nowrap text-[#27619b] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+              className="shrink-0 cursor-default text-[13px] font-bold leading-[normal] whitespace-nowrap underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+              style={{ color: YOTI_COLOR.link }}
               data-node-id="6056:15810"
               data-demo-inert="true"
             >
@@ -284,31 +375,23 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
         </div>
       </div>
 
-      {/* Frame 6 — 6056:15021 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
-        data-node-id="6056:15021"
-      >
-        {/*
-         * YOTI-OWNED CONTROL — NOT A GNL COMPONENT.
-         *
-         * Figma 6076:31367 is an instance of `Yoti ContinueButton` (6076:31361),
-         * the same second primary button the other three ID-document frames
-         * carry. Its #27619b fill is the Yoti CTA blue, not the GNL navy
-         * #243746 — the two are deliberate, not drift. Reproduce its
-         * appearance; do not fold it into the GNL primary and do not "fix" its
-         * colour. The `tone="yoti"` variant on BtnPrimary exists for exactly
-         * this. See design/verification-frame-map.md §7.
-         */}
-        <BtnPrimary
-          href={routes.document}
-          tone="yoti"
-          nodeId="6076:31367"
-          className="w-full md:w-auto"
-        >
-          {actions.continueShort}
-        </BtnPrimary>
-      </div>
+      {/*
+       * Frame 6 — 6056:15021, REPLACED BY THE PINNED BAR 2026-09-27. Same
+       * change, same reasoning and same destination as on Y1; see the long note
+       * on CidLivenessScreen.
+       *
+       * NOTE WHAT THE REAL SCREEN DOES HERE, because it is an open question and
+       * not a defect: YOTI_OBSERVED.md Y3 "Before a country is chosen" ends
+       * "NO Continue button, no pinned bar — confirmed", and the bar only
+       * appears in the "After typing a country" frame, on the same screen as
+       * the accepted-documents list. The bar is drawn here anyway for the same
+       * reason Y2 keeps its button: this build shows the resting state of a
+       * static screen, and a resting state with no forward control is a dead
+       * end on stage. Logged in DEMO_AUDIT.md.
+       */}
+      <YotiActionBar>
+        <YotiContinue href={routes.document}>{actions.continueShort}</YotiContinue>
+      </YotiActionBar>
     </CidScreen>
   );
 }
