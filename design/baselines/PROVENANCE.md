@@ -44,3 +44,13 @@ leaked and the right fix is in the markup, not here.
 Drop them into this folder under the frame ids in `design/frames.json`, delete
 this file, and **do not run `npm run baseline` again** — it would overwrite the
 real reference with a picture of the build.
+
+## Added 2026-09-29 — Flow 3 (three NEW frames, nothing overwritten)
+
+`wallet-c1` (C1 page, 6220:86445, 1440x1024), `wallet-connect` (W3,
+6325:60170, 390x881) and `wallet-cards` (W9, 6240:55253, 390x844) were copied
+from `design/shots/` **one file each, by name** — `npm run baseline --yes` was
+NOT run, because it rewrites every baseline and this file. The 22 existing
+baselines were not touched and still diff at 0.000%. Same caveat as above:
+these freeze the build of 2026-09-29; they do not prove a match with Figma
+(the wallet's glyphs and the C1 page's wallet icons are drawn stand-ins).

@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { ASSETS } from "@/lib/assets";
 import type { LinkedItem, LinkedItemAction } from "@/lib/data/driver-vehicle";
+import { UpsellAddedAction } from "@/components/service/UpsellAddedAction";
+import { UPSELL_ADDED_STATE_ENABLED } from "@/lib/data/flow3";
 
 /*
  * `item-card-*` — Figma 6076:24356 / 6220:86386 / 6076:24368 / 6076:24378 /
@@ -208,9 +211,11 @@ const CARD =
  * copy. Below 768 it becomes a column, matching how the `inline` card above
  * reflows, and the button goes full width so it does not sit orphaned.
  *
- * THE BUTTON IS INERT, like every other button on a linked-item card: the
- * design draws no digital-wallet screen. `aria-disabled`, not `disabled`, so
- * the native disabled state cannot repaint the label and fail the pixel gate.
+ * THE BUTTON WAS INERT until 2026-09-29, like every other button on a
+ * linked-item card, because the design drew no digital-wallet screen. Flow 3
+ * (Figma section 6343:84884) now draws one, so "Add to wallet" is a link to it
+ * — see the note on the link itself. Every OTHER button on these cards is
+ * still inert.
  */
 function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }) {
   return (
@@ -273,15 +278,41 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
         className="flex shrink-0 flex-col items-start max-md:w-full max-md:items-stretch"
         data-node-id="6257:73259"
       >
-        <button
-          type="button"
-          className={`${BTN_PRIMARY} cursor-default select-none`}
-          data-node-id="6257:73260"
-          data-demo-inert="true"
-          aria-disabled="true"
-        >
-          {upsell.actionLabel}
-        </button>
+        {/*
+          FLOW 3's ENTRY POINT — CHANGED 2026-09-29 from an inert <button>
+          (the "Not part of this demo" toast) to a real link to the C1 wallet
+          page, Figma 6220:86445. User: "start implmenting workflow 3".
+
+          BEHAVIOUR ONLY. Same BTN_PRIMARY classes, same label, same node id,
+          so the `service-verified` frame must still diff at 0.000% — and it is
+          the gate that proves it. `<a>` vs `<button>` renders the same box
+          here because Tailwind's preflight already resets the button's UA font,
+          colour, padding and border, and BTN_PRIMARY sets every one of them
+          explicitly. Only the cursor changes (default -> pointer), which the
+          screenshot does not paint, because the control now does something.
+
+          `next/link`, not a bare `<a>`: a full document load would drop the
+          warm `gnl-demo:v1` provider and DemoNav's key handler, the same
+          reason YotiContinue switched (DEMO_AUDIT.md, Yoti zone pass).
+        */}
+        {/* FLOW3_BRIEF.md §10 item 7 — the "added" state, behind a flag that
+            is OFF: with it off this is the original <Link>, unchanged. */}
+        {UPSELL_ADDED_STATE_ENABLED ? (
+          <UpsellAddedAction
+            href={upsell.actionHref}
+            label={upsell.actionLabel}
+            className={BTN_PRIMARY}
+            nodeId="6257:73260"
+          />
+        ) : (
+          <Link
+            href={upsell.actionHref}
+            className={`${BTN_PRIMARY} cursor-pointer select-none`}
+            data-node-id="6257:73260"
+          >
+            {upsell.actionLabel}
+          </Link>
+        )}
       </div>
     </div>
   );

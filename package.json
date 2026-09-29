@@ -16,9 +16,11 @@
     "check": "npm run build && npm run responsive && npm run clicks"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@fontsource/lato": "^5.3.0",
     "@fontsource/montserrat": "^5.3.0",
     "next": "16.3.5",
+    "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -27,6 +29,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "pixelmatch": "^7.2.0",

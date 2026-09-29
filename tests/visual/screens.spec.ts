@@ -8,6 +8,13 @@ type Frame = {
   width: number;
   height: number;
   budget: number;
+  /**
+   * OPTIONAL selectors to paint over before comparing — ADDED 2026-09-29 for
+   * Flow 3's `wallet-c1`, whose QR encodes a per-offer id minted in the
+   * browser and whose expiry line counts down. Frames without `mask` take
+   * exactly the screenshot they always did.
+   */
+  mask?: string[];
 };
 
 const manifest = JSON.parse(readFileSync("design/frames.json", "utf8")) as {
@@ -38,6 +45,7 @@ for (const f of manifest.frames) {
     await page.screenshot({
       path: `design/shots/${f.id}.png`,
       fullPage: true,
+      ...(f.mask ? { mask: f.mask.map((sel) => page.locator(sel)), maskColor: "#ff00ff" } : {}),
     });
   });
 }

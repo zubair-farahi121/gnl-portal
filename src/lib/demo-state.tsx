@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { SERVICES, type IdvMethod, type ServiceId } from "@/lib/data/service-config";
+import type { CredentialOffer } from "@/lib/mock-issuer";
 
 /* ====================================================================
  * THE DEMO STORE — `gnl-demo:v1` in localStorage.
@@ -102,10 +103,57 @@ export type ServiceState = {
   verifiedAt?: string;
 };
 
+/**
+ * FLOW 3 — the wallet's slice of the store. REWORKED 2026-09-29 to
+ * FLOW3_BRIEF.md §3 (it was a single `status: waiting | adding | added`).
+ *
+ * TWO SIDES, KEPT APART ON PURPOSE:
+ *   offers / currentOfferId   the ISSUER's side — written ONLY by the DEMO
+ *                             MOCK issuer in src/lib/mock-issuer.ts, with
+ *                             fake network latency. The C1 page reads it.
+ *   cardIssuedAt              the WALLET's side — "the credential is on this
+ *                             phone". Written at once (no latency) by the
+ *                             wallet when it stores the certificate, so W-09
+ *                             never shows 2 cards because an issuer call was
+ *                             still in flight.
+ *   connectArmed              W-06's one-shot auto-advance (Back-safety).
+ *
+ * ONE SLICE, NOT PER SERVICE: the wallet flow exists for Driver and Vehicle
+ * only (the "Skip the paper copy" upsell sits on the 2015 CHEV IMT card).
+ */
+export type WalletSlice = {
+  offers?: Record<string, CredentialOffer>;
+  currentOfferId?: string;
+  cardIssuedAt?: string;
+  connectArmed?: boolean;
+};
+
 export type DemoStore = {
   /** Bumping this invalidates old stores rather than half-reading them. */
   v: 1;
   services: Partial<Record<ServiceId, ServiceState>>;
+  /**
+   * FLOW 3's shared state — see `WalletSlice`. ADDED 2026-09-29.
+   *
+   * THIS IS WHAT MAKES THE TWO WINDOWS TALK. The presenter has the C1 page in
+   * one window and the wallet in a second, narrow one. The wallet (through the
+   * mock issuer) writes here; the `storage` listener below fires in the C1
+   * window and it re-renders. No polling — the same listener that already
+   * syncs every other field (FLOW3_BRIEF.md §3 "reuse the sync").
+   *
+   * OPTIONAL, so every store written before today still parses (`v` stays 1).
+   * A store from the first Flow 3 build (`wallet.status`) is simply ignored:
+   * no offer -> the C1 page creates one. `resetAll` removes the whole key, so
+   * Escape and /reset clear the offer, the issued card and the counts in
+   * BOTH windows (brief §9).
+   *
+   * `connectArmed` is W-06's one-shot, the same pattern as `pendingAdvance`
+   * below: W-05's Accept arms it, W-06 ("Connecting wallet...") consumes it
+   * on mount and only then auto-advances. Arriving at W-06 any other way —
+   * Back, the presenter's ArrowLeft, a typed URL — finds it unarmed and the
+   * screen stays put, so it cannot bounce the presenter forward again.
+   */
+  wallet?: WalletSlice;
   /**
    * ONE-SHOT: the service whose `/auth/loading/` screen is allowed to
    * auto-advance (BUILD_BRIEF.md §8.3).
@@ -118,15 +166,35 @@ export type DemoStore = {
 };
 
 const EMPTY_SERVICE: ServiceState = { status: "not_started" };
-const EMPTY_STORE: DemoStore = { v: 1, services: {} };
+export const EMPTY_STORE: DemoStore = { v: 1, services: {} };
+
+/**
+ * SAME-WINDOW change signal — ADDED 2026-09-29 for Flow 3.
+ *
+ * The `storage` event only fires in the OTHER windows. When the mock issuer
+ * (src/lib/mock-issuer.ts) writes from a timer, the window that wrote also
+ * has to hear about it — its own provider state and its own `subscribe`
+ * callbacks. It dispatches this plain DOM event after every write; the
+ * provider below and the issuer's `subscribe` both listen for it alongside
+ * `storage`. Nothing else dispatches it, and Flows A / B never do.
+ */
+export const STORE_CHANGED_EVENT = "gnl-demo:store-changed";
+
+export function emitStoreChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(STORE_CHANGED_EVENT));
+}
 
 /**
  * Read the store, tolerating every way it can be unreadable: private mode
  * (throws), absent (null), corrupt (throws), or written by an older version of
  * the demo (`v` mismatch). All four answer `EMPTY_STORE`, which is the same
  * value the server rendered.
+ *
+ * EXPORTED 2026-09-29 for the Flow 3 mock issuer, which must read-modify-write
+ * the same key from outside React (its writes land after a fake latency).
  */
-function readStore(): DemoStore {
+export function readStore(): DemoStore {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return EMPTY_STORE;
@@ -140,7 +208,7 @@ function readStore(): DemoStore {
   }
 }
 
-function writeStore(next: DemoStore) {
+export function writeStore(next: DemoStore) {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(next));
   } catch {
@@ -179,6 +247,23 @@ type DemoStateApi = {
    * screen comes next. See ProcessingAdvance.
    */
   takePendingAdvance: () => ServiceId | null;
+  /**
+   * FLOW 3 — the offer the C1 page created and the wallet is working on, or
+   * null. Null until the store has been read (see the hydration note), so a
+   * prerendered page and its first client render agree.
+   */
+  walletOffer: CredentialOffer | null;
+  /**
+   * FLOW 3 — when the certificate landed in the wallet (W-08), or null. The
+   * WALLET's own record: W-09 shows 3 cards when set, 2 when not (brief §7).
+   */
+  walletCardIssuedAt: string | null;
+  /** W-08 — the wallet stores the certificate. Idempotent: keeps the first date. */
+  storeWalletCard: () => void;
+  /** W-05 "Accept" — arm W-06's one-shot auto-advance. */
+  armWalletConnect: () => void;
+  /** W-06 on mount — read AND clear the one-shot. True at most once per arming. */
+  takeWalletConnect: () => boolean;
   /** "Reset demo" / `/reset` — the ONLY thing that clears the store (§7.1). */
   resetAll: () => void;
 };
@@ -199,7 +284,13 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       setStore(readStore());
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    /* Flow 3: the mock issuer's writes in THIS window (see STORE_CHANGED_EVENT). */
+    const onLocal = () => setStore(readStore());
+    window.addEventListener(STORE_CHANGED_EVENT, onLocal);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(STORE_CHANGED_EVENT, onLocal);
+    };
   }, []);
 
   /**
@@ -296,6 +387,38 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
         return armed in SERVICES ? armed : null;
       },
 
+      /* ---------------- FLOW 3 — the wallet (2026-09-29) ---------------- */
+
+      walletOffer: (() => {
+        const id = store.wallet?.currentOfferId;
+        return (id && store.wallet?.offers?.[id]) || null;
+      })(),
+
+      walletCardIssuedAt: store.wallet?.cardIssuedAt ?? null,
+
+      storeWalletCard: () =>
+        update((prev) =>
+          prev.wallet?.cardIssuedAt
+            ? prev
+            : { ...prev, wallet: { ...prev.wallet, cardIssuedAt: new Date().toISOString() } },
+        ),
+
+      armWalletConnect: () =>
+        update((prev) => ({ ...prev, wallet: { ...prev.wallet, connectArmed: true } })),
+
+      takeWalletConnect: () => {
+        /* PERSISTED value, not React state — same reason as takePendingAdvance:
+           W-05 armed it a moment ago, on the previous screen. */
+        const live = typeof window === "undefined" ? store : readStore();
+        if (!live.wallet?.connectArmed) return false;
+        update((prev) => {
+          const { connectArmed: _drop, ...rest } = prev.wallet ?? {};
+          void _drop;
+          return { ...prev, wallet: rest };
+        });
+        return true;
+      },
+
       resetAll: () => {
         try {
           localStorage.removeItem(STORE_KEY);
@@ -303,6 +426,8 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
           /* ignore */
         }
         setStore(EMPTY_STORE);
+        /* Flow 3: the issuer's subscribers in THIS window hear the reset too. */
+        emitStoreChanged();
       },
     };
   }, [ready, store, update]);

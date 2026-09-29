@@ -1,9 +1,11 @@
 import { ASSETS } from "@/lib/assets";
 import {
   APP_ROUTES,
+  FLOW3_ROUTES,
   getService,
   serviceRoutes,
 } from "@/lib/data/service-config";
+import { DEMO_USER } from "@/lib/data/services";
 
 /**
  * This module is the Driver-and-Vehicle service page's content. Everything on
@@ -222,8 +224,73 @@ export type VcUpsell = {
   badge: string;
   body: string;
   actionLabel: string;
+  /**
+   * Where "Add to wallet" goes. ADDED 2026-09-29 with Flow 3: it opens the C1
+   * wallet page (6220:86445) instead of the "Not part of this demo" toast.
+   * BEHAVIOUR ONLY — the button's pixels are unchanged; see VcUpsellPanel.
+   */
+  actionHref: string;
   nodeId: string;
 };
+
+/**
+ * THE 2015 CHEV IMT — one record, three readers. EXTRACTED 2026-09-29.
+ *
+ * The Trusted page's linked-item card (6257:72388), the wallet's credential
+ * preview (W5, 6240:55097) and the wallet dashboard (W9, 6240:55253) all show
+ * the same plate, VIN and expiry. They used to live only inside the card's
+ * pre-joined line "Plate JKM 026 • VIN 2G1125535F9268441"; they are pulled
+ * out here so the wallet reads the SAME values rather than retyping them — a
+ * typo in a VIN on one screen and not the other is exactly the kind of thing
+ * a client reads.
+ *
+ * The card lines below are rebuilt from these fields and produce the
+ * character-for-character strings they always did (the `service-verified`
+ * baseline is the proof).
+ *
+ * `make`, `firstRegistered` and `issuingCountry` appear on no GNL screen:
+ * they are W5's rows, verbatim from 6345:12861 / 6345:12867 / 6345:12876, and
+ * match BUILD_BRIEF.md §12.5 where it has them.
+ */
+export const VEHICLE_CHEV = {
+  /** "Model" row on W5 (6345:12864) and the card title here. */
+  model: "2015 CHEV IMT",
+  plate: "JKM 026",
+  vin: "2G1125535F9268441",
+  expiry: "January 14, 2036",
+  make: "Chevrolet",
+  firstRegistered: "January 14, 2015",
+  issuingCountry: "Canada",
+} as const;
+
+/**
+ * FLOW 3 PERSONA — FLOW3_BRIEF.md §9, "add this to the persona file (flows A
+ * and B already use it)". ADDED 2026-09-29. These are the Figma values; every
+ * one that the portal already shows is built from the same record
+ * (DEMO_USER, VEHICLE_CHEV), so the wallet and the Trusted page's CHEV card
+ * cannot disagree. Read by src/lib/data/flow3.ts.
+ */
+export const WALLET_PERSONA = {
+  walletHolder: DEMO_USER.name,
+  /** W-07 6322:60904 — bold in the frame, U+2022 bullets. */
+  smsMaskedPhone: "••• ••• 0187",
+  vehicleRegistrationCertificate: {
+    plate: VEHICLE_CHEV.plate,
+    vin: VEHICLE_CHEV.vin,
+    make: VEHICLE_CHEV.make,
+    model: VEHICLE_CHEV.model,
+    firstRegistrationDate: VEHICLE_CHEV.firstRegistered,
+    expiryDate: VEHICLE_CHEV.expiry,
+    owner: DEMO_USER.name,
+    issuingCountry: VEHICLE_CHEV.issuingCountry,
+    /** "&", as the wallet frames spell it (6337:82531 …); C1 says "and". */
+    issuingAuthority: "Government of Newfoundland & Labrador",
+  },
+  existingWalletCards: [
+    { title: "Photo ID", issued: "Issued Aug 1, 2024" },
+    { title: "Proof of age", issued: "Issued Mar 15, 2023" },
+  ],
+} as const;
 
 export type LinkedItem = {
   kind: "wallet-promo" | "licence" | "address" | "vehicle";
@@ -282,10 +349,11 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
     kind: "vehicle",
     icon: ASSETS.iconTruck,
     iconSize: 32,
-    title: "2015 CHEV IMT",
+    title: VEHICLE_CHEV.model,
+    /* Rebuilt from VEHICLE_CHEV — the same two strings as before, U+2022 and all. */
     lines: [
-      { text: "Plate JKM 026 • VIN 2G1125535F9268441" },
-      { text: "Expires on January 14, 2036" },
+      { text: `Plate ${VEHICLE_CHEV.plate} • VIN ${VEHICLE_CHEV.vin}` },
+      { text: `Expires on ${VEHICLE_CHEV.expiry}` },
     ],
     layout: "stacked",
     /*
@@ -305,6 +373,8 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
       badge: "New",
       body: "Add your verified vehicle registration certificate to your wallet. Show proof instantly from your phone.",
       actionLabel: "Add to wallet",
+      /* Flow 3's entry point — the C1 wallet page. Was the toast until 2026-09-29. */
+      actionHref: FLOW3_ROUTES.c1,
       nodeId: "6257:73252",
     },
     nodeId: "6257:72388",

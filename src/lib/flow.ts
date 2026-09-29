@@ -2,6 +2,7 @@ import {
   APP_ROUTES,
   CID_ROUTES,
   DEFAULT_SERVICE_ID,
+  FLOW3_ROUTES,
   cidRoutes,
   serviceRoutes,
 } from "@/lib/data/service-config";
@@ -264,4 +265,41 @@ export const FLOW_B = [
   B.prerequisite,
   B.confirmation,
   B.pageVerified,
+] as const;
+
+/*
+ * ====================================================================
+ * FLOW 3 — "Issuance of Vehicle Registration Certificate", added 2026-09-29.
+ * Figma section 6343:84884; frames in design/FLOW3_OBSERVED.md.
+ *
+ * Trusted Driver and Vehicle page -> C1 wallet page -> wallet W1..W9.
+ *
+ * TWO WINDOWS, ONE LIST. On stage the C1 page and the wallet are in different
+ * browser windows, so in practice the presenter arrows WITHIN the wallet
+ * (W1..W9) and, on the C1 page, ArrowLeft goes back to Trusted. ArrowRight on
+ * the C1 page opens W1 in that same window — the recovery path if the second
+ * window was closed.
+ *
+ * W6 ("Connecting wallet...") IS IN THE LIST and is safe to arrow into from
+ * either side: its auto-advance is a one-shot armed only by W5's Accept, so
+ * ArrowLeft from W7 lands on W6 and STAYS there (see its page).
+ *
+ * THE TRUSTED PAGE IS SHARED WITH FLOW A, where it is the LAST entry. DemoNav
+ * picks FLOW_3 only for a path in FLOW_3 and in neither FLOW nor FLOW_B, so
+ * every arrow press on every Flow A / Flow B URL behaves exactly as before —
+ * ArrowRight on the Trusted page still does nothing.
+ * ====================================================================
+ */
+export const FLOW_3 = [
+  R.pageVerified,
+  FLOW3_ROUTES.c1,
+  FLOW3_ROUTES.walletHome,
+  FLOW3_ROUTES.scan,
+  FLOW3_ROUTES.connect,
+  FLOW3_ROUTES.offer,
+  FLOW3_ROUTES.review,
+  FLOW3_ROUTES.connecting,
+  FLOW3_ROUTES.code,
+  FLOW3_ROUTES.added,
+  FLOW3_ROUTES.cards,
 ] as const;

@@ -27,6 +27,36 @@
       "budget": 0.008
     },
     {
+      "id": "summary",
+      "node": "6031:6242",
+      "nodeKind": "pasted screenshot, not a frame — no text layer, nothing measurable",
+      "provenance": "DERIVED. Copy verbatim from BUILD_BRIEF.md §8.1 NL-04; box from the measured wizard (6031:6304 / 6217:81644). Height is this build's own, not Figma's.",
+      "route": "/services/driver-vehicle/summary/",
+      "width": 1440,
+      "height": 1245,
+      "budget": 0.008
+    },
+    {
+      "id": "terms",
+      "node": "6031:6243",
+      "nodeKind": "pasted screenshot, not a frame — no text layer, nothing measurable",
+      "provenance": "DERIVED. Copy verbatim from BUILD_BRIEF.md §8.1 NL-05; box from the measured wizard. Baselined in its DEFAULT state — checkbox unticked, no validation message. Height moved 1480 -> 1512 once, inside the pass that created the frame, when the consent box became a fixed 184px scroll region (16px padding + 7 x 24px lines) instead of a max-height that collapsed to its content on desktop and clipped mid-line at 393.",
+      "route": "/services/driver-vehicle/terms/",
+      "width": 1440,
+      "height": 1512,
+      "budget": 0.008
+    },
+    {
+      "id": "prereq-required",
+      "node": "6031:6301",
+      "nodeKind": "pasted screenshot, not a frame — no text layer, nothing measurable",
+      "provenance": "DERIVED. Copy verbatim from BUILD_BRIEF.md §8.1 NL-06. Same component and same box as `prereq-confirm` (6217:81644, measured) — §8.1's 'one component, two states'. Height is pinned to prereq-confirm's 997 rather than to its own natural 996, so the two baselines are the same size and can be diffed against EACH OTHER: the only pixels that should differ are the heading's casing, the intro's apostrophe, and the status word and its colour.",
+      "route": "/services/driver-vehicle/confirm-details/",
+      "width": 1440,
+      "height": 997,
+      "budget": 0.008
+    },
+    {
       "id": "onboard",
       "node": "6031:6304",
       "route": "/services/driver-vehicle/onboard/",
@@ -152,6 +182,37 @@
       "route": "/services/driver-vehicle/?verified=1",
       "width": 1440,
       "height": 1793,
+      "budget": 0.008
+    },
+    {
+      "id": "wallet-c1",
+      "node": "6220:86445",
+      "provenance": "ADDED 2026-09-29 (Flow 3); RE-BASELINED 2026-09-29 after the FLOW3_BRIEF.md rework. SELF-BASELINE of F3-02 in its 'Waiting for scan…' state (fresh store). The QR now encodes a per-offer id minted in the browser, and the expiry line counts down, so both are MASKED in the shot (`mask` below) — every other pixel is compared. Real Apple / Google marks from design-reference/flow3. 1024 is both the Figma height and the natural height at 1440.",
+      "route": "/services/driver-vehicle/wallet/",
+      "width": 1440,
+      "height": 1024,
+      "budget": 0.008,
+      "mask": [
+        "[data-wallet-qr]",
+        "[data-wallet-countdown]"
+      ]
+    },
+    {
+      "id": "wallet-connect",
+      "node": "6325:60170",
+      "provenance": "ADDED 2026-09-29 (Flow 3); RE-BASELINED 2026-09-29 after the FLOW3_BRIEF.md rework. SELF-BASELINE of W-03 'Allow connection?' at the brief's ONE phone size, 393 x 852 (§6). At <= 430 px the wallet is full screen, so this is the phone itself: status bar, header, progress 20 %, content scrolling inside. Real GNL crest flowers; glyphs partly drawn stand-ins.",
+      "route": "/wallet/connect/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008
+    },
+    {
+      "id": "wallet-cards",
+      "node": "6240:55253",
+      "provenance": "ADDED 2026-09-29 (Flow 3); RE-BASELINED 2026-09-29 after the FLOW3_BRIEF.md rework. SELF-BASELINE of W-09 at 393 x 852 in its BEFORE state (fresh store): two cards, '2 cards total'. The AFTER state (3 cards, today's date) changes daily and is asserted by `npm run clicks` instead.",
+      "route": "/wallet/cards/",
+      "width": 393,
+      "height": 852,
       "budget": 0.008
     }
   ]

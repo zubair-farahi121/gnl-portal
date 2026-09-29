@@ -1091,14 +1091,450 @@ async function runFlowB(width) {
   await ctx.close();
 }
 
+/* ==========================================================================
+ * FLOW 3 — "Issuance of Vehicle Registration Certificate". ADDED 2026-09-29;
+ * REWRITTEN the same day for the FLOW3_BRIEF.md rework (mock issuer with
+ * statuses, one phone frame, simulated scanner, decline / close rules).
+ * Figma section 6343:84884; frames and node ids in DEMO_AUDIT.md "Flow 3".
+ *
+ * DESKTOP (1440, 768) — brief §14 "Desktop story", in TWO PAGES OF ONE
+ * CONTEXT (two windows of the presenter's browser), the wallet opened by
+ * clicking the QR exactly as the presenter does:
+ *   W-C1     Trusted -> "Add to wallet" -> F3-02 "Waiting for scan…"; the QR
+ *            encodes /wallet/start/?offer=<id> and opens /wallet/; the
+ *            countdown reads mm:ss; "Get a new code" makes a NEW offer.
+ *   W-SYNC   the headline: the C1 page changes to "Adding to your wallet…"
+ *            and later "Added to your wallet" WITHOUT A RELOAD (a marker on
+ *            its `window` and its navigation count prove it).
+ *   W-DECL   Decline on W-03 -> W-01, C1 back to "Waiting for scan…", and the
+ *            SAME QR (same offer id) still works: scanning again -> "Adding".
+ *   W-CLOSE  close ✕ on W-04 -> W-01, C1 back to "Waiting for scan…"; Esc on
+ *            W-04 does the same.
+ *   W-BACK   W-03's back arrow -> W-02, which must NOT auto-detect again;
+ *            W-06 reached backwards must NOT bounce forward.
+ *   W-CARDS  W-09 shows 2 cards / "2 cards total" before, 3 / "3 cards total"
+ *            after, the new card on top with "Issued <today>".
+ *   W-KEEP   a refresh keeps the state (C1 "Added…", W-09 3 cards).
+ *   W-RESET  /reset in the wallet window -> C1 back to "Waiting for scan…",
+ *            W-09 back to 2 cards.
+ * MOBILE (393) — brief §14 "mobile story": F3-01m -> F3-03 (no QR) -> "Add to
+ *   Apple Wallet" -> W-03 … W-09, using the physical keyboard on W-07.
+ * W-HYD    a populated store (issued offer + card) must not cause a hydration
+ *          error, and the PRERENDERED C1 HTML says "Waiting for scan…".
+ * ========================================================================== */
+/*
+ * PRE-EXISTING NOISE, FILTERED FOR FLOW 3 ONLY. Chrome warns "preloaded using
+ * link preload but not used within a few seconds" on EVERY route of this build
+ * when a page lingers longer than ~5 s. Flow 3 lingers on purpose (the mock
+ * issuer's 300–800 ms latency, W-06's advance, the no-bounce waits). Every
+ * OTHER warning or error still fails.
+ */
+const flow3Real = (list) =>
+  list.filter((t) => !/favicon|Download the React DevTools|preloaded using link preload/i.test(t));
+
+const STATUS = {
+  waiting: 'Waiting for scan…',
+  adding: 'Adding to your wallet…',
+  added: 'Added to your wallet',
+};
+
+function today() {
+  const d = new Date();
+  return `Issued ${d.toLocaleString('en-US', { month: 'long' })} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function watchConsole(pg, list) {
+  pg.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') list.push(m.text()); });
+  pg.on('pageerror', (e) => list.push(`pageerror: ${e.message}`));
+}
+
+async function runFlow3Desktop(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 900 } });
+  const c1 = await ctx.newPage();
+  const errs = [];
+  watchConsole(c1, errs);
+  const at = (pg) => new URL(pg.url()).pathname;
+  const expectAt = (label, want, pg) => { if (at(pg) !== want) fails.push(`@${width} ${label}: expected ${want} got ${at(pg)}`); };
+  const statusOf = async () => (await c1.locator('[data-wallet-status]').first().textContent())?.trim();
+  const waitStatus = async (label, key, ms = 6000) => {
+    try {
+      await c1.waitForFunction((k) => document.querySelector('[data-wallet-status]')?.getAttribute('data-wallet-status') === k, key, { timeout: ms });
+      const t = await statusOf();
+      if (t !== STATUS[key]) fails.push(`@${width} ${label}: state line reads "${t}", expected "${STATUS[key]}"`);
+    } catch {
+      fails.push(`@${width} ${label}: C1 still reads "${await statusOf()}", expected "${STATUS[key]}"`);
+    }
+  };
+  const offerId = () => c1.locator('[data-wallet-qr]').getAttribute('data-offer-id');
+
+  /* ---------------- W-C1 ---------------- */
+  await c1.goto(BASE + '/services/driver-vehicle/?verified=1', { waitUntil: 'networkidle' });
+  await c1.waitForTimeout(400);
+  const addLink = c1.getByRole('link', { name: 'Add to wallet', exact: true });
+  if (!(await addLink.count())) fails.push(`@${width} W-C1a: "Add to wallet" is not a link on the Trusted page`);
+  await addLink.first().click();
+  await c1.waitForURL('**/services/driver-vehicle/wallet/');
+  expectAt('W-C1b Add to wallet -> F3-02', '/services/driver-vehicle/wallet/', c1);
+  await c1.waitForFunction(() => document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'), null, { timeout: 5000 })
+    .catch(() => fails.push(`@${width} W-C1c: no offer was created when the page opened`));
+  if ((await statusOf()) !== STATUS.waiting) fails.push(`@${width} W-C1d: C1 reads "${await statusOf()}"`);
+  const qr = c1.locator('[data-wallet-qr]');
+  const qrText = (await qr.getAttribute('data-qr-text')) ?? '';
+  const id1 = await offerId();
+  if (!qrText.endsWith(`/wallet/start/?offer=${id1}`)) fails.push(`@${width} W-C1e: the QR encodes "${qrText}", expected …/wallet/start/?offer=${id1}`);
+  if ((await qr.getAttribute('href')) !== '/wallet/') fails.push(`@${width} W-C1f: clicking the QR does not open /wallet/`);
+  if (!(await c1.locator('[data-wallet-qr] svg path').count())) fails.push(`@${width} W-C1g: the QR has no modules`);
+  if ((await c1.locator('[data-wallet-status]').getAttribute('aria-live')) !== 'polite') fails.push(`@${width} W-C1h: the state line is not aria-live="polite"`);
+  const cd = (await c1.locator('[data-wallet-countdown]').textContent())?.trim() ?? '';
+  if (!/^0[0-8]:[0-5]\d$/.test(cd)) fails.push(`@${width} W-C1i: countdown reads "${cd}", expected mm:ss`);
+  await c1.getByRole('button', { name: 'Get a new code', exact: true }).click();
+  await c1.waitForFunction((old) => { const v = document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'); return v && v !== old; }, id1, { timeout: 5000 })
+    .catch(() => fails.push(`@${width} W-C1j: "Get a new code" did not make a new offer`));
+  expectAt('W-C1k Get a new code stays put', '/services/driver-vehicle/wallet/', c1);
+  await c1.getByRole('link', { name: '← Back to Driver and Vehicle', exact: true }).click();
+  await c1.waitForURL((u) => u.pathname === '/services/driver-vehicle/');
+  expectAt('W-C1l breadcrumb -> Trusted page', '/services/driver-vehicle/', c1);
+  await c1.goBack();
+  await c1.waitForURL('**/services/driver-vehicle/wallet/');
+  await c1.waitForTimeout(600);
+
+  /* ---------------- the wallet window: the QR's own popup ---------------- */
+  const loads = { n: 0 };
+  c1.on('framenavigated', (f) => { if (f === c1.mainFrame()) loads.n++; });
+  await c1.evaluate(() => { window.__flow3NoReload = 'still-here'; });
+  const offerAtStart = await offerId();
+  const [w] = await Promise.all([ctx.waitForEvent('page'), qr.click()]);
+  watchConsole(w, errs);
+  await w.waitForLoadState('networkidle');
+  expectAt('W-SYNC0 the QR opens W-01', '/wallet/', w);
+  await w.waitForTimeout(400);
+  /* The ~400 px popup is <= 430: the wallet is FULL SCREEN there (brief §6). */
+  const pop = await w.locator('[data-wallet-phone]').boundingBox();
+  const vw = w.viewportSize()?.width ?? (await w.evaluate(() => window.innerWidth));
+  if (vw <= 430 && (!pop || Math.round(pop.width) !== vw)) fails.push(`@${width} W-FRAME1: the wallet is not full screen in a ${vw}px window`);
+  /* In a wide window it is the ONE phone frame, 393 x 852, radius 48. */
+  {
+    const fp = await ctx.newPage();
+    await fp.setViewportSize({ width: 1280, height: 900 });
+    await fp.goto(BASE + '/wallet/', { waitUntil: 'networkidle' });
+    const box = await fp.locator('[data-wallet-phone]').boundingBox();
+    const radius = await fp.locator('[data-wallet-phone]').evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+    if (!box || Math.round(box.width) !== 393 || Math.round(box.height) !== 852 || radius !== '48px') {
+      fails.push(`@${width} W-FRAME2: the phone frame is ${box && `${Math.round(box.width)}x${Math.round(box.height)}`} r=${radius}, expected 393x852 r=48px`);
+    }
+    await fp.close();
+  }
+  const count = async () => (await w.locator('[data-wallet-count]').first().textContent())?.trim();
+
+  /* W-CARDS before: 2 cards. */
+  if ((await count()) !== '2 cards total') fails.push(`@${width} W-CARDS1: W-01 reads "${await count()}" before issuing`);
+  await w.locator('[data-wallet-all-cards]').click();
+  await w.waitForURL('**/wallet/cards/');
+  await w.waitForTimeout(400);
+  if ((await w.locator('[data-wallet-cards] > *').count()) !== 2) fails.push(`@${width} W-CARDS2: W-09 shows ${await w.locator('[data-wallet-cards] > *').count()} cards before issuing, expected 2`);
+  if ((await count()) !== '2 cards total') fails.push(`@${width} W-CARDS3: W-09 reads "${await count()}" before issuing`);
+  await w.locator('[data-wallet-inert]').last().click();
+  if (!(await w.locator('.gnl-wallet-toast').isVisible().catch(() => false))) fails.push(`@${width} W-CARDS4: tapping a card shows no wallet toast`);
+  await w.goto(BASE + '/wallet/', { waitUntil: 'networkidle' });
+  await w.waitForTimeout(300);
+
+  /* W-01 -> W-02, which detects by itself (~1.2 s) -> W-03. C1 -> Adding. */
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/scan/');
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  expectAt('W-SCAN W-02 auto-detects -> W-03', '/wallet/connect/', w);
+  await waitStatus('W-SYNC1 after the scan', 'adding');
+
+  /* W-DECL */
+  await w.getByRole('button', { name: 'Decline', exact: true }).click();
+  await w.waitForURL('**/wallet/');
+  expectAt('W-DECL1 Decline -> W-01', '/wallet/', w);
+  await waitStatus('W-DECL2 after Decline', 'waiting');
+  if ((await offerId()) !== offerAtStart) fails.push(`@${width} W-DECL3: Decline replaced the QR (the same code must keep working)`);
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  expectAt('W-DECL4 the same QR scans again -> W-03', '/wallet/connect/', w);
+  await waitStatus('W-DECL5 rescanned', 'adding');
+
+  /* W-CLOSE — the ✕, then Esc. */
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  await w.getByRole('button', { name: 'Close', exact: true }).click();
+  await w.waitForURL('**/wallet/');
+  expectAt('W-CLOSE1 ✕ on W-04 -> W-01', '/wallet/', w);
+  await waitStatus('W-CLOSE2 after ✕', 'waiting');
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  await waitStatus('W-CLOSE3 rescanned', 'adding');
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  await w.waitForTimeout(300);
+  await w.keyboard.press('Escape');
+  await w.waitForURL('**/wallet/').catch(() => {});
+  expectAt('W-CLOSE4 Esc on W-04 -> W-01', '/wallet/', w);
+  await waitStatus('W-CLOSE5 after Esc', 'waiting');
+
+  /* W-BACK — W-03's back arrow -> W-02, which must stay put. */
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  await w.waitForTimeout(900);
+  await w.getByRole('link', { name: 'Back', exact: true }).click();
+  await w.waitForURL('**/wallet/scan/');
+  await w.waitForTimeout(2200);
+  expectAt('W-BACK1 W-02 reached by Back does NOT auto-detect again', '/wallet/scan/', w);
+  await w.getByRole('button', { name: 'Scan the QR code', exact: true }).click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 4000 }).catch(() => {});
+  expectAt('W-BACK2 tap the viewfinder -> W-03', '/wallet/connect/', w);
+
+  /* W-03 -> W-04 -> W-05 */
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  await w.getByRole('button', { name: 'View offer', exact: true }).click();
+  await w.waitForURL('**/wallet/review/');
+  const rows = (await w.locator('[data-wallet-rows]').textContent()) ?? '';
+  for (const v of ['JKM 026', '2G1125535F9268441', 'Chevrolet', '2015 CHEV IMT', 'January 14, 2015', 'January 14, 2036', 'Jason Momoa', 'Canada', 'Government of Newfoundland & Labrador']) {
+    if (!rows.includes(v)) fails.push(`@${width} W-05 rows: missing "${v}"`);
+  }
+  if (((await w.locator('[data-wallet-consent]').textContent()) ?? '').trim() !== 'It will be securely stored in your wallet. You control when its information is shared.') {
+    fails.push(`@${width} W-05 consent text differs`);
+  }
+  await waitStatus('W-SYNC2 mid-flow', 'adding');
+
+  /* W-05 Accept -> W-06 -> (~1.8 s) W-07 */
+  await w.getByRole('button', { name: 'Accept', exact: true }).click();
+  await w.waitForURL('**/wallet/connecting/');
+  await w.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
+  expectAt('W-06 auto-advance -> W-07', '/wallet/code/', w);
+  await w.getByText('Enter your verification code').first().waitFor();
+  await w.waitForTimeout(450);
+  /* W-06 Back-safety: ArrowLeft from W-07 lands on W-06 unarmed and stays. */
+  await w.keyboard.press('ArrowLeft');
+  await w.waitForURL('**/wallet/connecting/');
+  await w.waitForTimeout(2600);
+  expectAt('W-BACK3 W-06 reached backwards does NOT bounce forward', '/wallet/connecting/', w);
+  await w.keyboard.press('ArrowRight');
+  await w.waitForURL('**/wallet/code/');
+  await w.getByText('Enter your verification code').first().waitFor();
+  await w.waitForTimeout(300);
+
+  /* W-07 */
+  const code = w.locator('[data-wallet-code]');
+  const cont = w.getByRole('button', { name: /Continue/ });
+  if (await cont.isEnabled()) fails.push(`@${width} W-07a: Continue is enabled with no digits`);
+  if ((await code.getAttribute('data-digits')) !== '') fails.push(`@${width} W-07b: W-07 does not start empty`);
+  for (const d of ['4', '8', '2', '9']) await w.getByRole('button', { name: d, exact: true }).click();
+  await w.getByRole('button', { name: 'Delete last digit', exact: true }).click();
+  if ((await code.getAttribute('data-digits')) !== '482') fails.push(`@${width} W-07c: keypad entry reads "${await code.getAttribute('data-digits')}", expected "482"`);
+  if (await cont.isEnabled()) fails.push(`@${width} W-07d: Continue is enabled with 3 digits`);
+  const sms = w.locator('[data-wallet-sms]');
+  await sms.waitFor({ timeout: 3000 }).catch(() => fails.push(`@${width} W-07e: the SMS banner did not appear`));
+  if (!((await sms.textContent().catch(() => '')) ?? '').includes('Your GNL code is 482 915')) fails.push(`@${width} W-07f: SMS banner text differs`);
+  await sms.click();
+  if ((await code.getAttribute('data-digits')) !== '482915') fails.push(`@${width} W-07g: tapping the SMS did not fill the code`);
+  if (!(await cont.isEnabled())) fails.push(`@${width} W-07h: Continue is still disabled with 6 digits`);
+  expectAt('W-07i six digits do not auto-continue', '/wallet/code/', w);
+  await cont.click();
+  await w.waitForURL('**/wallet/added/', { timeout: 4000 }).catch(() => {});
+  expectAt('W-07 Continue -> W-08', '/wallet/added/', w);
+  await waitStatus('W-SYNC3 after issuing', 'added');
+  if ((await c1.evaluate(() => window.__flow3NoReload)) !== 'still-here' || loads.n !== 0) {
+    fails.push(`@${width} W-SYNC4: the C1 page RELOADED (marker lost or ${loads.n} navigation(s)) — the sync must be live`);
+  }
+  console.log(`  @${width} W-SYNC: C1 went Waiting -> Adding -> Added with no reload; decline and close returned it to Waiting`);
+
+  /* W-08 -> W-09 */
+  if (!(await w.getByText('Added Successfully').first().isVisible())) fails.push(`@${width} W-08: heading not visible`);
+  await w.getByRole('link', { name: /Go to Wallet/ }).click();
+  await w.waitForURL('**/wallet/cards/');
+  await w.waitForTimeout(500);
+  const cards = w.locator('[data-wallet-cards] > *');
+  if ((await cards.count()) !== 3) fails.push(`@${width} W-CARDS5: W-09 shows ${await cards.count()} cards after issuing, expected 3`);
+  if ((await cards.first().getAttribute('data-wallet-card')) !== 'vehicle-registration-certificate') fails.push(`@${width} W-CARDS6: the new card is not on top`);
+  const vrc = (await cards.first().textContent()) ?? '';
+  for (const v of ['Vehicle Registration Certificate', today(), 'Jason Momoa', 'JKM 026', 'January 14, 2036']) {
+    if (!vrc.includes(v)) fails.push(`@${width} W-CARDS7: the new card is missing "${v}"`);
+  }
+  if ((await count()) !== '3 cards total') fails.push(`@${width} W-CARDS8: W-09 reads "${await count()}" after issuing`);
+
+  /* W-KEEP — refresh both windows. */
+  await c1.reload({ waitUntil: 'networkidle' });
+  await waitStatus('W-KEEP1 C1 after a refresh', 'added', 3000);
+  await w.reload({ waitUntil: 'networkidle' });
+  await w.waitForTimeout(400);
+  if ((await cards.count()) !== 3) fails.push(`@${width} W-KEEP2: W-09 after a refresh shows ${await cards.count()} cards`);
+
+  /* W-RESET */
+  await w.goto(BASE + '/reset/', { waitUntil: 'networkidle' });
+  await waitStatus('W-RESET1 /reset -> C1', 'waiting');
+  await w.goto(BASE + '/wallet/cards/', { waitUntil: 'networkidle' });
+  await w.waitForTimeout(400);
+  if ((await cards.count()) !== 2) fails.push(`@${width} W-RESET2: W-09 after /reset shows ${await cards.count()} cards, expected 2`);
+
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 3 desktop console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
+async function runFlow3Mobile(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 852 } });
+  const p = await ctx.newPage();
+  const errs = [];
+  watchConsole(p, errs);
+  const at = () => new URL(p.url()).pathname;
+  const expectAt = (label, want) => { if (at() !== want) fails.push(`@${width} ${label}: expected ${want} got ${at()}`); };
+
+  /* Before: 2 cards. */
+  await p.goto(BASE + '/wallet/cards/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  const cards = p.locator('[data-wallet-cards] > *');
+  if ((await cards.count()) !== 2) fails.push(`@${width} M-CARDS1: W-09 shows ${await cards.count()} cards before issuing`);
+  const phone = await p.locator('[data-wallet-phone]').boundingBox();
+  if (!phone || Math.round(phone.width) !== width) fails.push(`@${width} M-FRAME: the wallet is not full screen at ${width} (${phone && Math.round(phone.width)})`);
+
+  /* F3-01m -> F3-03 */
+  await p.goto(BASE + '/services/driver-vehicle/?verified=1', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  await p.getByRole('link', { name: 'Add to wallet', exact: true }).first().click();
+  await p.waitForURL('**/services/driver-vehicle/wallet/');
+  await p.waitForTimeout(900);
+  if (await p.locator('[data-wallet-qr]').isVisible()) fails.push(`@${width} M-1: a QR is visible on F3-03 (the phone page has none)`);
+  const apple = p.getByRole('link', { name: 'Add to Apple Wallet', exact: true });
+  const google = p.getByRole('link', { name: 'Add to Google Wallet', exact: true });
+  if (!(await apple.isVisible()) || !(await google.isVisible())) fails.push(`@${width} M-2: the wallet buttons are not visible`);
+  await p.getByRole('button', { name: 'Get help adding your licence', exact: true }).click();
+  if (!(await p.getByText('Not part of this demo').first().isVisible().catch(() => false))) fails.push(`@${width} M-3: the help link shows no toast`);
+  await apple.click();
+  await p.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  expectAt('M-4 Add to Apple Wallet -> W-03', '/wallet/connect/');
+  await p.waitForTimeout(1000);
+  const statusInStore = () => p.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('gnl-demo:v1') || '{}');
+    const id = s.wallet?.currentOfferId;
+    return id ? s.wallet.offers[id].status : null;
+  });
+  if ((await statusInStore()) !== 'scanned') fails.push(`@${width} M-5: after the deep link the offer is "${await statusInStore()}", expected "scanned"`);
+  await p.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await p.waitForURL('**/wallet/offer/');
+  await p.getByRole('button', { name: 'View offer', exact: true }).click();
+  await p.waitForURL('**/wallet/review/');
+  await p.getByRole('button', { name: 'Accept', exact: true }).click();
+  await p.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
+  expectAt('M-6 W-05 Accept -> W-06 -> W-07', '/wallet/code/');
+  await p.getByText('Enter your verification code').first().waitFor();
+  await p.waitForTimeout(300);
+  await p.keyboard.type('123456');
+  if ((await p.locator('[data-wallet-code]').getAttribute('data-digits')) !== '123456') fails.push(`@${width} M-7: the physical keyboard did not fill the code`);
+  await p.keyboard.press('Enter');
+  await p.waitForURL('**/wallet/added/', { timeout: 4000 }).catch(() => {});
+  expectAt('M-8 Enter -> W-08', '/wallet/added/');
+  await p.getByRole('link', { name: /Go to Wallet/ }).click();
+  await p.waitForURL('**/wallet/cards/');
+  await p.waitForTimeout(500);
+  if ((await cards.count()) !== 3) fails.push(`@${width} M-CARDS2: W-09 shows ${await cards.count()} cards after issuing`);
+  await p.waitForTimeout(1200);
+  if ((await statusInStore()) !== 'issued') fails.push(`@${width} M-9: the offer is "${await statusInStore()}", expected "issued"`);
+  /* P1 (brief §8): the same-device "◀ MyGovNL" back to F3-03, which toasts. */
+  const back = p.locator('[data-wallet-mygovnl]');
+  if (!(await back.isVisible().catch(() => false))) {
+    fails.push(`@${width} M-10: no "◀ MyGovNL" link in the same-device wallet`);
+  } else {
+    await back.click();
+    await p.waitForURL((u) => u.pathname === '/services/driver-vehicle/wallet/', { timeout: 5000 }).catch(() => {});
+    expectAt('M-11 ◀ MyGovNL -> F3-03', '/services/driver-vehicle/wallet/');
+    await p.waitForTimeout(700);
+    if (!(await p.locator('.gnl-toast', { hasText: 'Added to your wallet' }).first().isVisible().catch(() => false))) fails.push(`@${width} M-12: F3-03 shows no "Added to your wallet" toast on return`);
+    if (new URL(p.url()).search) fails.push(`@${width} M-13: ?from=wallet was not dropped from the URL`);
+  }
+  console.log(`  @${width} mobile story: F3-01m -> F3-03 -> Add to Apple Wallet -> W-03 … W-09 (2 cards -> 3) -> ◀ MyGovNL`);
+
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 3 mobile console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
+/*
+ * P1 PRESENTER STAGE (brief §3): Shift+W from a portal page opens it; its two
+ * SAME-ORIGIN iframes sync like two windows — drive the wallet frame, the C1
+ * frame changes. Nothing in the prerendered portal links to it.
+ */
+async function runFlow3Stage(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 1000 } });
+  const p = await ctx.newPage();
+  const errs = [];
+  watchConsole(p, errs);
+  await p.goto(BASE + '/services/driver-vehicle/?verified=1', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  await p.keyboard.press('Shift+W');
+  await p.waitForURL('**/demo/wallet-stage/', { timeout: 5000 }).catch(() => {});
+  if (new URL(p.url()).pathname !== '/demo/wallet-stage/') fails.push(`@${width} S-1: Shift+W went to ${new URL(p.url()).pathname}`);
+  await p.waitForTimeout(1500);
+  const c1 = p.frameLocator('[data-stage-frame="c1"]');
+  const wf = p.frameLocator('[data-stage-frame="wallet"]');
+  const st = () => c1.locator('[data-wallet-status]').getAttribute('data-wallet-status');
+  if ((await st()) !== 'waiting') fails.push(`@${width} S-2: the stage's C1 frame reads ${await st()}`);
+  await wf.locator('[data-wallet-scan-card]').click();
+  let seen = null;
+  for (let i = 0; i < 40 && seen !== 'adding'; i++) { await p.waitForTimeout(200); seen = await st(); }
+  if (seen !== 'adding') fails.push(`@${width} S-3: scanning in the stage's wallet frame left C1 at "${seen}"`);
+  await p.getByRole('button', { name: 'Reset demo', exact: true }).click();
+  await p.waitForTimeout(2000);
+  if ((await st()) !== 'waiting') fails.push(`@${width} S-4: Reset demo on the stage left C1 at "${await st()}"`);
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 3 stage console: ${real.join(' ;; ')}`);
+  console.log(`  @${width} presenter stage: Shift+W, wallet frame -> C1 frame "Adding", Reset demo -> "Waiting"`);
+  await ctx.close();
+}
+
+async function runFlow3Hydration(width) {
+  const hctx = await b.newContext({ viewport: { width, height: 900 } });
+  const now = new Date().toISOString();
+  const later = new Date(Date.now() + 8 * 60 * 1000).toISOString();
+  await hctx.addInitScript(([n, l]) => {
+    try {
+      localStorage.setItem('gnl-demo:v1', JSON.stringify({
+        v: 1,
+        services: { 'driver-vehicle': { status: 'onboarded', step: 'ready' } },
+        wallet: {
+          currentOfferId: 'seeded0001',
+          offers: { seeded0001: { id: 'seeded0001', serviceId: 'driver-vehicle', credentialType: 'VehicleRegistrationCertificate', status: 'issued', createdAt: n, expiresAt: l, issuedAt: n, scannedAt: n } },
+          cardIssuedAt: n,
+        },
+      }));
+    } catch { /* ignore */ }
+  }, [now, later]);
+  const h = await hctx.newPage();
+  const errs = [];
+  watchConsole(h, errs);
+  const html = await (await h.request.get(BASE + '/services/driver-vehicle/wallet/')).text();
+  if (!html.includes(STATUS.waiting)) fails.push(`@${width} W-HYD1: the prerendered C1 HTML does not say "${STATUS.waiting}"`);
+  if (html.includes(STATUS.added)) fails.push(`@${width} W-HYD2: the prerendered C1 HTML already contains a store-dependent status`);
+  for (const r of ['/services/driver-vehicle/wallet/', '/wallet/', '/wallet/cards/', '/services/driver-vehicle/']) {
+    await h.goto(BASE + r, { waitUntil: 'networkidle' });
+    await h.waitForTimeout(350);
+  }
+  await h.goto(BASE + '/services/driver-vehicle/wallet/', { waitUntil: 'networkidle' });
+  await h.waitForTimeout(500);
+  if (width >= 768) {
+    const t = (await h.locator('[data-wallet-status]').first().textContent())?.trim();
+    if (t !== STATUS.added) fails.push(`@${width} W-HYD3: a seeded issued offer reads back as "${t}"`);
+  }
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} W-HYD console with a populated wallet store: ${real.join(' ;; ')}`);
+  await hctx.close();
+}
+
 for (const w of [1440, 768, 390]) await run(w);
 for (const w of [1440, 768, 390]) await runFlowBCid(w);
 for (const w of [1440, 768, 390]) await runFlowB(w);
+for (const w of [1440, 768]) await runFlow3Desktop(w);
+await runFlow3Mobile(393);
+await runFlow3Stage(1440);
+for (const w of [1440, 393]) await runFlow3Hydration(w);
 await b.close();
 
 console.log(
   fails.length
     ? 'CLICK FAILURES:\n' + fails.join('\n')
-    : 'click-through: Flow A forward + backward chain, Flow B CID chain and Flow B full chain (dashboard -> Trusted) intact at 1440 / 768 / 390',
+    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted) and Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) intact at 1440 / 768 / 390',
 );
 if (fails.length) process.exit(1);

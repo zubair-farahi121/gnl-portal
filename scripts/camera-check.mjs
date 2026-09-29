@@ -356,6 +356,38 @@ await page.goto(BASE + '/dashboard/', { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 ok((await page.locator('video').count()) === 0, 'dashboard: no <video>, no camera requested elsewhere');
 
+/* ---------- 5b. FLOW 3 — the wallet's QR scanner, W-02 (REWORKED 2026-09-29) ----------
+ *
+ * FLOW3_BRIEF.md §7 W-02 replaces the wallet's live camera with a SIMULATED
+ * scanner (a tilted, glowing picture of the desktop's own QR; auto-detect after
+ * ~1.2 s or on tap). So the wallet must now NEVER ask for the camera. This
+ * section proves the opposite of what it used to, on a camera-granted page
+ * that has just run the whole live CID path above:
+ *   - /wallet/scan/ makes NO getUserMedia call and shows NO <video>;
+ *   - the 260 px viewfinder still exists and holds the simulated QR;
+ *   - tapping it "scans": the page moves to W-03, and still no track is live.
+ * Every CID / Yoti camera assertion above is unchanged.
+ */
+{
+  /* A full navigation: the init script's counter starts again from zero here. */
+  await page.goto(BASE + '/wallet/scan/', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const box = await page.evaluate(() => {
+    const b = document.querySelector('[data-wallet-scan]')?.getBoundingClientRect();
+    return b ? [Math.round(b.width), Math.round(b.height)] : null;
+  });
+  ok(box && box[0] === 260 && box[1] === 260, `W-02: the 260px viewfinder is there (${box && box.join('x')})`);
+  ok((await page.locator('[data-wallet-scan] svg path').count()) >= 1, 'W-02: the viewfinder shows a simulated QR');
+  ok((await page.locator('video').count()) === 0, 'W-02: no <video> — the scanner is simulated (brief §7)');
+  const cons = await page.evaluate(() => window.__gnlConstraints || []);
+  ok(cons.length === 0, `W-02: NO getUserMedia call (${cons.join(' | ') || 'none'})`);
+  ok(await liveCount() === 0, `W-02: zero live tracks (${(await trackStates()).join(',')})`);
+  await page.locator('[data-wallet-scan]').click();
+  await page.waitForURL('**/wallet/connect/**', { timeout: 10000 });
+  await page.waitForTimeout(500);
+  ok(await liveCount() === 0, `W-02 -> W-03: still zero live tracks (${(await trackStates()).join(',')})`);
+}
+
 /* ---------- 6. ?mock=1 forces the mock, and is sticky ---------- */
 const ctx2 = await browser.newContext({ viewport: { width: 390, height: 900 }, permissions: ['camera'] });
 const p2 = await ctx2.newPage();

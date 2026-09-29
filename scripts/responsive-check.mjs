@@ -157,6 +157,35 @@ const ROUTES = [
   ['b-prerequisite', '/services/studentaid/prerequisite/'],
   ['b-confirmation', '/services/studentaid/confirmation/'],
   ['b-service-verified', '/services/studentaid/?verified=1'],
+  // ====================================================================
+  // FLOW 3 — "Issuance of Vehicle Registration Certificate", added 2026-09-29.
+  //
+  // The C1 page is a GNL desktop page with a phone twin that is a DIFFERENT
+  // layout below 768 (F3-03: buttons instead of the QR), so both halves of that
+  // switch are measured here. REWORKED 2026-09-29 (FLOW3_BRIEF.md §6): the
+  // wallet is ONE 393 x 852 phone frame above 430 px and full screen at or
+  // below it, its content scrolling INSIDE the phone — so the widths to watch
+  // are 320 (36px Black headlines, W-07's six 48px code boxes) and 431+ (the
+  // frame must centre and never widen the page).
+  //
+  // W-06 /wallet/connecting/ is loaded COLD here, i.e. unarmed, so it does NOT
+  // auto-advance. W-02 /wallet/scan/ is now a SIMULATED scanner (no camera);
+  // loaded cold with no offer it does not auto-detect either. /wallet/start/
+  // is the QR's entry route: with no offer it asks the mock issuer for one and
+  // replaces itself with W-03 — measured to prove that path is console-clean.
+  ['flow3-c1', '/services/driver-vehicle/wallet/'],
+  ['wallet-home', '/wallet/'],
+  ['wallet-start', '/wallet/start/'],
+  ['wallet-scan', '/wallet/scan/'],
+  ['wallet-connect', '/wallet/connect/'],
+  ['wallet-offer', '/wallet/offer/'],
+  ['wallet-review', '/wallet/review/'],
+  ['wallet-connecting', '/wallet/connecting/'],
+  ['wallet-code', '/wallet/code/'],
+  ['wallet-added', '/wallet/added/'],
+  ['wallet-cards', '/wallet/cards/'],
+  // The P1 presenter stage (hidden; Shift+W). Two iframes, scaled to fit.
+  ['wallet-stage', '/demo/wallet-stage/'],
   // THE GNL 404 — added 2026-09-23 (Tier 1 item 1.6, brief §7.6). `/nope/` is
   // an unknown path on purpose: the static export serves out/404.html for it,
   // which is the page under test. It is in this gate because §7.6 says the demo

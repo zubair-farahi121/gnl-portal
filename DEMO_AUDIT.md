@@ -909,3 +909,315 @@ Yoti screens with no Back control Flow B had no reverse move at all.
 | `npm run responsive` | exit 0 — **44 routes** (35 before + 9 Flow B desktop incl. `?verified=1`), no horizontal scroll at any width, console clean, **with the `cid-b-terms` exemption deleted** |
 | `npm run clicks` | exit 0 — Flow A chain, Flow B CID chain (F1b now follows the decline link), and the new Flow B full chain, at 1440 / 768 / 390 |
 | `npm run camera` | exit 0 |
+
+---
+
+## Flow 3 — wallet issuance
+
+"Issuance of Vehicle Registration Certificate", Figma section **6343:84884**
+(spec: `design/FLOW3_OBSERVED.md`). Figma read-only throughout: only
+`get_metadata`, `get_design_context` and `get_screenshot` were called; no write
+tool, no asset download. Built in three phases so a successor can resume from
+the last dated entry below.
+
+### 2026-09-29 — Phase 1 DONE: C1 side
+
+* **Store:** `gnl-demo:v1` gains an optional `wallet: { status, connectArmed? }`
+  (`waiting -> adding -> added`, forward-only via `advanceWallet`; W6's
+  one-shot via `armWalletConnect` / `takeWalletConnect`). Absent reads as
+  `waiting`; `resetAll` already removes the key. `src/lib/demo-state.tsx`.
+* **Routes:** `FLOW3_ROUTES` in `src/lib/data/service-config.ts` — C1 page
+  `/services/driver-vehicle/wallet/`, wallet `/wallet/{,scan,connect,offer,review,connecting,code,added,cards}/`.
+* **Entry:** "Add to wallet" on the Trusted page (6257:73260) is now a
+  `next/link` to the C1 page instead of the toast. Same classes; the
+  `service-verified` frame still diffs at **0.000%**.
+* **Persona:** `VEHICLE_CHEV` extracted in `driver-vehicle.ts`; the CHEV card
+  lines are rebuilt from it (byte-identical output).
+* **C1 page** `src/app/services/driver-vehicle/wallet/page.tsx` (server
+  component) from 6220:86445 / 6220:86488. Real QR generated at build time
+  (`src/lib/qr.ts`, `qrcode` package, encodes `PUBLIC_BASE_URL` or
+  `http://localhost:4173` + `/wallet/`). Clicking it opens the wallet in a
+  393x852 named popup (`WalletQrLink`). Status line `WalletStatusLine` reads
+  the store after mount — prerendered "Waiting for scan…". Below 768 the QR is
+  replaced by "Add to Apple Wallet" / "Add to Google Wallet" -> W3.
+* **Status text check:** 6289:45276 AND 6289:46104 both read "Adding to your
+  wallet…" (get_design_context on 6289:45291 / 6289:46119). "Added to your
+  wallet" is derived (annotation 6220:86486).
+* Gates this phase: `npm run build` clean (46 pages); `npm run diff` **PASS,
+  0.000% on all 22 frames**. The phone buttons point at `/wallet/connect/`,
+  which Phase 2 builds (until then its prefetch 404s at < 768).
+
+### 2026-09-29 — Phase 2 DONE: wallet routes W1–W9
+
+* **Zone:** `src/app/wallet/layout.tsx` — Inter 300/400/500/600/700/900
+  vendored from `@fontsource/inter` into `src/app/fonts/` and loaded with
+  `next/font/local` IN THIS LAYOUT ONLY (verified: `out/index.html` and the
+  service page preload no Inter; `out/wallet/index.html` does). Plain
+  `#e6e8ef` backdrop, a phone-width white column (max 430px), no device
+  frame, no status bar, no home indicator. Its keyframes are emitted in the
+  layout, `gnl-wallet-` prefixed; `prefers-reduced-motion` stops them.
+* **Tokens:** `src/lib/data/wallet-tokens.ts` — every wallet colour, size,
+  weight, progress fraction and timing, from the frames' own Portage bindings.
+  **Copy:** `WALLET_COPY` in `src/lib/data/flow3.ts`; persona from
+  `DEMO_USER` + `VEHICLE_CHEV` (no retyped VIN/plate/expiry).
+* **Screens:** W1 `/wallet/` (6288:59109) · W2 `/wallet/scan/` (6286:90660,
+  `CameraViewport` reused, rear camera, mock = the real build-time QR; tapping
+  the viewfinder sets `adding` -> W3) · W3 `/wallet/connect/` (6325:60170, sets
+  `adding` on mount; Decline -> wallet toast) · W4 `/wallet/offer/`
+  (6240:54958) · W5 `/wallet/review/` (6240:55097; Accept arms W6) · W6
+  `/wallet/connecting/` (6293:46861; one-shot 2 s `router.replace` to W7) · W7
+  `/wallet/code/` (6322:60882; keypad + keyboard, tap the boxes to quick-fill,
+  auto-continues at 6 digits) · W8 `/wallet/added/` (6240:55218; sets `added`)
+  · W9 `/wallet/cards/` (6240:55253).
+* **Wallet toast:** `WalletToast` (own tokens, `data-wallet-inert`), so the GNL
+  toast never appears inside the wallet.
+* Gates this phase: `npm run build` clean — **55 static pages** (46 + 9
+  wallet); `tsc --noEmit` clean; all nine wallet routes load with a clean
+  console at 390 (spot check). Full gates are Phase 3.
+
+### 2026-09-29 — Phase 3 DONE: two-window sync, reset, keys, gates
+
+* **Keys:** `FLOW_3` in `src/lib/flow.ts` (Trusted -> C1 -> W1..W9). DemoNav
+  uses it only for a path in `FLOW_3` and in neither `FLOW` nor `FLOW_B`, so
+  every Flow A / Flow B arrow press is unchanged. Escape still clears the
+  whole store; in the wallet window it lands on `/wallet/` instead of the GNL
+  login page. `/reset` needed no change (it removes the whole key).
+* **W6 Back-safety:** one-shot armed by W5 Accept; `router.replace` to W7;
+  W7's Back goes to W5. Gate asserts ArrowLeft from W7 lands on W6 and it
+  does NOT bounce forward after 3.2 s.
+* **Gates added:** 10 routes in `responsive-check.mjs`; `runFlow3` in
+  `click-through.mjs` (W-CHAIN, **W-SYNC two pages / one context**, W-RESET
+  Escape + /reset, W-HYD populated store + prerendered text); W2 section 5b in
+  `camera-check.mjs`; three NEW self-baselines `wallet-c1`, `wallet-connect`,
+  `wallet-cards` (copied one by one — `npm run baseline --yes` NOT run).
+* **Mutation check:** with the `storage` listener disabled, W-SYNC2/3/4 and
+  W-RESET3 fail at every width — the sync test has teeth. Reverted.
+* **Flow A/B untouched:** all 45 pre-existing prerendered HTML files are
+  byte-identical to before this work (scripts/links stripped), and all 22
+  original frames diff at 0.000%.
+
+#### Gate results — 2026-09-29 (final build, served WITHOUT `-s`, three routes -> three md5s)
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean, **55 static pages** (+1 C1, +9 wallet) |
+| `npm run diff` | **GATE: PASS — 0.000% on all 25 frames** (22 original, none re-baselined, + 3 new) |
+| `npm run clicks` | exit 0 — Flow A, Flow B CID, Flow B full, and Flow 3 at 1440 / 768 / 390 |
+| `npm run camera` | exit 0 — incl. W2: live feed in the 260px viewfinder, rear camera, track stopped on the scan tap |
+| `npm run responsive` | exit 0 — **54 routes**, no horizontal scroll at 320–1920, console clean |
+
+#### Deliberate deviations (Flow 3)
+
+* No status bar / home indicator / bezel on the wallet (decision: two windows).
+* All wallet glyphs, the NL emblem, the Apple / Google marks, the benefit
+  icons and the phone-width certificate picture are **drawn stand-ins** at the
+  Figma box sizes (read-only file; no asset download).
+* The C1 status line is kept on the phone-width layout (6220:86488 draws
+  none) so a same-device user sees where things stand.
+* 6220:86506's magenta "[Get help adding your licence]" placeholder rendered
+  as a normal GNL link (toast), without brackets.
+* W7 opens EMPTY (the frame is a mid-typing snapshot "4 8 2"); the code boxes
+  are the quick-fill button (fills 482915); any 6 digits continue.
+* W5 heading follows the frame (Headings 6345:12128):
+  "Is the information correct?" (FLOW3_OBSERVED.md paraphrased "this").
+* W6 has no "Powered by Portage Cryptography" line — the frame has none.
+
+#### Open questions (Flow 3)
+
+* **F3-1** Which wallet do we name on stage? C1 says Apple / Google Wallet;
+  the wallet shown is a Portage-style app.
+* **F3-2** W2 says "the **login** QR code" — reproduced verbatim.
+* **F3-3** "Added to your wallet" is derived, not drawn.
+* **F3-4** W9 "Issued October 31, 2026" is after the dry run.
+* **F3-5** W1 already says "3 cards total" BEFORE the certificate is added.
+* **F3-6** Decline (W3, W5) has no drawn path — toast.
+* **F3-7** Issuer spelled "Government of Newfoundland **&** Labrador" in the
+  wallet and "…**and** Labrador" on C1; "licence" on 6220:86506 vs a
+  registration certificate.
+* **F3-8** The phone-width buttons go to W3 (skipping home + scanner). Right
+  for same-device, but confirm.
+* **F3-9** The code on the QR encodes `http://localhost:4173/wallet/` unless
+  `PUBLIC_BASE_URL` is set at build time — a real phone cannot open it.
+
+---
+
+### 2026-09-29 — REWORK to FLOW3_BRIEF.md (branch `flow3`)
+
+The first build above was reworked to the formal brief `FLOW3_BRIEF.md`.
+Where this section and the entries above disagree, this section wins. Each
+line below is one committed phase; resume from the last one.
+
+* **Phases 1–3 DONE (one commit — the store API change made the three
+  inseparable: every wallet screen and the C1 page read the old
+  `walletStatus`, so no intermediate state builds).**
+  * Mock issuer `src/lib/mock-issuer.ts` (labelled DEMO MOCK): `OfferStatus`
+    created/scanned/connected/viewed/accepted/code_verified/issued/declined,
+    `CredentialOffer` (+ `scannedAt`), `createOffer/getOffer/updateOffer/
+    subscribe`, 300–800 ms latency, per-window FIFO, `issued` final. Offers
+    live in `gnl-demo:v1` (`wallet.offers/currentOfferId`), synced by the
+    existing `storage` listener plus a same-window event.
+  * QR entry route `/wallet/start/?offer=ID[&from=mygovnl]` (static-export
+    safe; `/wallet/offer/` is W-04). QR drawn in the browser, encodes
+    `${PUBLIC_BASE_URL||http://localhost:4173}/wallet/start/?offer=ID`.
+  * Tokens rewritten to brief §6; ONE phone frame 393x852 r48 (full screen
+    <= 430); status bar 9:41 + icons; home indicator; header (back / ✕ /
+    progress 20-40-40-60-80-100 %); close -> `created` unless issued; Esc = ✕.
+  * W-01..W-09 and F3-02 / F3-03 reworked (details in the Phase 4 entry).
+  * Gates on this commit: build clean (56 pages); diff 0.000 % on all 25
+    (22 originals untouched; 3 Flow 3 frames re-baselined by copying, the
+    dry run listed exactly those 3); clicks exit 0; camera exit 0;
+    responsive exit 0 (55 routes, no overflow, console clean).
+* **Phase 5 (P1) DONE — committed before the Phase 4 docs.** Presenter stage
+  `/demo/wallet-stage/` (Shift+W, two same-origin iframes, Reset demo);
+  upsell "Added to wallet ✓" behind `UPSELL_ADDED_STATE_ENABLED = false`
+  (verified working with the flag flipped on in a scratch build, then off —
+  `service-verified` stays 0.000 %); same-device "◀ MyGovNL" + GNL toast; QR
+  dim fix. The countdown, animations, scanner simulation and SMS banner came
+  with Phases 1–3.
+* **Phase 4 DONE** — this section, `DEMO_SCRIPT.md` (new), README "Flow 3",
+  `screenshots/flow3/`.
+
+#### Frames — every §4 frame found in Figma (get_metadata on 6343:84884, 2026-09-29)
+
+Read-only throughout: `get_metadata`, `get_design_context` only. No Figma
+write tool, no `download_assets`, no screenshot needed. Names and positions
+match FLOW3_BRIEF.md §4; the ids match `design/FLOW3_OBSERVED.md`.
+
+| ID | Frame name | Node | Size | Position | Built as |
+|---|---|---|---|---|---|
+| F3-01 | `D_driver-vehicle-service-page_verified_VC upsell` (instance) | **6285:87154** | 1440×1792 | 586, 2387 | `/services/driver-vehicle/` Trusted (unchanged; only "Add to wallet" wiring) |
+| F3-01m | `m_driver-vehicle-mobile_VC upsell` (instance) | **6285:87155** | 393×2787 | 586, 4296 | same page < 768 |
+| F3-02 | `driver-vehicle-service-page` — Waiting | **6220:86445** | 1440×1024 | 2857, 2387 | `/services/driver-vehicle/wallet/` ≥ 768 |
+| F3-02 | `driver-vehicle-service-page` — Adding | **6289:45276** | 1440×1024 | 5390, 2387 | same, state 2 (status 6289:45291 "Adding to your wallet…") |
+| F3-02 | `driver-vehicle-service-page` — Adding | **6289:46104** | 1440×1024 | 7538, 2387 | same (status 6289:46119 ALSO "Adding to your wallet…") |
+| F3-03 | `digital-wallet-mobile` | **6220:86488** | 393×1471 | 2857, 3560 | same route < 768 |
+| W-01 | `wallet-home-wireframe` | **6288:59109** | 393×874 | 4361, 2387 | `/wallet/` |
+| W-02 | `1. QR Scanner` | **6286:90660** | 390×844 | 6890, 2387 | `/wallet/scan/` |
+| W-03 | `government-issuer-interaction-request` | **6325:60170** | 390×881 | 9184, 2387 | `/wallet/connect/` |
+| W-04 | `Screen 1: Renewal Approved` | **6240:54958** | 390×910 | 9682, 2387 | `/wallet/offer/` |
+| W-05 | `Screen 4: Credential Preview` | **6240:55097** | 393×1432 | 10241, 2387 | `/wallet/review/` |
+| W-06 | `Screen 2: Wallet Redirect` | **6293:46861** | 390×844 | 10844, 2387 | `/wallet/connecting/` |
+| W-07 | `transactional-code-entry` | **6322:60882** | 393×874 | 11358, 2387 | `/wallet/code/` |
+| W-08 | `Screen 7: Success` | **6240:55218** | 393×844 | 11927, 2387 | `/wallet/added/` |
+| W-09 | `Screen 8: Wallet Dashboard` | **6240:55253** | 393×844 | 12365, 2387 | `/wallet/cards/` |
+| note | magenta "dynamic states : Waiting for scan / Adding to your wallet / Added to your wallet" | 6220:86486 | — | 3463, 3560 | source of the derived "Added" state |
+
+Measured against the build: F3-02 renders 1440×**1024** (Figma 1024); F3-03
+renders 393×**1469** (Figma 1471).
+
+#### Mechanism
+
+* **Mock issuer** (`src/lib/mock-issuer.ts`, DEMO MOCK). §3 table: `created`
+  → Waiting; `scanned/connected/viewed/accepted/code_verified` → Adding;
+  `issued` → Added; `declined` → Waiting (same QR keeps working).
+  Who sets what: C1 open → `createOffer` (reused if still usable, so a
+  refresh keeps state); W-02 detect or `/wallet/start/` → `scanned`; W-03
+  Yes, connect → `connected`; W-04 View offer → `viewed`; W-05 Accept →
+  `accepted`; W-07 Continue → `code_verified`, 0.6 s, `issued`; W-03 / W-05
+  Decline → `declined`; ✕ / Esc → `created` (unless issued). W-03 and W-08
+  also catch up on mount (ArrowRight / deep link).
+* **Static-export route choice.** `/wallet/offer/:offerId` cannot be
+  prerendered for ids minted in the browser, and `/wallet/offer/` is W-04.
+  The QR encodes `${PUBLIC_BASE_URL}/wallet/start/?offer=<id>`; that one
+  prerendered route reads the id client-side. OpenID4VCI note in
+  `src/lib/qr.ts`.
+* **Two devices.** Phone-view pop-up (QR click → W-01), same device (F3-03
+  buttons → W-03), presenter stage (P1). Real phone: P2, not built.
+
+#### Deliberate changes from Figma (brief §10, and every other one)
+
+1. **W-02 text** "the login QR code" → "the QR code" (brief §10.1).
+2. **QR generated in code** per offer, not "image 13" (§10.2).
+3. **"Issued" date = today** on W-09, "Issued <Month D, YYYY>" (§10.3).
+4. **One phone frame** 393×852 r48 1 px #E6E8EF; long screens scroll inside;
+   full screen at ≤ 430 px (§10.4). NOTE: the user earlier rejected a bezel
+   around the whole PORTAL, and the first Flow 3 build extended that to the
+   wallet. FLOW3_BRIEF.md is newer and asks for a frame around the WALLET
+   MOCK only — followed; the portal is still never framed. In the ~400 px
+   pop-up the wallet is full screen (≤ 430), so the frame shows in wide
+   windows and the stage draws its own outline.
+5. **Real status-bar icons** (signal / wifi / battery) and **9:41 on every
+   screen** — W-01's frame says "11:34" (§10.5).
+6. **Decline and close → "Waiting for scan"** — not designed (§10.6).
+7. **Upsell "Added to wallet ✓"** — built, behind a flag, OFF (§10.7).
+8. **Optional extras built (§8 / §10.8):** screen push (250 ms, reverse on
+   Back); state-line cross-fade, pulsing dot on Waiting, animated dots on
+   Adding; QR dim 35 % + spinner (Adding) / 20 % + #198754 check (Added);
+   simulated scanner (tilt, glow, blur that clears, snap-pulse); SMS banner;
+   check drawing in; new card slide-in + ~3 s highlight; "◀ MyGovNL" +
+   GNL toast; `prefers-reduced-motion` jumps to end states.
+9. **Hidden Figma layers shown because the brief asks for them:** W-01
+   `today-card` 6288:59161 ("Today / Added Personalausweis") and W-02
+   `button_default` 6286:90676 ("Enter Code Manually"). Both show the toast.
+10. **Live card count** on W-01 and W-09 (2 before, 3 after). Figma W-01
+    says "3 cards total" before anything is added.
+11. **"Added to your wallet"** derived from note 6220:86486 (not drawn).
+12. **Expiry** "8 minutes" → a live **mm:ss** countdown; "Get a new code"
+    makes a new offer + QR; at 00:00 a new offer is made silently (P1).
+    Frozen once the wallet has picked the offer up.
+13. **F3-03 has no state line** (as drawn). The first build had kept one.
+14. **W-02 has no camera** (simulated scanner). The camera gate now asserts
+    no `getUserMedia` on W-02; every CID / Yoti camera assertion is intact.
+15. **Navigation details:** W-07 Back → W-05 (W-06 is a one-shot transition
+    and would sit spinning); W-08 ✕ → W-01 (brief rule; the first build sent
+    it to W-09); Esc = ✕ on W-02..W-08 (§12), while W-01 / W-09 and the portal
+    keep Esc = reset; W-02 does not auto-detect again when reached by Back.
+16. **W-07 does not auto-continue** at 6 digits: the button becomes primary
+    and Continue (or Enter) moves on (§7 W-07). Code starts empty.
+17. **Status-bar geometry** normalised: W-07's frame draws a 41 px bar with a
+    14 px clock; every screen uses 44 px / 15 px (W-01 / W-09: 56 px).
+18. **GNL crest flowers**: the pack's SVG (155×100 canvas) cropped to its
+    drawn box → 35×57 in the badge (brief "about 47×57"; the asset's own
+    aspect wins). W-05 card uses the pack's white crest + wordmark at 72×36.
+19. **Real Apple / Google Wallet marks** from the pack (downscaled PNGs),
+    replacing the drawn stand-ins. ID / Eye / Shield / Truck / Switch /
+    loader / backspace glyphs are still drawn (not in the pack).
+20. **"image 28"** on F3-03 is a labelled stand-in (`data-standin`, alt text
+    says "Placeholder for Figma image 28"); figma.com is blocked here, so it
+    could not be exported or even looked at.
+21. **`CredentialOffer.scannedAt`** added (not in the brief's interface) for
+    the countdown freeze. BroadcastChannel not added (optional).
+22. **Visual gate:** `wallet-c1` masks the QR and the countdown (the only
+    two pixels that change per run); `wallet-connect` / `wallet-cards` now
+    shot at 393×852. `wallet-cards` is the BEFORE state (2 cards).
+
+#### Open questions (brief §11, and new)
+
+1. **Code step:** SMS code (Figma) or the wallet's own PIN (Martin)?
+   `CODE_MODE` switches; `wallet_pin` shows `[Heading from Tatyana's
+   updated design]` / `[Wallet PIN text from Tatyana's updated design]`.
+2. **Consent wording on W-05:** Maud's wording may replace
+   `WALLET_CONSENT`.
+3. **F3-03 subtitle** says "Scan the code with Apple Wallet or Google
+   Wallet" on a page with no QR (same text as desktop 6220:86454/86495).
+4. **F3-03 "image 28"**: could not be exported or viewed — does it show the
+   vehicle registration certificate or a driver's licence?
+5. **Upsell after issuing** — enable `UPSELL_ADDED_STATE_ENABLED`?
+6. **Text not in Figma:** "Added to your wallet" (derived from 6220:86486);
+   the `wallet_pin` texts; the SMS banner text is the brief's.
+7. **W-01 "Today / Added Personalausweis"** (hidden layer, a German ID —
+   Paradym leftover). Shown verbatim because the brief asks for two list
+   cards. Replace the text, or drop the card?
+8. **W-02 "Enter Code Manually"** is hidden in Figma; shown per the brief.
+9. **F3-03 "[Get help adding your licence]"** is a magenta placeholder and
+   says "licence" on a registration page. Rendered as a link (toast).
+10. **Issuer spelling:** "&" in the wallet, "and" on C1 ("Issued by the
+    Government of Newfoundland and Labrador"). Both kept as drawn.
+11. **Which wallet do we name on stage?** C1 says Apple / Google Wallet; the
+    wallet mock is neutral (brief: not Apple, Google or Paradym branded).
+12. **F3-01 vs its Figma frames** (§5 "compare … list real differences"):
+    NOT done in this pass. The Trusted page is a frozen Flow A frame
+    (`service-verified`, 0.000 %) and Flows A/B must not change before the
+    dry run; only the "Add to wallet" wiring was touched (already done in the
+    first build). To do after the dry run.
+
+#### Gate results — 2026-09-29, final build (served WITHOUT `-s`; three routes → three md5s)
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean, **57 static pages** (+ `/wallet/start/`, `/demo/wallet-stage/`) |
+| `npm run shots && npm run diff` | **GATE: PASS — 0.000 % on all 25 frames.** The 22 original frames untouched. Re-baselined (copied one by one; the dry run of `npm run baseline` listed exactly these): `wallet-c1`, `wallet-connect`, `wallet-cards` in Phase 1–3, and `wallet-c1` again on the final build (8 px of anti-aliasing at the pulsing dot, 0.001 %) |
+| `npm run clicks` | exit 0 — Flow A, Flow B CID, Flow B full; Flow 3 desktop story + two-window sync + decline / close / Esc / back + 2 → 3 cards + refresh + /reset at 1440 and 768; mobile story at 393 incl. ◀ MyGovNL; presenter stage; hydration with a populated store at 1440 and 393 |
+| `npm run camera` | exit 0 — all CID / Yoti camera checks unchanged; W-02 asserts NO camera |
+| `npm run responsive` | exit 0 — **56 routes** × 320/375/393/768/1024/1280/1440/1920 (+ `/wallet/start/`, `/demo/wallet-stage/`), no horizontal scroll, console clean (run on its own server, port 4174, `DEMO_BASE_URL`) |
+| mutation check | with the `storage` listeners removed (provider + issuer), the Flow 3 click run fails (exit 1) — the sync test has teeth. Reverted |

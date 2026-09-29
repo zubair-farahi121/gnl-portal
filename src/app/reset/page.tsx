@@ -17,6 +17,11 @@ import { APP_ROUTES } from "@/lib/data/service-config";
  * So this is now the ONLY route that empties `gnl-demo:v1`. (The presenter's
  * Escape key in `DemoNav` does the same thing without a navigation.)
  *
+ * FLOW 3 (2026-09-29): that includes the wallet status. `resetAll` removes the
+ * whole key, so a C1 wallet page open in another window receives the `storage`
+ * event and drops back to "Waiting for scan…" with no code here — asserted by
+ * `npm run clicks` (W-RESET).
+ *
  * IT RENDERS A BLANK PAGE ON PURPOSE. It exists for a fraction of a second
  * between a keystroke and the login screen; a heading and a card would flash
  * up and be gone. Nothing here is a design decision — there is no Figma frame

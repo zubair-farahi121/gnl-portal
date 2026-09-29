@@ -30,6 +30,12 @@ import { useEffect, useRef, useState } from "react";
  * an effect, so it asks only when one of those three screens MOUNTS. No other
  * route in the flow triggers a permission prompt.
  *
+ * FOUR SINCE 2026-09-29: Flow 3's wallet QR scanner, /wallet/scan/ (W2, Figma
+ * 6286:90660), mounts it too — inside its 260px viewfinder, rear camera, with
+ * the real build-time QR as its mock. Same component, no change to it; tapping
+ * the viewfinder navigates away and the unmount below stops the track
+ * (asserted by `npm run camera`, section 5b).
+ *
  * The liveness screen asks for the FRONT camera and the two capture screens
  * for the REAR one. That is the `facingMode` prop, not a second copy of this
  * file; see the prop's own note for why it is always `ideal`, never `exact`.

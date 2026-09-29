@@ -354,6 +354,62 @@ export const APP_ROUTES = {
 } as const;
 
 /**
+ * FLOW 3 — "Issuance of Vehicle Registration Certificate". ADDED 2026-09-29.
+ * Figma section 6343:84884; every frame is listed in design/FLOW3_OBSERVED.md.
+ *
+ * TWO SURFACES, TWO VISUAL LANGUAGES, ONE LIST OF PATHS:
+ *
+ *   c1      the C1 page (GNL design, Lato, TopNav/SiteFooter) — 6220:86445.
+ *           Hangs off the Driver and Vehicle service because that is the only
+ *           service with the "Skip the paper copy" upsell, and because its
+ *           breadcrumb goes back there. A plain path, not a `serviceRoutes()`
+ *           key: adding it there would mint /services/studentaid/wallet/ as a
+ *           path nothing builds.
+ *
+ *   wallet  the wallet app (Portage 2026 language, Inter) — W1..W9. Its own
+ *           top-level `/wallet/` tree rather than anything under /services/,
+ *           because in the story it is a DIFFERENT APP on the user's phone:
+ *           the presenter opens it in a second, narrow browser window. Named
+ *           for what each screen is, like the rest of the app's paths.
+ *
+ * One `?` param in the whole tree: `start?offer=<id>`, the QR code's target
+ * (FLOW3_BRIEF.md §3; see walletOfferUrl in src/lib/qr.ts for why a query
+ * string and not `/wallet/offer/:offerId`). Every other screen is a plain,
+ * prerendered, individually addressable path, which is what keeps
+ * ArrowRight / type-the-URL recovery working on stage.
+ */
+export const FLOW3_ROUTES = {
+  /** C1 "Add your vehicle registration certificate to your wallet" — 6220:86445. */
+  c1: "/services/driver-vehicle/wallet/",
+  /** W1 wallet home, "Hello, Jason!" — 6288:59109. Clicking the QR opens this. */
+  walletHome: "/wallet/",
+  /**
+   * The QR's / deep link's entry (`?offer=<id>`, `&from=mygovnl` for the
+   * same-device path). Not a screen: it picks the offer, marks it `scanned`
+   * and replaces itself with W-03. Added 2026-09-29 (brief §3).
+   */
+  start: "/wallet/start/",
+  /** W2 "Scan QR Code" — 6286:90660. */
+  scan: "/wallet/scan/",
+  /** W3 "Allow connection?" — 6325:60170. Same-device mode starts here. */
+  connect: "/wallet/connect/",
+  /** W4 "Certificate offered" — 6240:54958. */
+  offer: "/wallet/offer/",
+  /** W5 "Is the information correct?" — 6240:55097. */
+  review: "/wallet/review/",
+  /** W6 "Connecting wallet..." — 6293:46861. Auto-advances, one-shot. */
+  connecting: "/wallet/connecting/",
+  /** W7 "Enter your verification code" — 6322:60882. */
+  code: "/wallet/code/",
+  /** W8 "Added Successfully" — 6240:55218. The offer becomes `issued`. */
+  added: "/wallet/added/",
+  /** W9 wallet dashboard with the new certificate — 6240:55253. */
+  cards: "/wallet/cards/",
+  /** P1 presenter stage — C1 + wallet side by side. Hidden; Shift+W (DemoNav). */
+  stage: "/demo/wallet-stage/",
+} as const;
+
+/**
  * The document label as the "Accepted documents" frame spells it.
  *
  * Both strings are verbatim from Figma 6087:31396 and must stay that way:
