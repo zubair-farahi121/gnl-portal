@@ -193,7 +193,7 @@ export function WalletStatusButton({
   href: string;
   children: React.ReactNode;
   variant?: "primary" | "secondary";
-  /** W-05 Accept: arm W-06's one-shot auto-advance. */
+  /** W-05 "Add to wallet" (was "Accept"): arm W-06's one-shot auto-advance. */
   armConnect?: boolean;
   dataAction?: string;
 }) {

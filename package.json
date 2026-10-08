@@ -10,19 +10,23 @@
     "baseline": "node scripts/baseline.mjs",
     "visual": "npm run build && npm run shots && npm run diff",
     "serve": "serve out -l 4173",
+    "serve:phone": "node server/demo-server.mjs",
     "responsive": "node scripts/responsive-check.mjs",
     "clicks": "node scripts/click-through.mjs",
     "camera": "node scripts/camera-check.mjs",
+    "phone": "node scripts/phone-path-check.mjs",
     "check": "npm run build && npm run responsive && npm run clicks"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
     "@fontsource/lato": "^5.3.0",
     "@fontsource/montserrat": "^5.3.0",
+    "compression": "1.8.1",
     "next": "16.3.5",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "serve-handler": "6.1.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

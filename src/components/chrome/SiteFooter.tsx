@@ -26,21 +26,22 @@ import { ASSETS } from "@/lib/assets";
 type Variant = "desktop" | "mobile";
 
 /**
- * The GNL crest. Two stacked SVG leaves inside one box, positioned with the
- * exact percentage insets from Figma so the composite scales correctly between
- * the desktop (72.134 x 36.215) and mobile (99.214 x 49.811) sizes.
+ * The GNL crest, in one box at the desktop (72.134 x 36.215) or mobile
+ * (99.214 x 49.811) size.
+ *
+ * 2026-10-01: the designer's single `gnl-crest.svg` (colour flowers, white
+ * wordmark) replaces the two stacked placeholder leaves. Its aspect (1.992)
+ * is the box's, so it fills the same box exactly.
  */
 function GnlCrest({ className }: { className: string }) {
   return (
     <div className={`relative shrink-0 overflow-clip ${className}`} data-node-id="6011:775">
-      <div className="absolute inset-[0_36.61%_18.23%_0]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.gnlCrestFlowers} />
-      </div>
-      <div className="absolute inset-[30.74%_0_0.72%_0.08%]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.gnlCrestWordmark} />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="Government of Newfoundland and Labrador"
+        className="absolute inset-0 block size-full max-w-none object-contain"
+        src={ASSETS.gnlCrest}
+      />
     </div>
   );
 }

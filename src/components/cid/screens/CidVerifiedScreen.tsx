@@ -2,11 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { CidScreen } from "@/components/cid/CidScreen";
+import { HandoffDoneNotice } from "@/components/cid/HandoffDoneNotice";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
 import { useDemoState } from "@/lib/demo-state";
 import { getCidCopy } from "@/lib/data/cid";
 import { APP_ROUTES, type ServiceConfig } from "@/lib/data/service-config";
+import { MOBILE_ROUTE } from "@/lib/data/phone-path";
+import { isHandoffTab } from "@/lib/remote-sync";
 
 /*
  * CID_ID_success — Figma 6217:66058, 393 x 1014.810546875.
@@ -108,12 +111,22 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
    * to find that out.
    */
   const onContinue = () => {
+    /* Phone path (docs/PHONE_PATH.md): a PHONE that came through the laptop's
+       hand-off QR has already handed the result back — the laptop moved on by
+       itself — so the phone ends on "You can return to your computer". */
+    if (isHandoffTab(service.id)) {
+      router.replace(`${MOBILE_ROUTE}?done=1&service=${service.id}`);
+      return;
+    }
     markVerified(service.id);
     router.push(APP_ROUTES.processing);
   };
 
   return (
     <CidScreen service={service} mainNodeId="6062:22542" subStep={copy.subStep}>
+      {/* Phone path (2026-09-30): null unless this phone tab came through the
+          laptop's hand-off QR — see src/components/cid/HandoffDoneNotice.tsx. */}
+      <HandoffDoneNotice serviceId={service.id} />
       {/* Frame 5 — 6062:22553 */}
       <div
         className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"

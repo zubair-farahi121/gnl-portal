@@ -26,8 +26,8 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_TYPE } from "@/lib/data/wallet-to
  *                #E6E8EF line between rows (none under the last)
  *   consent      WALLET_CONSENT — ONE constant (Tatyana may swap in Maud's
  *                wording)
- *   actions      "Accept"  -> `accepted`, arms W-06, W-06
- *                "Decline" -> `declined`, W-01
+ *   actions      "Add to wallet" (Figma "Accept", renamed 2026-09-30) -> `accepted`, arms W-06, W-06
+ *                "Cancel" (Figma "Decline", renamed 2026-09-30)  -> `declined`, W-01
  */
 export default function WalletReviewPage() {
   const c = WALLET_COPY.review;

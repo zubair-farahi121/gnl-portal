@@ -54,8 +54,15 @@ export type ServiceCardData = {
   duplicateChevron?: boolean;
 };
 
-/** `welcome-section` 6031:5977 — "Welcome Jason Momoa!" */
-export const DEMO_USER = { name: "Jason Momoa" } as const;
+/**
+ * `welcome-section` 6031:5977 — "Welcome Jason Moore!"
+ *
+ * Figma says "Jason Momoa". CHANGED 2026-09-30 (branch feedback-ui, decided by
+ * Zubair): a real celebrity's name is not suitable in a customer demo. The
+ * wallet's holder / owner (driver-vehicle.ts) is built from this, so it
+ * follows. The wallet greeting "Hello, Jason!" is unchanged.
+ */
+export const DEMO_USER = { name: "Jason Moore" } as const;
 
 /**
  * `services-grid` 6031:5988 — three explicit columns of 384px cards.

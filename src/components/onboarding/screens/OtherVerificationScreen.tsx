@@ -6,7 +6,7 @@ import { WizardCard } from "@/components/wizard/WizardCard";
 import { WizardHeader } from "@/components/wizard/WizardHeader";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
-import { ASSETS } from "@/lib/assets";
+import { MethodRadio } from "@/components/onboarding/MethodRadio";
 import { WIZARD_ACTIONS, getOnboardingCopy } from "@/lib/data/onboarding";
 import { serviceRoutes, type ServiceConfig } from "@/lib/data/service-config";
 import { useDemoState } from "@/lib/demo-state";
@@ -51,10 +51,11 @@ import { useDemoState } from "@/lib/demo-state";
  * not part of the design and are not rendered (the rule every CID `Check box`
  * follows). §9 PP-08 agrees: "Buttons Back and Continue (no Cancel)".
  *
- * THE RADIO IS PRE-SELECTED AND IS THE ONLY OPTION, so it is not a control:
- * there is nothing to change it to. It is drawn with the same 16px
- * `radioSelected` asset NL-07 / PP-07 use, and exposed to assistive tech as a
- * checked radio in a one-item group so its state is announced, not just seen.
+ * THE RADIO IS PRE-SELECTED AND IS THE ONLY OPTION: there is nothing to
+ * change it to. Since 2026-09-30 (feedback-ui) it is a native
+ * <input type="radio"> (MethodRadio, the same one NL-07 / PP-07 use), checked,
+ * in a one-item radiogroup, with the option row as its <label>. It used to be
+ * a role="radio" <div> around the 16px `radioSelected` image.
  *
  * EXITS — §9: "Continue -> PP-09".
  *   Back     -> /services/<id>/onboard/                  PP-07, the previous step
@@ -102,51 +103,48 @@ export function OtherVerificationScreen({ service }: { service: ServiceConfig })
               className="flex min-h-[114px] w-full shrink-0 flex-col items-start"
               data-node-id="6217:35200"
             >
-              {/* service-title-row 6217:35229 */}
+              {/* A one-item radiogroup; the <label> inside it is
+                  service-title-row 6217:35229. */}
               <div
-                className="flex w-full items-start gap-[12px]"
+                className="flex w-full"
                 role="radiogroup"
                 aria-label={other.title}
-                data-node-id="6217:35229"
               >
-                {/* Frame 14674 6217:38164 — pt-[4px] seats the 16px radio on
-                    the first 24px line. */}
-                <div className="flex shrink-0 items-center pt-[4px]" data-node-id="6217:38164">
-                  <div
-                    className="relative size-[16px] shrink-0"
-                    role="radio"
-                    aria-checked="true"
-                    aria-labelledby="pp08-option"
-                    data-node-id="6217:35230"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt=""
-                      className="absolute inset-0 block size-full max-w-none"
-                      src={ASSETS.radioSelected}
+                <label
+                  className="flex w-full items-start gap-[12px]"
+                  data-node-id="6217:35229"
+                >
+                  {/* Frame 14674 6217:38164 — pt-[4px] seats the 16px radio on
+                      the first 24px line. */}
+                  <div className="flex shrink-0 items-center pt-[4px]" data-node-id="6217:38164">
+                    <MethodRadio
+                      name={`other-verification-${service.id}`}
+                      checked
+                      labelledBy="pp08-option"
+                      nodeId="6217:35230"
                     />
                   </div>
-                </div>
 
-                {/* verification-list-wrapper 6217:35233 */}
-                <div
-                  className="flex min-w-px flex-1 flex-col items-start gap-[8px]"
-                  data-node-id="6217:35233"
-                >
-                  <p
-                    id="pp08-option"
-                    className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
-                    data-node-id="6217:35234"
+                  {/* verification-list-wrapper 6217:35233 */}
+                  <div
+                    className="flex min-w-px flex-1 flex-col items-start gap-[8px]"
+                    data-node-id="6217:35233"
                   >
-                    {other.option}
-                  </p>
-                  <p
-                    className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
-                    data-node-id="6217:35237"
-                  >
-                    {other.confirmation}
-                  </p>
-                </div>
+                    <p
+                      id="pp08-option"
+                      className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+                      data-node-id="6217:35234"
+                    >
+                      {other.option}
+                    </p>
+                    <p
+                      className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+                      data-node-id="6217:35237"
+                    >
+                      {other.confirmation}
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 

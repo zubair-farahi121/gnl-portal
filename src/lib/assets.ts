@@ -39,11 +39,34 @@
  * screens had been added. Recounted 2026-09-23 with the liveness assets.)
  */
 export const ASSETS = {
-  /** GNL crest, "Flowers" leaf. Figma I6011:775;6098:62280. */
-  gnlCrestFlowers: "/assets/gnl-crest-flowers.svg",
-  /** GNL crest, "Newfoundland & Labrador" wordmark leaf. Figma I6011:775;6098:99116. */
-  gnlCrestWordmark: "/assets/gnl-crest-wordmark.svg",
-  /** MyGovNL nav logo, 112 x 33.645. Figma I6031:6245;6022:2272. */
+  /**
+   * GNL crest, the whole lockup (colour flowers + WHITE "Newfoundland
+   * Labrador" wordmark), for the dark grey #64717c footer. Figma 6011:775.
+   *
+   * REAL ARTWORK — the designer's SharePoint export, 2026-10-01. viewBox
+   * 243.6 x 122.3 (aspect 1.992), the same as the footer's crest box at both
+   * sizes (72.134 x 36.215 and 99.214 x 49.811), so it fills the box with no
+   * layout change. It replaces the two placeholder leaves
+   * (gnl-crest-flowers.svg + gnl-crest-wordmark.svg), now deleted.
+   */
+  gnlCrest: "/assets/gnl-crest.svg",
+  /**
+   * GNL crest with a GREY wordmark, for the WHITE verification-service option
+   * cards (NL-07 / PP-07). Figma 6098:60395, 72.134 x 36.215.
+   *
+   * REAL ARTWORK — the designer's SharePoint export, 2026-10-01. Its own box
+   * is 73 x 37 (aspect 1.973 against 1.992), so it is drawn `object-contain`.
+   */
+  gnlCrestGrey: "/assets/gnl-crest-grey.svg",
+  /**
+   * MyGovNL logo (white mark, white + grey wordmark), for a dark background.
+   * Nav: 112 x 33.645, Figma I6031:6245;6022:2272. Dashboard purple footer
+   * band: 150 x 45.05972671508789, Figma 6031:6229 — the same artwork, so the
+   * old `mygovnl-wordmark.svg` placeholder is deleted.
+   *
+   * REAL ARTWORK — the designer's SharePoint export, 2026-10-01. viewBox
+   * 241.1 x 72.4 (aspect 3.330), the same as both boxes (3.329).
+   */
   mygovnlLogo: "/assets/mygovnl-logo.svg",
   /**
    * MyGovNL login-page header lockup, 293.328 x 74.010. Figma 4002:516.
@@ -62,7 +85,7 @@ export const ASSETS = {
    * See LoginHeader.
    *
    * NOTE: this is NOT the nav logo. `mygovnlLogo` (112 x 33.645, aspect 3.329)
-   * is the MyGovNL wordmark ALONE, with no crest, and is still a placeholder.
+   * is the MyGovNL logo ALONE, with no crest (real artwork since 2026-10-01).
    */
   mygovnlHeaderLogo: "/assets/mygovnl-header-logo.png",
   /** Gear, inner group leaf 13.190 x 13.261. Figma I6031:6245;6022:2282;9661:4172. */
@@ -91,6 +114,7 @@ export const ASSETS = {
    * this one AND gained the 32px one. Both are rendered there — see
    * design/resync-login-dashboard.md.
    */
+  // Bootstrap `chevron-right`, #004b87 (2026-09-30).
   iconChevronRight: "/assets/icon-chevron-right.svg",
   /**
    * `Chevron` component instance in every service-card header, 32 x 32.
@@ -100,17 +124,16 @@ export const ASSETS = {
   iconChevron32: "/assets/icon-chevron-32.svg",
   /** Service-card bullet marker, 5 x 13 (note: NOT square). Figma 6031:5997 et al. */
   bulletMarker: "/assets/bullet-marker.svg",
-  /** Unfilled favourite star, 20 x 20. Figma 6031:6006 et al. */
+  /** Unfilled favourite star, 20 x 20. Figma 6031:6006 et al. Bootstrap `star`, #5f6368 (2026-09-30). */
   iconStarOff: "/assets/icon-star-off.svg",
-  /** MyGovNL wordmark on the purple footer band, 150 x 45.05972671508789. Figma 6031:6229. */
-  mygovnlWordmark: "/assets/mygovnl-wordmark.svg",
+  /* The purple footer band's MyGovNL logo (6031:6229) uses `mygovnlLogo`. */
 
   /* --- Task 11: driver-vehicle service page, unverified (6031:6244) --- */
-  /** Lock in the "Confirmation required" badge, 12 x 12. Stroked white — it sits on #e8706f. Figma 6031:6253. */
+  /** Lock in the "Confirmation required" badge, 12 x 12. White — it sits on #e8706f. Figma 6031:6253. Bootstrap `lock-fill` (2026-10-01; the outline `lock` from 2026-09-30 matched the hollow Figma glyph, the brief asked for lock-fill). */
   iconLock: "/assets/icon-lock.svg",
-  /** Bell in the 32px #eaecef circle beside the page title, 16 x 16. Figma 6031:6257. */
+  /** Bell in the 32px #eaecef circle beside the page title, 16 x 16. Figma 6031:6257. Bootstrap `bell-fill`, #5f6368 (2026-09-30). */
   iconBellAlert: "/assets/icon-bell-alert.svg",
-  /** Filled favourite star in the sidebar favourite-card, 20 x 20. Figma 6031:6268. */
+  /** Favourite star in the sidebar favourite-card, 20 x 20. Figma 6031:6268. Bootstrap `star-fill`, #5f6368 (2026-09-30). */
   iconStar: "/assets/icon-star.svg",
   /** "View your address" scope icon, 16 x 16. Figma 6098:34117. */
   iconHome: "/assets/icon-home.svg",
@@ -131,7 +154,7 @@ export const ASSETS = {
   /**
    * The 24 x 24 lock beside "Action locked" on the StudentAid portal row.
    * Figma 6206:26620 `Lock`. Bootstrap `lock` outline in #5f6368 — a separate
-   * file from `iconLock`, which is 12px, white, and a placeholder.
+   * file from `iconLock`, which is 12px and white.
    */
   iconLock24: "/assets/icon-lock-24.svg",
   /**
@@ -151,7 +174,7 @@ export const ASSETS = {
   bulletDot: "/assets/bullet-dot.svg",
 
   /* --- Task 19: driver-vehicle service page, VERIFIED (6065:23367) --- */
-  /** "Success_check" in the green `Trusted` badge. Leaf renders 12.135 x 12 inside a 12 x 12 box. Figma 6065:24184. */
+  /** "Success_check" in the green `Trusted` badge. Leaf renders 12.135 x 12 inside a 12 x 12 box. Figma 6065:24184. Bootstrap `check-lg`, white (2026-09-30). */
   iconSuccessCheck: "/assets/icon-success-check.svg",
   /** "Digital ID" glyph in the digital-wallet promo card, 58 x 58. Figma 6220:86400. */
   iconDigitalId: "/assets/icon-digital-id.svg",
@@ -293,8 +316,13 @@ export const ASSETS = {
    * illustration inside `illustration-frame` (6056:13912) on 6217:65268.
    * 345 x 345.63043212890625, the leaf's RENDERED size at the 393 design width.
    * Figma 6076:31212.
+   *
+   * REAL ARTWORK — 2026-10-01: Yoti's own "Prepare to scan your face"
+   * illustration (a drawing, approved for use), from the designer's SharePoint
+   * folder. 345 x 346 PNG; it carries its own pale-blue rounded card inside a
+   * thin white margin, so the page adds no background or border of its own.
    */
-  livenessIllustration: "/assets/liveness-illustration.svg",
+  livenessIllustration: "/assets/yoti-prepare-to-scan-face.png",
   /**
    * The three `InstructionRow` icons on 6217:65268, 34 x 34 each.
    * Figma 6076:31228 / 6076:31231 / 6076:31233.

@@ -19,7 +19,7 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_TIMING } from "@/lib/data/wallet-
  * A TRANSITION SCREEN: it leaves by itself after ~1.8 s for W-07.
  *
  * ONE-SHOT, SO BACK DOES NOT BOUNCE (the /auth/loading/ lesson, DEMO_AUDIT.md
- * NL-21). The advance is ARMED by W-05's Accept and CONSUMED on mount here.
+ * NL-21). The advance is ARMED by W-05's "Add to wallet" (was "Accept") and CONSUMED on mount here.
  * Reached any other way — W-07's Back, ArrowLeft, a typed URL — nothing is
  * armed and the screen stays put; ArrowRight still moves on. `replace`, so
  * W-06 does not sit in the history between W-05 and W-07.

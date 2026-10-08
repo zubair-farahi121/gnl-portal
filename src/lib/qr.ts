@@ -42,11 +42,23 @@ import { FLOW3_ROUTES } from "@/lib/data/service-config";
  *
  * `PUBLIC_BASE_URL` is read at BUILD time (next.config.ts `env`); unset, it
  * is `http://localhost:4173`, the port every gate in this repo serves on.
+ *
+ * THE PHONE PATH (2026-09-30, docs/PHONE_PATH.md). When the build is served
+ * by server/demo-server.mjs and phone mode is on, the C1 page passes `sync`:
+ * the QR then encodes `<base>/wallet/start/?offer=<id>&room=<room>`, where
+ * `base` is the server's public address (DEMO_PUBLIC_URL, or the laptop's LAN
+ * IP), so a real phone can open it and its progress reaches the laptop.
+ * Without `sync` the URL is exactly what it always was.
  */
-export function walletOfferUrl(offerId: string | null): string {
-  const base = (process.env.PUBLIC_BASE_URL || "http://localhost:4173").replace(/\/+$/, "");
+export function walletOfferUrl(
+  offerId: string | null,
+  sync?: { base: string; room: string } | null,
+): string {
+  const base = (sync?.base || process.env.PUBLIC_BASE_URL || "http://localhost:4173").replace(/\/+$/, "");
   const path = FLOW3_ROUTES.start;
-  return offerId ? `${base}${path}?offer=${encodeURIComponent(offerId)}` : `${base}${path}`;
+  if (!offerId) return `${base}${path}`;
+  const query = `?offer=${encodeURIComponent(offerId)}`;
+  return sync ? `${base}${path}${query}&room=${encodeURIComponent(sync.room)}` : `${base}${path}${query}`;
 }
 
 export type QrMatrix = {

@@ -35,9 +35,15 @@ export const C1_BREADCRUMB = {
 export const C1_COPY = {
   /** 6220:86453 — 32px Lato Bold at 1440; 24px on the phone twin (6220:86494). */
   heading: "Add your vehicle registration certificate to your wallet",
-  /** 6220:86454. */
+  /**
+   * 6220:86454. Figma: "…Scan the code with Apple Wallet or Google Wallet to
+   * add it." CHANGED 2026-09-30 (branch feedback-ui, team meeting) to name no
+   * wallet brand in the instruction; the "Works with" Apple / Google marks and
+   * the phone's "Add to Apple Wallet / Add to Google Wallet" buttons stay.
+   * Desktop and phone both render this string.
+   */
   subtitle:
-    "Your registration is verified and active. Scan the code with Apple Wallet or Google Wallet to add it.",
+    "Your registration is verified and active. Scan the code with your digital wallet to add it.",
   /** 6220:86462. */
   worksWith: "Works with",
   /** 6220:86465 / 6220:86468. */
@@ -293,8 +299,14 @@ export const WALLET_COPY = {
       { label: "Issuing Authority", value: VRC.issuingAuthority },
     ],
     consent: WALLET_CONSENT,
-    accept: "Accept",
-    decline: "Decline",
+    /*
+     * CHANGED 2026-09-30 (branch feedback-ui, team meeting). Figma: "Accept" /
+     * "Decline". Labels only — "Cancel" does exactly what "Decline" did
+     * (offer `declined`, wallet home, C1 back to "Waiting for scan…"). W-03's
+     * "Yes, connect" / "Decline" above is unchanged.
+     */
+    accept: "Add to wallet",
+    decline: "Cancel",
   },
   /** W-06 6293:46861 — three ASCII dots in the frame, not U+2026. */
   connecting: {

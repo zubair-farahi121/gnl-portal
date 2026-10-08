@@ -165,6 +165,7 @@ Brief §10.7 items first, then everything carried forward from `design/page-inve
 ### From brief §10.7 — persona values, keep as-is unless told otherwise
 
 - **Q-10** — The portal greets "**Welcome Jason Momoa!**" but the licence holder on the same journey is "**IAN B GARLAND**". Intentional, or should they be one person? One-line change in `src/lib/data/`.
+  - **2026-09-30 — persona changed to "Jason Moore"** (`DEMO_USER`, so the dashboard greeting and the wallet holder / owner follow; "Hello, Jason!" stays). Reason: a real celebrity name is not suitable in a customer demo. Decided by Zubair on 30 Sep. The IAN B GARLAND question above is still open.
 - **Q-11** — The licence "**Expires on January 14, 2026**" is already in the past. Roll it forward?
 - **Q-12** — Specimen ID images show "**MICHAEL R. HOWARD**" and "**SARAH MARTIN**", a third and fourth name. Fine as sample documents?
 
@@ -1221,3 +1222,89 @@ renders 393×**1469** (Figma 1471).
 | `npm run camera` | exit 0 — all CID / Yoti camera checks unchanged; W-02 asserts NO camera |
 | `npm run responsive` | exit 0 — **56 routes** × 320/375/393/768/1024/1280/1440/1920 (+ `/wallet/start/`, `/demo/wallet-stage/`), no horizontal scroll, console clean (run on its own server, port 4174, `DEMO_BASE_URL`) |
 | mutation check | with the `storage` listeners removed (provider + issuer), the Flow 3 click run fails (exit 1) — the sync test has teeth. Reverted |
+
+## 2026-10-01 — Feedback round (Tatyana + team meeting)
+
+Branch `feedback-ui`. Applies the designer's feedback ("they use Bootstrap",
+"radio buttons seem to be regular native HTML elements", the SharePoint logo
+folder) and the team meeting's wording and persona decisions.
+
+### Changes
+
+1. **Real logos** (designer's SharePoint exports, used as-is):
+   - `mygovnl-logo.svg` in the top nav (desktop and mobile, 112 x 33.645) and
+     in the dashboard's purple footer band (150 x 45.06; it replaces the
+     `mygovnl-wordmark.svg` placeholder — same artwork, same 3.33 aspect, dark
+     background).
+   - `gnl-crest.svg` (colour flowers, white wordmark) as one image in the grey
+     site footer (72.134 x 36.215 desktop, 99.214 x 49.811 mobile), replacing
+     the two stacked placeholder leaves. Same aspect, no layout change.
+   - `gnl-crest-grey.svg` (grey wordmark) in the white verification-service
+     option cards (NL-07 / PP-07), `object-contain` in the 72.134 x 36.215 box.
+   - Deleted the unused placeholders `gnl-crest-flowers.svg`,
+     `gnl-crest-wordmark.svg`, `mygovnl-wordmark.svg`. The wallet's own
+     `flow3/gnl-crest-*` files are unchanged.
+2. **Yoti liveness illustration**: Yoti's real "Prepare to scan your face"
+   drawing (`yoti-prepare-to-scan-face.png`, approved for use) replaces the
+   placeholder on `/cid/liveness/`. Only the image changed; the PNG carries its
+   own pale-blue rounded card, so there is no second background or border.
+   At 1280+ it is drawn at 480px from a 345px source, so it is slightly soft.
+3. **Bootstrap Icons 1.13.1** (MIT, credited inside each file):
+   `star-fill`, `star`, `chevron-right` (#004b87), `lock-fill` (white, 12px),
+   `check-lg` (white), `bell-fill` — same file names, sizes and colours.
+4. **Native radio buttons** on NL-07 / PP-07 (ChooseMethodScreen) and PP-08
+   (OtherVerificationScreen): real `<input type="radio">`, one name per group,
+   16px, `accent-color: #004b87`, GNL option checked. GNL IDV still leads on;
+   MRD / MCP still show "Not part of this demo". Yoti document radios
+   unchanged.
+5. **Login**: real Email Address and Password inputs in the same boxes; the eye
+   toggles the password; an empty field shows "Enter your email address and
+   password." in red and stays; any non-empty values go to the dashboard;
+   Enter submits. DemoNav's arrow keys / Esc / Shift+W no longer act while
+   typing in a field. "Forgot password?" stays inert.
+6. **Persona**: "Jason Momoa" → **"Jason Moore"** (see the 2026-09-30 note
+   above); "Hello, Jason!" unchanged.
+7. **C1 subtitle**: "…Scan the code with **your digital wallet** to add it."
+   (desktop C1 and phone F3-03). Resolves open question 3 / 11 above. The
+   "Works with" Apple / Google marks and the phone's Add to Apple / Google
+   Wallet buttons stay.
+8. **W-05** (`/wallet/review/`): "Accept" / "Decline" → **"Add to wallet"** /
+   **"Cancel"**; Cancel does exactly what Decline did. W-03 keeps "Yes,
+   connect" / "Decline".
+9. `scripts/click-through.mjs` types `jason.moore@email.com` / a password at
+   every login, asserts the empty-field error, Enter, the eye toggle, keys
+   while typing, the radio group and the new wallet labels and persona.
+
+### Deliberate deviations from Figma
+
+| Where | Figma | Build | Why |
+|---|---|---|---|
+| W-05 buttons | Accept / Decline | Add to wallet / Cancel | Team meeting: plainer action labels |
+| C1 / F3-03 subtitle | "…with Apple Wallet or Google Wallet…" | "…with your digital wallet…" | Do not over-promise Apple / Google support |
+| Persona | Jason Momoa | Jason Moore | A real celebrity name is not suitable in a customer demo |
+| Method / other-verification radios | 16px drawn radio | native `<input type="radio">`, accent #004b87 | Designer: the real portal uses native radios |
+| Badge lock | hollow lock glyph (6031:6253) | Bootstrap `lock-fill` | As the feedback brief lists; `lock` (outline) is the closer match if preferred |
+
+### Re-baselined frames (copied one by one; `npm run baseline --yes` NOT run)
+
+- **Logos (23 frames)**: `auth-loading`, `cid-biometric`, `cid-capture-back`,
+  `cid-capture-front`, `cid-capture-intro`, `cid-continue-on-mobile`,
+  `cid-country`, `cid-document`, `cid-liveness`, `cid-liveness-capture`,
+  `cid-terms`, `cid-verified`, `confirmation`, `dashboard`, `login`, `onboard`,
+  `prereq-confirm`, `prereq-required`, `service`, `service-verified`,
+  `summary`, `terms`, `wallet-c1` — differing pixels confined to the logo boxes.
+- **Yoti illustration**: `cid-liveness` (illustration box only).
+- **lock-fill**: `service` (the 12px glyph only).
+- Earlier on this branch (2026-09-30): `dashboard`, `service`,
+  `service-verified` (Bootstrap glyphs, persona), `onboard` (native radios),
+  `wallet-c1` (subtitle). Details in `design/baselines/PROVENANCE.md`.
+
+### Gate results — 2026-10-01, fresh build, served without `-s` on port 4181
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean |
+| `npm run shots && npm run diff` | 25 passed; **GATE: PASS — 0.000 % on all 25 frames** |
+| `npm run clicks` | exit 0 — "Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted) and Flow 3 (…) intact at 1440 / 768 / 390" |
+| `npm run camera` | exit 0 — "camera gate: live path OK, tracks cleaned up, mock forceable" |
+| `npm run responsive` | exit 0 — 56 routes; "none — no horizontal scroll at any width on any route"; console issues: none |

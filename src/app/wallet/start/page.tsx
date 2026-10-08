@@ -9,9 +9,10 @@ import { useDemoState } from "@/lib/demo-state";
 import { SAME_DEVICE_KEY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { createOffer, isWaiting, peekCurrentOffer, selectOffer, updateOffer } from "@/lib/mock-issuer";
+import { joinRoom } from "@/lib/remote-sync";
 
 /*
- * /wallet/start/?offer=<id>[&from=mygovnl] — THE QR CODE'S TARGET, and the
+ * /wallet/start/?offer=<id>[&room=<room>][&from=mygovnl] — THE QR CODE'S TARGET, and the
  * same-device deep link. ADDED 2026-09-29 (FLOW3_BRIEF.md §3).
  *
  * NOT A SCREEN (brief §8: no screens beyond W-01..W-09). It is the static-
@@ -40,12 +41,18 @@ export default function WalletStartPage() {
     done.current = true;
     const params = new URLSearchParams(window.location.search);
     const id = params.get("offer");
+    const room = params.get("room");
     try {
       if (params.get("from") === "mygovnl") sessionStorage.setItem(SAME_DEVICE_KEY, "1");
     } catch {
       /* ignore */
     }
     void (async () => {
+      /* Phone path: a real phone brings `&room=<room>`. Joining copies the
+         laptop's offer into this browser, so `selectOffer` finds it, and from
+         here on every `updateOffer` is mirrored back to the laptop. No-op on
+         a static build or without `room` (docs/PHONE_PATH.md). */
+      if (room) await joinRoom(room);
       if (!(id && selectOffer(id)) && !peekCurrentOffer()) await createOffer();
       const cur = peekCurrentOffer();
       if (cur && isWaiting(cur.status)) void updateOffer(cur.id, { status: "scanned" });

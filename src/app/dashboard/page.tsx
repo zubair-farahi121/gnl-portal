@@ -276,7 +276,7 @@ function FooterSection() {
           <img
             alt="MyGovNL"
             className="absolute inset-0 block size-full max-w-none"
-            src={ASSETS.mygovnlWordmark}
+            src={ASSETS.mygovnlLogo}
           />
         </div>
 

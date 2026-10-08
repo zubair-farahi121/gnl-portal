@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { DemoStateProvider } from "@/lib/demo-state";
 import { DemoNav } from "@/components/DemoNav";
+import { RemoteSyncBridge } from "@/components/RemoteSyncBridge";
 import { DemoToast } from "@/components/ui/DemoToast";
 
 /*
@@ -100,6 +101,8 @@ export default function RootLayout({
       <body>
         <DemoStateProvider>
           <DemoNav />
+          {/* Phone path (2026-09-30): renders nothing; see the component. */}
+          <RemoteSyncBridge />
           {children}
           {/*
            * "Not part of this demo" — brief §10.5 / §7.6 / §15.

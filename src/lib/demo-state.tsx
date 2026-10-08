@@ -64,6 +64,18 @@ import type { CredentialOffer } from "@/lib/mock-issuer";
 
 export const STORE_KEY = "gnl-demo:v1";
 
+/**
+ * THE PHONE PATH's room id (src/lib/remote-sync.ts, docs/PHONE_PATH.md) —
+ * ADDED 2026-09-30. Only ever written when the build is served by
+ * server/demo-server.mjs and phone mode is on. Declared here, next to
+ * STORE_KEY, because `resetAll` clears it too and announces which room it
+ * dropped (ROOM_RESET_EVENT), so RemoteSyncBridge can delete it on the
+ * server: a reset demo starts a fresh room, and a phone from the last run
+ * cannot reach it.
+ */
+export const ROOM_KEY = "gnl-demo:room";
+export const ROOM_RESET_EVENT = "gnl-demo:room-reset";
+
 /** §12.2, verbatim. */
 export type OnboardingStatus =
   | "not_started"
@@ -420,14 +432,19 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
       },
 
       resetAll: () => {
+        let room: string | null = null;
         try {
+          room = localStorage.getItem(ROOM_KEY);
           localStorage.removeItem(STORE_KEY);
+          localStorage.removeItem(ROOM_KEY);
         } catch {
           /* ignore */
         }
         setStore(EMPTY_STORE);
         /* Flow 3: the issuer's subscribers in THIS window hear the reset too. */
         emitStoreChanged();
+        /* Phone path: only ever set in phone mode; see ROOM_KEY. */
+        if (room) window.dispatchEvent(new CustomEvent(ROOM_RESET_EVENT, { detail: room }));
       },
     };
   }, [ready, store, update]);

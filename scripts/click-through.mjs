@@ -92,6 +92,19 @@ const b = await chromium.launch({
 const BASE = process.env.DEMO_BASE_URL ?? 'http://127.0.0.1:4173';
 const fails = [];
 
+/*
+ * THE LOGIN (2026-09-30, feedback-ui). The login page has real Email Address
+ * / Password inputs; any non-empty pair is accepted. Every login step types
+ * the demo persona's credentials before clicking "Log in".
+ */
+const DEMO_EMAIL = 'jason.moore@email.com';
+const DEMO_PASSWORD = 'demo1234';
+const logIn = async (pg) => {
+  await pg.getByLabel('Email Address', { exact: true }).fill(DEMO_EMAIL);
+  await pg.getByLabel('Password', { exact: true }).fill(DEMO_PASSWORD);
+  await pg.getByRole('button', { name: 'Log in', exact: true }).click();
+};
+
 async function run(width) {
   const ctx = await b.newContext({ viewport: { width, height: 900 } });
   const p = await ctx.newPage();
@@ -150,7 +163,50 @@ async function run(width) {
 
   /* ===================== FORWARD — every on-screen control ================ */
   await p.goto(BASE + '/', { waitUntil: 'networkidle' });
-  await step('1  Log in', click('Log in'), '/dashboard');
+  /*
+   * 0a — EMPTY SUBMIT. "Log in" with both fields empty must show the inline
+   * error AND stay on `/`. Then with the email only: same.
+   */
+  await p.getByRole('button', { name: 'Log in', exact: true }).click();
+  await p.waitForTimeout(400);
+  if (new URL(p.url()).pathname !== '/') fails.push(`@${width} 0a login: empty submit left the login page`);
+  await sees('0a login: empty-submit error', 'Enter your email address and password.');
+  await p.getByLabel('Email Address', { exact: true }).fill(DEMO_EMAIL);
+  await p.getByLabel('Email Address', { exact: true }).press('Enter');
+  await p.waitForTimeout(400);
+  if (new URL(p.url()).pathname !== '/') fails.push(`@${width} 0b login: Enter with no password left the login page`);
+  await sees('0b login: missing-password error', 'Enter your email address and password.');
+  /*
+   * 0c — PRESENTER KEYS WHILE TYPING. ArrowRight / ArrowLeft in a field move
+   * the caret; they must not step the flow (DemoNav). Escape in a field
+   * blurs it and must not reset or navigate either.
+   */
+  {
+    const field = p.getByLabel('Email Address', { exact: true });
+    await field.click();
+    for (const k of ['ArrowRight', 'ArrowLeft', 'Escape']) {
+      await field.focus();
+      await p.keyboard.press(k);
+      await p.waitForTimeout(400);
+      if (new URL(p.url()).pathname !== '/') fails.push(`@${width} 0c login: ${k} while typing navigated to ${new URL(p.url()).pathname}`);
+    }
+    if (await field.evaluate((el) => el === document.activeElement)) {
+      fails.push(`@${width} 0c login: Escape in the email field did not blur it`);
+    }
+    const pw = p.getByLabel('Password', { exact: true });
+    await pw.fill('abc');
+    await pw.press('ArrowLeft');
+    await p.waitForTimeout(400);
+    if (new URL(p.url()).pathname !== '/') fails.push(`@${width} 0c login: ArrowLeft in the password field navigated`);
+    if ((await field.inputValue()) !== DEMO_EMAIL) fails.push(`@${width} 0c login: the email value was lost`);
+    /* 0d — the eye shows and hides the password. */
+    await p.getByRole('button', { name: 'Show password', exact: true }).click();
+    if ((await pw.getAttribute('type')) !== 'text') fails.push(`@${width} 0d login: the eye did not show the password`);
+    await p.getByRole('button', { name: 'Hide password', exact: true }).click();
+    if ((await pw.getAttribute('type')) !== 'password') fails.push(`@${width} 0d login: the eye did not hide the password`);
+  }
+  await p.goto(BASE + '/', { waitUntil: 'networkidle' });
+  await step('1  Log in (typed credentials)', logIn, '/dashboard');
   await step(
     '2  Driver and Vehicle card',
     (pg) => pg.getByRole('link', { name: /Driver and Vehicle/ }).first().click(),
@@ -196,6 +252,49 @@ async function run(width) {
    * failure this gate exists to catch. Asserted at all three widths because the
    * link is centred in a shrink-to-fit box that reflows.
    */
+  /*
+   * 3e — NATIVE RADIOS (2026-09-30, feedback-ui). NL-07's options are real
+   * <input type="radio">s in one named group, each inside a <label> card.
+   * GNL IDV is the checked one; MRD is inert. A click on the MRD card, and an
+   * arrow key from the GNL IDV radio onto it, must show the toast, stay on the
+   * page and NOT leave MRD checked.
+   */
+  {
+    const radios = () =>
+      p.evaluate(() =>
+        [...document.querySelectorAll('[data-node-id="6031:6321"] input[type="radio"]')].map((r) => ({
+          name: r.name,
+          checked: r.checked,
+          title: document.getElementById(r.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+          inLabel: !!r.closest('label'),
+        })),
+      );
+    const checkState = async (label) => {
+      const rs = await radios();
+      const names = new Set(rs.map((r) => r.name));
+      const on = rs.filter((r) => r.checked).map((r) => r.title);
+      if (rs.length !== 2 || names.size !== 1 || rs.some((r) => !r.inLabel)) {
+        fails.push(`@${width} ${label}: NL-07 radios ${JSON.stringify(rs)} — expected 2 native radios, one name, each in a <label>`);
+      }
+      if (on.length !== 1 || on[0] !== 'GNL Identity Verification Service') {
+        fails.push(`@${width} ${label}: NL-07 checked radio(s) ${JSON.stringify(on)}, expected GNL IDV only`);
+      }
+    };
+    await checkState('3e');
+    // `force`: the inert radio is aria-disabled on purpose, and Playwright
+    // counts a label of an aria-disabled control as "not enabled". The click
+    // is still a real mouse click at the card's centre.
+    await p.getByText('Motor Registration Division (MRD)', { exact: true }).click({ force: true });
+    await p.waitForTimeout(400);
+    at('3f NL-07 MRD card must not navigate', '/services/driver-vehicle/onboard');
+    await sees('3f NL-07 MRD card shows the toast', 'Not part of this demo');
+    await checkState('3f after an MRD click');
+    await p.getByRole('radio', { name: 'GNL Identity Verification Service' }).focus();
+    await p.keyboard.press('ArrowUp');
+    await p.waitForTimeout(400);
+    at('3g NL-07 ArrowUp onto MRD must not navigate', '/services/driver-vehicle/onboard');
+    await checkState('3g after ArrowUp onto MRD');
+  }
   await step('4  Onboard -> mobile hand-off', click('Continue'), '/cid/continue-on-mobile');
   await step(
     '5  Mobile hand-off -> terms',
@@ -376,6 +475,23 @@ async function run(width) {
   await step('B19 Summary -> service (Cancel)', click('Cancel'), '/services/driver-vehicle');
 
   /* ===================== Remaining controls ============================== */
+  await p.goto(BASE + '/services/driver-vehicle/onboard/', { waitUntil: 'networkidle' });
+  /* C0 — the GNL IDV card itself still leads on (it was a <Link>; it is now a
+     <label> around a native radio). Mouse, then Enter on the focused radio. */
+  await step(
+    'C0 NL-07 GNL IDV card -> hand-off',
+    (pg) => pg.getByText('GNL Identity Verification Service', { exact: true }).click(),
+    '/cid/continue-on-mobile',
+  );
+  await p.goto(BASE + '/services/driver-vehicle/onboard/', { waitUntil: 'networkidle' });
+  await step(
+    'C0b NL-07 Enter on the GNL IDV radio -> hand-off',
+    async (pg) => {
+      await pg.getByRole('radio', { name: 'GNL Identity Verification Service' }).focus();
+      await pg.keyboard.press('Enter');
+    },
+    '/cid/continue-on-mobile',
+  );
   await p.goto(BASE + '/services/driver-vehicle/onboard/', { waitUntil: 'networkidle' });
   await step('C1 Onboard Cancel', click('Cancel'), '/services/driver-vehicle');
   await p.goto(BASE + '/services/driver-vehicle/prerequisite/', { waitUntil: 'networkidle' });
@@ -856,7 +972,7 @@ async function runFlowB(width) {
 
   /* ===================== FORWARD ======================================== */
   await p.goto(BASE + '/', { waitUntil: 'networkidle' });
-  await step('G1  Log in', click('Log in'), '/dashboard');
+  await step('G1  Log in (typed credentials)', logIn, '/dashboard');
   /* PP-02: the whole card is the link, like Driver and Vehicle's. */
   await step(
     'G2  StudentAidNL card -> PP-03',
@@ -896,14 +1012,16 @@ async function runFlowB(width) {
   await step('G7  PP-06 -> PP-07 method step', click('Continue'), '/services/studentaid/onboard');
   /*
    * G7b — THREE cards from `config.methods`, in order, GNL IDV the only
-   * selected one. Read off the radio image each card draws.
+   * selected one. Read off each card's native radio (2026-09-30: it was a
+   * radio image, and the leading card was an <a>; it is now a <label> with
+   * `data-href`).
    */
   {
     const cards = await p.evaluate(() =>
       [...document.querySelectorAll('[data-node-id="6217:30593"] > *')].map((el) => ({
         title: el.querySelector('p')?.textContent?.trim(),
-        selected: !!el.querySelector('img[src*="radio-selected"]'),
-        link: el.tagName === 'A',
+        selected: !!el.querySelector('input[type="radio"]')?.checked,
+        link: el.hasAttribute('data-href'),
       })),
     );
     const titles = cards.map((c) => c.title);
@@ -921,10 +1039,21 @@ async function runFlowB(width) {
     }
   }
   /* G7e — MCP is not in the demo: it must show the toast and stay put. */
-  await p.locator('[data-node-id="6217:30594"]').click();
+  // `force`: see 3f — the inert radio's label reads as "not enabled".
+  await p.locator('[data-node-id="6217:30594"]').click({ force: true });
   await p.waitForTimeout(400);
   at('G7e PP-07 MCP card must not navigate', '/services/studentaid/onboard');
   await sees('G7f PP-07 MCP card shows the toast', 'Not part of this demo');
+  {
+    const on = await p.evaluate(() =>
+      [...document.querySelectorAll('[data-node-id="6217:30593"] input[type="radio"]:checked')].map(
+        (r) => r.closest('label')?.querySelector('p')?.textContent?.trim(),
+      ),
+    );
+    if (on.length !== 1 || on[0] !== 'GNL Identity Verification Service') {
+      fails.push(`@${width} G7g: after an MCP click the checked radio(s) are ${JSON.stringify(on)}, expected GNL IDV only`);
+    }
+  }
 
   await step('G8  PP-07 -> PP-08 other verification', click('Continue'), '/services/studentaid/other-verification');
   await sees('G8b PP-08 option', 'This option is for users who do not have a valid MCP number or MRD-issued ID.');
@@ -1286,13 +1415,34 @@ async function runFlow3Desktop(width) {
   await w.waitForURL('**/wallet/connect/', { timeout: 4000 }).catch(() => {});
   expectAt('W-BACK2 tap the viewfinder -> W-03', '/wallet/connect/', w);
 
+  /*
+   * W-CANCEL (2026-09-30, feedback-ui) — W-05's buttons were renamed
+   * "Accept" -> "Add to wallet" and "Decline" -> "Cancel". Cancel must do what
+   * Decline did: W-01, C1 back to "Waiting for scan…", the same QR still works.
+   */
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  await w.getByRole('button', { name: 'View offer', exact: true }).click();
+  await w.waitForURL('**/wallet/review/');
+  for (const old of ['Accept', 'Decline']) {
+    if (await w.getByRole('button', { name: old, exact: true }).count()) fails.push(`@${width} W-CANCEL0: W-05 still shows "${old}"`);
+  }
+  await w.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await w.waitForURL('**/wallet/').catch(() => {});
+  expectAt('W-CANCEL1 W-05 Cancel -> W-01', '/wallet/', w);
+  await waitStatus('W-CANCEL2 after W-05 Cancel', 'waiting');
+  if ((await offerId()) !== offerAtStart) fails.push(`@${width} W-CANCEL3: W-05 Cancel replaced the QR`);
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  expectAt('W-CANCEL4 the same QR scans again -> W-03', '/wallet/connect/', w);
+
   /* W-03 -> W-04 -> W-05 */
   await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
   await w.waitForURL('**/wallet/offer/');
   await w.getByRole('button', { name: 'View offer', exact: true }).click();
   await w.waitForURL('**/wallet/review/');
   const rows = (await w.locator('[data-wallet-rows]').textContent()) ?? '';
-  for (const v of ['JKM 026', '2G1125535F9268441', 'Chevrolet', '2015 CHEV IMT', 'January 14, 2015', 'January 14, 2036', 'Jason Momoa', 'Canada', 'Government of Newfoundland & Labrador']) {
+  for (const v of ['JKM 026', '2G1125535F9268441', 'Chevrolet', '2015 CHEV IMT', 'January 14, 2015', 'January 14, 2036', 'Jason Moore', 'Canada', 'Government of Newfoundland & Labrador']) {
     if (!rows.includes(v)) fails.push(`@${width} W-05 rows: missing "${v}"`);
   }
   if (((await w.locator('[data-wallet-consent]').textContent()) ?? '').trim() !== 'It will be securely stored in your wallet. You control when its information is shared.') {
@@ -1300,8 +1450,8 @@ async function runFlow3Desktop(width) {
   }
   await waitStatus('W-SYNC2 mid-flow', 'adding');
 
-  /* W-05 Accept -> W-06 -> (~1.8 s) W-07 */
-  await w.getByRole('button', { name: 'Accept', exact: true }).click();
+  /* W-05 Add to wallet (was "Accept") -> W-06 -> (~1.8 s) W-07 */
+  await w.getByRole('button', { name: 'Add to wallet', exact: true }).click();
   await w.waitForURL('**/wallet/connecting/');
   await w.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
   expectAt('W-06 auto-advance -> W-07', '/wallet/code/', w);
@@ -1351,7 +1501,7 @@ async function runFlow3Desktop(width) {
   if ((await cards.count()) !== 3) fails.push(`@${width} W-CARDS5: W-09 shows ${await cards.count()} cards after issuing, expected 3`);
   if ((await cards.first().getAttribute('data-wallet-card')) !== 'vehicle-registration-certificate') fails.push(`@${width} W-CARDS6: the new card is not on top`);
   const vrc = (await cards.first().textContent()) ?? '';
-  for (const v of ['Vehicle Registration Certificate', today(), 'Jason Momoa', 'JKM 026', 'January 14, 2036']) {
+  for (const v of ['Vehicle Registration Certificate', today(), 'Jason Moore', 'JKM 026', 'January 14, 2036']) {
     if (!vrc.includes(v)) fails.push(`@${width} W-CARDS7: the new card is missing "${v}"`);
   }
   if ((await count()) !== '3 cards total') fails.push(`@${width} W-CARDS8: W-09 reads "${await count()}" after issuing`);
@@ -1417,9 +1567,9 @@ async function runFlow3Mobile(width) {
   await p.waitForURL('**/wallet/offer/');
   await p.getByRole('button', { name: 'View offer', exact: true }).click();
   await p.waitForURL('**/wallet/review/');
-  await p.getByRole('button', { name: 'Accept', exact: true }).click();
+  await p.getByRole('button', { name: 'Add to wallet', exact: true }).click();
   await p.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
-  expectAt('M-6 W-05 Accept -> W-06 -> W-07', '/wallet/code/');
+  expectAt('M-6 W-05 Add to wallet -> W-06 -> W-07', '/wallet/code/');
   await p.getByText('Enter your verification code').first().waitFor();
   await p.waitForTimeout(300);
   await p.keyboard.type('123456');

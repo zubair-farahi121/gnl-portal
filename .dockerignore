@@ -1,0 +1,21 @@
+# Rebuilt inside the image — never copy the laptop's copies in.
+node_modules
+.next
+out
+*.tsbuildinfo
+
+# Not needed to build the demo (keeps the build context small).
+.git
+.DS_Store
+test-results
+screenshots
+design-reference
+design/**/*.png
+*.zip
+
+# Never bake local secrets into an image.
+.env*
+*.pem
+
+# Local TLS certificates are mounted at run time, never baked in.
+certs

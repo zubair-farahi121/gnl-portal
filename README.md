@@ -1,6 +1,8 @@
 # GNL demo — MyGovNL with CertifiO ID, and the wallet (Flow 3)
 
-A static (`output: "export"`) Next.js demo. No server, no real API. The
+A static (`output: "export"`) Next.js demo. No real API: served statically it needs
+no server at all, and `npm run serve:phone` adds a tiny demo server for the
+**phone path** (a real phone next to the laptop — see below). The
 presenter walk-through is in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md); the design
 audit is in [`DEMO_AUDIT.md`](DEMO_AUDIT.md).
 
@@ -10,6 +12,8 @@ audit is in [`DEMO_AUDIT.md`](DEMO_AUDIT.md).
 npm install
 npm run build          # writes out/
 npx serve out -l 4173  # NEVER `serve -s`: SPA mode sends every route to the login page
+# or, with the phone path (same static files + a small in-memory sync API):
+npm run serve:phone     # node server/demo-server.mjs, port 4173
 ```
 
 Open `http://localhost:4173/`. Reset everything with **Esc** on a portal page,
@@ -31,7 +35,7 @@ your wallet → Added to your wallet*.
 | QR / deep-link entry | `/wallet/start/?offer=<id>` — not a screen: selects the offer, marks it `scanned`, goes to W-03 |
 | Mock issuer | `src/lib/mock-issuer.ts` — **DEMO MOCK**. Offer statuses `created → scanned → connected → viewed → accepted → code_verified → issued` (+ `declined`), 300–800 ms fake latency |
 | Sync | the existing `gnl-demo:v1` localStorage store and its `storage` event: two windows (or two iframes) of one browser stay in step without reloads |
-| Copy / persona | `src/lib/data/flow3.ts` (`CODE_MODE`, `WALLET_CONSENT`, `UPSELL_ADDED_STATE_ENABLED`), `WALLET_PERSONA` in `src/lib/data/driver-vehicle.ts` |
+| Copy / persona | `src/lib/data/flow3.ts` (`CODE_MODE`, `WALLET_CONSENT`, `UPSELL_ADDED_STATE_ENABLED`), `WALLET_PERSONA` in `src/lib/data/driver-vehicle.ts`. The persona is **Jason Moore** (`DEMO_USER` in `src/lib/data/services.ts`); log in as `jason.moore@email.com` with any password |
 | Tokens | `src/lib/data/wallet-tokens.ts` (brief §6) |
 
 **Ways to show it**
@@ -47,10 +51,15 @@ your wallet → Added to your wallet*.
    from nowhere else) or open `/demo/wallet-stage/`: the C1 page (left, scaled
    to fit) and the wallet phone (right) in two same-origin iframes, with a
    **Reset demo** button. Best on one big screen or a projector.
-4. **Real phone** (P2, not built): the QR encodes
-   `${PUBLIC_BASE_URL}/wallet/start/?offer=<id>`. Set `PUBLIC_BASE_URL` at
-   build time (default `http://localhost:4173`). A real phone can open the
-   wallet, but it cannot sync with the desktop without a server.
+4. **Real phone** (the phone path): run
+   `npm run serve:phone`. The QR then encodes
+   `<laptop LAN address>/wallet/start/?offer=<id>&room=<room>` once phone mode is
+   on at `/demo/phone/`; the phone
+   opens the wallet at W-03 and the C1 page follows it live. The same server
+   makes the IDV "Continue on a smartphone" QR real too. Served statically
+   (`npx serve out`) nothing changes: the QR is `${PUBLIC_BASE_URL}/wallet/start/?offer=<id>`
+   as before. Setup, HTTPS for the phone camera and limits: `DEPLOY.md`
+   "Phone path"; design and security: [`docs/PHONE_PATH.md`](docs/PHONE_PATH.md).
 
 **The wallet phone.** One frame, 393×852, radius 48, with a 9:41 status bar and
 a home indicator; long screens scroll inside it. At a viewport of 430 px or
@@ -71,7 +80,8 @@ wallet fills the screen.
 `npm run build` · `npm run shots && npm run diff` (pixel diff, 25 frames) ·
 `npm run clicks` · `npm run camera` · `npm run responsive` (≈ 13 min; set
 `DEMO_BASE_URL` to run it against another port). All of them expect the build
-served on port 4173.
+served on port 4173. `npm run phone` is the phone-path gate: run it against
+`npm run serve:phone` (two browser contexts = laptop + phone).
 
 ---
 

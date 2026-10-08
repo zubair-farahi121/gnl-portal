@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { LoginHeader } from "@/components/chrome/LoginHeader";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { ASSETS } from "@/lib/assets";
 import { FAQ_ITEMS, LANDING_SERVICES } from "@/lib/data/landing";
-import { APP_ROUTES } from "@/lib/data/service-config";
+import { LoginForm } from "@/components/login/LoginForm";
 
 /*
  * mygovnl-login-page — Figma 6206:23558, 1440 x 1880.215.
@@ -34,11 +33,14 @@ import { APP_ROUTES } from "@/lib/data/service-config";
  * in its own comment. At >= 1440 every one of those is a no-op, which is what
  * keeps the geometry above true.
  *
- * Nothing on this page is interactive except the Log in button. The inputs are
- * empty presentational boxes (Figma fills them with a zero-width space) and the
+ * The login form is the only live part of this page. Since 2026-09-30 (branch
+ * feedback-ui, team meeting) it has real Email Address / Password inputs and a
+ * submit button — see src/components/login/LoginForm.tsx, the one client
+ * component here. Before that the inputs were empty presentational boxes
+ * (Figma fills them with a zero-width space) and "Log in" was a <Link>. The
  * accordion rows are CLOSED and inert — the design shows no open state, so
  * adding one would invent a design that does not exist and break the 56px row.
- * That is also why this file needs no "use client".
+ * This file itself still needs no "use client".
  */
 
 /**
@@ -101,85 +103,12 @@ function HeroSection() {
           </p>
         </div>
 
-        {/* FormFields 6031:5870 */}
-        <div
-          className="flex w-full shrink-0 flex-col items-start gap-[16px]"
-          data-node-id="6031:5870"
-        >
-          <InputField label="Email Address" nodeId="6031:5871" />
-          <InputField label="Password" nodeId="6031:5878" withEye />
-        </div>
-
-        {/* No password-reset screen exists in the demo — inert, not wired. */}
-        <p
-          className="w-full cursor-default text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-underline-position:from-font] [word-break:break-word]"
-          data-node-id="6031:5884"
-          data-demo-inert="true"
-        >
-          Forgot password?
-        </p>
-
-        {/* ActionButtons 6031:5885 — the one live control on this page. */}
-        <div
-          className="flex w-full shrink-0 items-center justify-end"
-          data-node-id="6031:5885"
-        >
-          <Link
-            className="flex min-w-px flex-[1_0_0] items-center justify-center overflow-clip rounded-[4px] bg-[#263854] px-[24px] py-[10px]"
-            href={APP_ROUTES.dashboard}
-            data-node-id="6031:5888"
-          >
-            <p className="shrink-0 text-[14px] font-bold leading-[normal] whitespace-nowrap text-white [word-break:break-word]">
-              Log in
-            </p>
-          </Link>
-        </div>
+        {/* FormFields 6031:5870, "Forgot password?" 6031:5884 and
+            ActionButtons 6031:5885 — since 2026-09-30 a client form with real
+            inputs; see LoginForm. */}
+        <LoginForm />
       </div>
     </section>
-  );
-}
-
-/**
- * InputField 6031:5871 / 6031:5878.
- *
- * Presentational only — no <input>, because the design shows an empty box and a
- * real input would drag focus rings, placeholder metrics and browser autofill
- * styling into the pixel diff. Figma fills the value slot with a zero-width
- * space (U+200B) to hold the 21px line box open; that is reproduced literally.
- */
-function InputField({
-  label,
-  nodeId,
-  withEye = false,
-}: {
-  label: string;
-  nodeId: string;
-  withEye?: boolean;
-}) {
-  return (
-    <div
-      className="flex w-full shrink-0 flex-col items-start gap-[6px]"
-      data-node-id={nodeId}
-    >
-      <p className="w-full text-[14px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]">
-        {label}
-      </p>
-      <div className="box-border flex h-[40px] w-full shrink-0 items-center rounded-[6px] border border-solid border-[#d4d8da] bg-white px-[12px]">
-        <p className="min-w-px flex-[1_0_0] text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]">
-          {"​"}
-        </p>
-        {withEye ? (
-          <div className="relative size-[16px] shrink-0" data-node-id="6031:5882">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt=""
-              className="absolute inset-0 block size-full max-w-none"
-              src={ASSETS.iconEye}
-            />
-          </div>
-        ) : null}
-      </div>
-    </div>
   );
 }
 

@@ -17,7 +17,7 @@ import { WALLET_COLOR, WALLET_TIMING, WALLET_TYPE } from "@/lib/data/wallet-toke
  *
  * SAME WIRING AS DemoToast, deliberately: one delegated `click` listener on
  * `document`, bubble phase, `closest('[data-wallet-inert="true"]')` — so W3's
- * and W5's "Decline", W1's "Present", the menu buttons and the collapsed
+ * and W5's "Cancel" (was "Decline"), W1's "Present", the menu buttons and the collapsed
  * dashboard cards need no handler and the static screens need no client
  * boundary of their own. Native <button>s dispatch `click` for Enter/Space,
  * so all of them work from the keyboard.

@@ -17,6 +17,7 @@ import {
   type CredentialOffer,
 } from "@/lib/mock-issuer";
 import { qrMatrix, walletOfferUrl } from "@/lib/qr";
+import { ensureRoom, laptopSync, qrBase, watchRoom } from "@/lib/remote-sync";
 
 /*
  * F3-02 / F3-03 — the LIVE parts of the C1 page "Add your vehicle
@@ -46,6 +47,8 @@ import { qrMatrix, walletOfferUrl } from "@/lib/qr";
 
 type OfferCtx = {
   offer: CredentialOffer | null;
+  /** Phone path: the shared room the QR names, or null (phone mode off / static build). */
+  sync: { base: string; room: string } | null;
   state: DesktopState;
   remainingMs: number;
   newCode: () => void;
@@ -126,6 +129,37 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
     return subscribe(currentId, setOffer);
   }, [currentId]);
 
+  /*
+   * THE PHONE PATH (2026-09-30, docs/PHONE_PATH.md). Only when the build is
+   * served by server/demo-server.mjs AND phone mode is on (/demo/phone/):
+   * join (or start) the shared room, so the QR can name it and a real
+   * phone's progress reaches this page. The phone's writes land in the local
+   * store and fire the store's own change event, so `subscribe` above and
+   * the state line react exactly as they do for the pop-up. Re-checked when
+   * the offer changes: a Reset (Esc) drops the room and the next offer starts
+   * a new one. Otherwise `laptopSync` says no without a single request.
+   */
+  const [sync, setSync] = useState<OfferCtx["sync"]>(null);
+  useEffect(() => {
+    if (!ready) return;
+    let dead = false;
+    void (async () => {
+      const h = await laptopSync();
+      if (!h || dead) return;
+      const room = await ensureRoom();
+      if (dead) return;
+      const base = qrBase(h);
+      setSync((prev) => (room ? (prev?.room === room && prev.base === base ? prev : { base, room }) : null));
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [ready, currentId]);
+
+  /* …and listen for the phone while this page is open (a GET a second). */
+  const syncOn = sync !== null;
+  useEffect(() => (syncOn ? watchRoom() : undefined), [syncOn]);
+
   /* The countdown clock — one tick a second, client-only. */
   useEffect(() => {
     if (!ready) return;
@@ -149,8 +183,8 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
   }, [offer, waiting, now, remainingMs, make]);
 
   const value = useMemo<OfferCtx>(
-    () => ({ offer, state: desktopState(offer?.status), remainingMs, newCode: make }),
-    [offer, remainingMs, make],
+    () => ({ offer, sync, state: desktopState(offer?.status), remainingMs, newCode: make }),
+    [offer, sync, remainingMs, make],
   );
 
   return (
@@ -178,8 +212,8 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
  * never moves.
  */
 export function OfferQr() {
-  const { offer, state } = useOfferCtx();
-  const text = offer ? walletOfferUrl(offer.id) : null;
+  const { offer, sync, state } = useOfferCtx();
+  const text = offer ? walletOfferUrl(offer.id, sync) : null;
   const qr = useMemo(() => (text ? qrMatrix(text) : null), [text]);
   const quiet = 4;
   const box = qr ? qr.size + quiet * 2 : 1;
@@ -193,6 +227,7 @@ export function OfferQr() {
       className="relative flex h-[196.5px] w-[220.4px] cursor-pointer items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004b87]"
       data-wallet-qr="true"
       data-qr-text={text ?? ""}
+      data-qr-url={text ?? ""}
       data-offer-id={offer?.id ?? ""}
       data-node-id="6220:86458"
       onClick={(e) => {

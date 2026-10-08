@@ -18,11 +18,27 @@ const WALLET_ESC_CLOSES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * True when the key event comes from a form field or editable text. Every
+ * <input> counts, not only text boxes: on a radio the arrow keys belong to
+ * the browser (they move through the group), so they are not the
+ * presenter's there either.
+ */
+function isTypingTarget(t: EventTarget | null): t is HTMLElement {
+  if (!(t instanceof HTMLElement)) return false;
+  return t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+}
+
+/**
  * Presenter aid. Renders nothing, so it cannot affect the pixel gate.
  *   ArrowRight / ArrowLeft — step through the flow
  *   Escape                 — reset to a clean unverified state (on wallet
  *                            screens with a close ✕: that ✕ — Flow 3)
  *   Shift+W                — the Flow 3 presenter stage (/demo/wallet-stage/)
+ *
+ * NONE of these fire while focus is in a text field (input, textarea, select
+ * or contenteditable) — ADDED 2026-09-30 with the login page's real inputs.
+ * An arrow key there moves the caret, and Escape only leaves the field
+ * (blur); it does not reset the demo.
  */
 export function DemoNav() {
   const router = useRouter();
@@ -36,6 +52,15 @@ export function DemoNav() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      /*
+       * TYPING GUARD (2026-09-30). The presenter keys must not fire from a
+       * text field: ArrowLeft in the login's Email Address box would
+       * otherwise leave the page. Escape there just blurs the field.
+       */
+      if (isTypingTarget(e.target)) {
+        if (e.key === "Escape") e.target.blur();
+        return;
+      }
       /*
        * WHICH FLOW — added 2026-09-28. FLOW_B only for a path that is in
        * FLOW_B and NOT in FLOW; every Flow A URL and every shared URL resolves
@@ -69,9 +94,8 @@ export function DemoNav() {
        * steal a capital W from a form.
        */
       if (e.key === "W" && e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const t = e.target as HTMLElement | null;
-        const typing = !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
-        if (!typing) router.push(FLOW3_ROUTES.stage);
+        // Typing is already ruled out by the guard at the top.
+        router.push(FLOW3_ROUTES.stage);
         return;
       }
       /*

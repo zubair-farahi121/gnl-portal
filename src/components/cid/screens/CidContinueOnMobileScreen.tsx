@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
-import { ASSETS } from "@/lib/assets";
+import { HandoffQr } from "@/components/cid/HandoffQr";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
 
@@ -208,20 +208,19 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
              * real export is a byte swap with no layout change.
              *
              * NOT A CONTROL. It is a plain <img> with no href and no handler:
-             * the demo has no second device, no camera and no scanning, and a
-             * clickable QR would be interactivity the design does not have.
+             * a clickable QR would be interactivity the design does not have.
+             * (With the phone path it is a real, scannable code — still not a
+             * control; it is for a phone camera.)
              */}
-            <div
-              className="relative h-[216.981201171875px] w-[220.4013671875px] shrink-0"
-              data-node-id="6156:60706"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="absolute inset-0 block size-full max-w-none"
-                src={ASSETS.qrMobileHandoff}
-              />
-            </div>
+            {/*
+             * PHONE PATH (2026-09-30): the box now lives in a client island,
+             * HandoffQr, whose first render is this exact box + placeholder
+             * <img>. That is all it ever renders unless the build is served by
+             * server/demo-server.mjs AND phone mode is on (/demo/phone/); then
+             * it swaps in a real QR for the phone and adds one status line —
+             * see src/components/cid/HandoffQr.tsx and docs/PHONE_PATH.md.
+             */}
+            <HandoffQr serviceId={service.id} />
 
             {/* 6156:60707 — w-full, so the card's `items-center` cannot move it
                 and the line stays left-aligned as the frame shows. */}

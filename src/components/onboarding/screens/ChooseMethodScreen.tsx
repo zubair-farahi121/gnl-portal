@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { WizardCard } from "@/components/wizard/WizardCard";
@@ -15,6 +14,7 @@ import {
 } from "@/lib/data/onboarding";
 import { serviceRoutes, type ServiceConfig } from "@/lib/data/service-config";
 import { CancelLink } from "@/components/onboarding/CancelLink";
+import { MethodRadio } from "@/components/onboarding/MethodRadio";
 
 /*
  * ====================================================================
@@ -174,10 +174,11 @@ const SCALE: Record<
 /**
  * GNL Logo — Figma 6098:100409 / 6098:60395, 72.134 x 36.215.
  *
- * Same component and the same two leaves as the desktop footer crest, at the
- * same size. SiteFooter keeps its copy private, so the geometry is repeated
- * here rather than exported across a component boundary; the percentage insets
- * are identical, so both stay correct from one pair of asset files.
+ * 2026-10-01: the designer's `gnl-crest-grey.svg` (colour flowers, GREY
+ * wordmark — this card is white, so the footer's white-wordmark crest would
+ * vanish here). Its own box is 73 x 37, so it is drawn `object-contain` in the
+ * Figma box. Decorative (alt=""): the card is a <label> and its radio is named
+ * by the title alone.
  */
 function GnlLogo() {
   return (
@@ -185,19 +186,26 @@ function GnlLogo() {
       className="relative h-[36.215px] w-[72.134px] shrink-0 overflow-clip"
       data-node-id="6098:60395"
     >
-      <div className="absolute inset-[0_36.61%_18.23%_0]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.gnlCrestFlowers} />
-      </div>
-      <div className="absolute inset-[30.74%_0_0.72%_0.08%]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.gnlCrestWordmark} />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img alt="" className="absolute inset-0 block size-full max-w-none object-contain" src={ASSETS.gnlCrestGrey} />
     </div>
   );
 }
 
-function OptionBody({ option, scale }: { option: IdvOption; scale: MethodStepScale }) {
+/** A stable id for an option's title, so its radio is named by the title alone. */
+function titleId(option: IdvOption) {
+  return `idv-method-${option.nodeId.replace(/[^0-9a-z]/gi, "-")}-title`;
+}
+
+function OptionBody({
+  option,
+  scale,
+  group,
+}: {
+  option: IdvOption;
+  scale: MethodStepScale;
+  group: string;
+}) {
   return (
     <>
       {/* service-details — flex-1, so the crest keeps its 72.134px at the right edge. */}
@@ -206,18 +214,20 @@ function OptionBody({ option, scale }: { option: IdvOption; scale: MethodStepSca
             width to wrap against; below 768 it takes the full details column
             and top-aligns the radio against what may now be two lines. */}
         <div className="flex shrink-0 items-center gap-[12px] max-md:w-full max-md:items-start">
-          <div className="relative size-[16px] shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt=""
-              className="absolute inset-0 block size-full max-w-none"
-              src={option.selected ? ASSETS.radioSelected : ASSETS.radioUnselected}
-            />
-          </div>
+          {/* 2026-09-30 (feedback-ui): a native radio, not the 16px
+              radio-selected / radio-unselected image. The card around it is
+              the <label>. */}
+          <MethodRadio
+            name={group}
+            checked={option.selected}
+            href={option.href}
+            labelledBy={titleId(option)}
+          />
           {/* The design's `whitespace-nowrap` holds these on one line at 740px.
               "Motor Registration Division (MRD)" is ~245px, wider than the
               details column gets below 768, so it is released there. */}
           <p
+            id={titleId(option)}
             className={`shrink-0 whitespace-nowrap ${TITLE_STYLE[scale][option.titleStyle]} max-md:min-w-px max-md:shrink max-md:whitespace-normal`}
           >
             {option.title}
@@ -263,27 +273,44 @@ function OptionBody({ option, scale }: { option: IdvOption; scale: MethodStepSca
 
 /**
  * Only the CertifiO ID option (GNL Identity Verification Service) carries an
- * href, so it is the one clickable element on this screen. Every other option
- * renders as a plain div and does not navigate, which keeps the presenter from
- * clicking into an unbuilt provider screen on stage.
+ * href, so it is the one option that leads on. Every other option is inert:
+ * it does not navigate, its radio does not stay checked, and it shows the
+ * "Not part of this demo" toast — which keeps the presenter from clicking
+ * into an unbuilt provider screen on stage.
+ *
+ * 2026-09-30 (feedback-ui): every card is a <label> wrapping a native radio
+ * (MethodRadio), one `name` per group. It used to be a <Link> (GNL IDV) or a
+ * <div> (inert) around a radio image. `data-href` marks the card that leads
+ * on, for `npm run clicks`.
  */
-function OptionCard({ option, scale }: { option: IdvOption; scale: MethodStepScale }) {
+function OptionCard({
+  option,
+  scale,
+  group,
+}: {
+  option: IdvOption;
+  scale: MethodStepScale;
+  group: string;
+}) {
   if (option.href) {
     return (
-      <Link className={OPTION_CARD} href={option.href} data-node-id={option.nodeId}>
-        <OptionBody option={option} scale={scale} />
-      </Link>
+      <label
+        className={`${OPTION_CARD} cursor-pointer`}
+        data-node-id={option.nodeId}
+        data-href={option.href}
+      >
+        <OptionBody option={option} scale={scale} group={group} />
+      </label>
     );
   }
   return (
-    <div
+    <label
       className={`${OPTION_CARD} cursor-default select-none`}
       data-node-id={option.nodeId}
       data-demo-inert="true"
-      aria-disabled="true"
     >
-      <OptionBody option={option} scale={scale} />
-    </div>
+      <OptionBody option={option} scale={scale} group={group} />
+    </label>
   );
 }
 
@@ -340,10 +367,17 @@ export function ChooseMethodScreen({ service }: { service: ServiceConfig }) {
              */}
             <div
               className="flex w-full shrink-0 flex-col items-start gap-[24px]"
+              role="radiogroup"
+              aria-label={copy.sectionIntro.title}
               data-node-id={nodeIds.options}
             >
               {copy.idvOptions.map((option) => (
-                <OptionCard key={option.nodeId} option={option} scale={scale} />
+                <OptionCard
+                  key={option.nodeId}
+                  option={option}
+                  scale={scale}
+                  group={`idv-method-${service.id}`}
+                />
               ))}
             </div>
 

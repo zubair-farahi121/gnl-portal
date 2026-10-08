@@ -186,6 +186,10 @@ const ROUTES = [
   ['wallet-cards', '/wallet/cards/'],
   // The P1 presenter stage (hidden; Shift+W). Two iframes, scaled to fit.
   ['wallet-stage', '/demo/wallet-stage/'],
+  // THE PHONE PATH (added 2026-10-04): the presenter's switch (it shows "needs
+  // the demo server" on a static build) and the phone's last screen.
+  ['demo-phone', '/demo/phone/'],
+  ['cid-mobile-done', '/cid/mobile/?done=1&service=driver-vehicle'],
   // THE GNL 404 — added 2026-09-23 (Tier 1 item 1.6, brief §7.6). `/nope/` is
   // an unknown path on purpose: the static export serves out/404.html for it,
   // which is the page under test. It is in this gate because §7.6 says the demo
