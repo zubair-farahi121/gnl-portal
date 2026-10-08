@@ -1,123 +1,94 @@
-# GNL demo — MyGovNL with CertifiO ID, and the wallet (Flow 3)
+# GNL demo
 
-A static (`output: "export"`) Next.js demo. No real API: served statically it needs
-no server at all, and `npm run serve:phone` adds a tiny demo server for the
-**phone path** (a real phone next to the laptop — see below). The
-presenter walk-through is in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md); the design
-audit is in [`DEMO_AUDIT.md`](DEMO_AUDIT.md).
+This is a clickable demo of MyGovNL. A signed-in user opens the Driver and Vehicle
+service, proves who they are with CertifiO ID, and gets access. They can then add their
+vehicle registration certificate to a digital wallet. A second service, StudentAidNL,
+shows the same journey with a few differences.
 
-## Run it
+There is no real backend and no real data. The user in the demo, Jason Moore, is
+fictional. Everything runs from a small static website.
+
+## Run it on your computer
+
+You need Node.js 22.
 
 ```bash
 npm install
-npm run build          # writes out/
-npx serve out -l 4173  # NEVER `serve -s`: SPA mode sends every route to the login page
-# or, with the phone path (same static files + a small in-memory sync API):
-npm run serve:phone     # node server/demo-server.mjs, port 4173
+npm run build
+npm run serve
 ```
 
-Open `http://localhost:4173/`. Reset everything with **Esc** on a portal page,
-or open `/reset`.
+Open http://localhost:4173 and press **Esc** once to start clean.
+Log in with `jason.moore@email.com` and any password.
 
-## Flow 3 — add the vehicle registration certificate to a wallet
+That's it. Run `npm run build` again whenever the code changes.
 
-Spec: `FLOW3_BRIEF.md` (Figma section 6343:84884). Story: on the Trusted
-Driver and Vehicle page, **Add to wallet** (the "Skip the paper copy" panel)
-opens the C1 page with a QR code; a neutral wallet app on the "phone" scans
-it, the user accepts, reviews, enters a code, and the certificate lands in
-the wallet. The C1 page follows along live: *Waiting for scan → Adding to
-your wallet → Added to your wallet*.
+## Run it with Docker
 
-| Part | Where |
-|---|---|
-| C1 page (MyGovNL, Lato) | `/services/driver-vehicle/wallet/` — QR at ≥ 768 px (F3-02), two wallet buttons below (F3-03) |
-| Wallet (Inter, its own tokens) | `/wallet/` W-01 home · `/wallet/scan/` W-02 · `/wallet/connect/` W-03 · `/wallet/offer/` W-04 · `/wallet/review/` W-05 · `/wallet/connecting/` W-06 · `/wallet/code/` W-07 · `/wallet/added/` W-08 · `/wallet/cards/` W-09 |
-| QR / deep-link entry | `/wallet/start/?offer=<id>` — not a screen: selects the offer, marks it `scanned`, goes to W-03 |
-| Mock issuer | `src/lib/mock-issuer.ts` — **DEMO MOCK**. Offer statuses `created → scanned → connected → viewed → accepted → code_verified → issued` (+ `declined`), 300–800 ms fake latency |
-| Sync | the existing `gnl-demo:v1` localStorage store and its `storage` event: two windows (or two iframes) of one browser stay in step without reloads |
-| Copy / persona | `src/lib/data/flow3.ts` (`CODE_MODE`, `WALLET_CONSENT`, `UPSELL_ADDED_STATE_ENABLED`), `WALLET_PERSONA` in `src/lib/data/driver-vehicle.ts`. The persona is **Jason Moore** (`DEMO_USER` in `src/lib/data/services.ts`); log in as `jason.moore@email.com` with any password |
-| Tokens | `src/lib/data/wallet-tokens.ts` (brief §6) |
-
-**Ways to show it**
-
-1. **Phone view window (default).** On the C1 page, click the QR code: the
-   wallet opens in a ~400×860 pop-up at W-01. Put it beside the browser. Tap
-   **Scan QR-code**; the scanner "finds" the code by itself. Allow pop-ups for
-   localhost; if blocked, the wallet opens in a tab.
-2. **Same device.** At phone width the C1 page has no QR; **Add to Apple
-   Wallet** / **Add to Google Wallet** open the wallet at W-03. **◀ MyGovNL**
-   in the wallet's status bar comes back with an "Added to your wallet" toast.
-3. **Presenter stage.** Press **Shift+W** on any portal page (it is linked
-   from nowhere else) or open `/demo/wallet-stage/`: the C1 page (left, scaled
-   to fit) and the wallet phone (right) in two same-origin iframes, with a
-   **Reset demo** button. Best on one big screen or a projector.
-4. **Real phone** (the phone path): run
-   `npm run serve:phone`. The QR then encodes
-   `<laptop LAN address>/wallet/start/?offer=<id>&room=<room>` once phone mode is
-   on at `/demo/phone/`; the phone
-   opens the wallet at W-03 and the C1 page follows it live. The same server
-   makes the IDV "Continue on a smartphone" QR real too. Served statically
-   (`npx serve out`) nothing changes: the QR is `${PUBLIC_BASE_URL}/wallet/start/?offer=<id>`
-   as before. Setup, HTTPS for the phone camera and limits: `DEPLOY.md`
-   "Phone path"; design and security: [`docs/PHONE_PATH.md`](docs/PHONE_PATH.md).
-
-**The wallet phone.** One frame, 393×852, radius 48, with a 9:41 status bar and
-a home indicator; long screens scroll inside it. At a viewport of 430 px or
-less (a phone, the pop-up, the stage iframe) the frame is dropped and the
-wallet fills the screen.
-
-**Switches**
-
-- `CODE_MODE` (`"sms"` | `"wallet_pin"`) — W-07's SMS code with the simulated
-  Messages banner, or the wallet's own PIN (text not designed yet).
-- `WALLET_CONSENT` — W-05's two consent lines, in one place.
-- `UPSELL_ADDED_STATE_ENABLED` — after issuing, the Trusted page's "Add to
-  wallet" becomes a disabled "Added to wallet ✓". **Off** until Tatyana
-  confirms.
-
-## Gates
-
-`npm run build` · `npm run shots && npm run diff` (pixel diff, 25 frames) ·
-`npm run clicks` · `npm run camera` · `npm run responsive` (≈ 13 min; set
-`DEMO_BASE_URL` to run it against another port). All of them expect the build
-served on port 4173. `npm run phone` is the phone-path gate: run it against
-`npm run serve:phone` (two browser contexts = laptop + phone).
-
----
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
+You need Docker with Compose. You don't need Node.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --build -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:4173. To stop it, run `docker compose down`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Put it on a server
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use the same Docker command, plus three things:
 
-## Learn More
+1. **Tell it its address.** Create a `.env` file next to `docker-compose.yml`:
+   ```
+   PUBLIC_BASE_URL=https://gnl-demo.example.com
+   ```
+   The QR codes use this address, so a phone can open them.
+2. **Use HTTPS.** Browsers only allow the camera on HTTPS. Without it, the capture
+   screens show a still picture instead, and the demo still works. If a reverse proxy
+   sits in front, it must forward the original Host header. For nginx:
+   `proxy_set_header Host $http_host;`
+3. **Keep it private.** It carries GNL branding. Put it behind a VPN, an IP allow-list
+   or a password at the proxy.
 
-To learn more about Next.js, take a look at the following resources:
+`docker compose ps` should show `healthy`. More options, such as another port or a
+certificate inside the container, are in [DEPLOY.md](DEPLOY.md).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Using the demo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Esc** resets everything. You can also open `/reset`.
+- **→** and **←** jump to the next or previous screen when you need to skip ahead.
+- **Shift+W** shows the web page and the wallet phone side by side in one window.
+  Use it if pop-ups are blocked.
+- Each person's progress is saved in their own browser, so people testing at the same
+  time don't affect each other.
+- **Optional: a real phone.** Start with `npm run serve:phone` instead of
+  `npm run serve`, then turn phone mode on at `/demo/phone/`. The phone needs to be on
+  the same network. Details: [docs/PHONE_PATH.md](docs/PHONE_PATH.md).
 
-## Deploy on Vercel
+## If something goes wrong
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Problem | Fix |
+|---|---|
+| Every page shows the login screen | The server is in "single page" mode. Use `npm run serve` (never `serve -s`). |
+| Port 4173 is busy | Stop the other server. Or, with Docker, run `DEMO_PORT=8080 docker compose up -d`. |
+| Old content after a change | Run `npm run build` again. With Docker, run `docker compose up --build -d`. |
+| The wallet doesn't open when you click the QR | Allow pop-ups for the site, or press **Shift+W**. |
+| The camera doesn't start | Close other apps using it (Teams, Zoom). On a server, check that it uses HTTPS. |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## For developers
+
+- Built with Next.js 16 (static export), React 19, TypeScript and Tailwind 4.
+- Code lives in `src/`. Screen text and settings live in `src/lib/data/`.
+  - The wallet flow's switches, `CODE_MODE`, `WALLET_CONSENT` and
+    `UPSELL_ADDED_STATE_ENABLED`, are in `src/lib/data/flow3.ts`.
+- The fake credential issuer is `src/lib/mock-issuer.ts`. The phone-path server is
+  `server/demo-server.mjs`.
+- Checks (the test scripts are in the full repository, not in the deploy package):
+  - `npm run shots && npm run diff`: pixel comparison with the designs.
+  - `npm run clicks`: every click path.
+  - `npm run camera`: the camera screens.
+  - `npm run responsive`: every page at several widths (about 13 minutes).
+  - `npm run phone`: the phone path.
+
+  They expect the site on port 4173. Set `DEMO_BASE_URL` to test another address.
+- The presenter script is in `DEMO_SCRIPT.md`. The design notes are in `DEMO_AUDIT.md`
+  and `FLOW3_BRIEF.md`. Both are in the full repository only.
