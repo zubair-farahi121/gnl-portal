@@ -214,6 +214,273 @@
       "width": 393,
       "height": 852,
       "budget": 0.008
+    },
+    {
+      "id": "studentaid-verified",
+      "node": "6408:84644",
+      "route": "/services/studentaid/?verified=1",
+      "width": 1440,
+      "height": 1450,
+      "budget": 0.008,
+      "provenance": "FLOW 4 (2026-10-14). The Trusted StudentAidNL page (PP-23, derived) WITH the new \"Skip retyping your funding details\" panel. ONLY THE PANEL (6412:85602) follows 6408:84644: that newer frame also differs from PP-23 outside the panel (subtitle, badge position, portal-row chevron, Remove consent), which was reported, not redesigned — so this is a self-baseline of the page as built, not of the Figma frame, and its height is the build's 1450, not Figma's 1524."
+    },
+    {
+      "id": "wallet-c1-noa",
+      "node": "6412:85663",
+      "route": "/services/studentaid/wallet/",
+      "width": 1440,
+      "height": 1024,
+      "budget": 0.008,
+      "mask": [
+        "[data-wallet-qr]",
+        "[data-wallet-countdown]"
+      ],
+      "provenance": "FLOW 4 (2026-10-14). The C1 page, \"Waiting for scan…\", masked like wallet-c1 (the QR encodes a per-offer id, the countdown ticks)."
+    },
+    {
+      "id": "wallet-noa-connect",
+      "node": "6412:86796",
+      "route": "/wallet/connect/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "scanned",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z"
+                }
+              }
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen."
+    },
+    {
+      "id": "wallet-noa-offer",
+      "node": "6412:85809",
+      "route": "/wallet/offer/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "connected",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z"
+                }
+              }
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen."
+    },
+    {
+      "id": "wallet-noa-review",
+      "node": "6412:86558",
+      "route": "/wallet/review/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "viewed",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z"
+                }
+              }
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen. The top of the 2128-tall screen; the rest scrolls inside the phone."
+    },
+    {
+      "id": "wallet-noa-code",
+      "node": "6412:86737",
+      "route": "/wallet/code/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "accepted",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z"
+                }
+              }
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen. Wallet-PIN mode, empty (Figma shows 4 8 2 mid-typing)."
+    },
+    {
+      "id": "wallet-noa-added",
+      "node": "6412:86625",
+      "route": "/wallet/added/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "issued",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z",
+                  "issuedAt": "2026-10-14T12:05:00.000Z",
+                  "scannedAt": "2026-10-14T12:05:00.000Z"
+                }
+              },
+              "noaIssuedAt": "2026-10-14T12:05:00.000Z"
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen."
+    },
+    {
+      "id": "wallet-noa-cards",
+      "node": "6412:86648",
+      "route": "/wallet/cards/",
+      "width": 393,
+      "height": 852,
+      "budget": 0.008,
+      "seed": {
+        "localStorage": {
+          "gnl-demo:v1": {
+            "v": 1,
+            "services": {
+              "studentaid": {
+                "status": "onboarded",
+                "step": "ready"
+              }
+            },
+            "wallet": {
+              "currentOfferId": "f4seednoa1",
+              "offers": {
+                "f4seednoa1": {
+                  "id": "f4seednoa1",
+                  "serviceId": "studentaid",
+                  "credentialType": "NoticeOfAssessment",
+                  "status": "issued",
+                  "createdAt": "2026-10-14T12:05:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z",
+                  "issuedAt": "2026-10-14T12:05:00.000Z",
+                  "scannedAt": "2026-10-14T12:05:00.000Z"
+                },
+                "f4seedvrc1": {
+                  "id": "f4seedvrc1",
+                  "serviceId": "driver-vehicle",
+                  "credentialType": "VehicleRegistrationCertificate",
+                  "status": "issued",
+                  "createdAt": "2026-10-14T12:00:00.000Z",
+                  "expiresAt": "2099-01-01T00:00:00.000Z",
+                  "issuedAt": "2026-10-14T12:00:00.000Z",
+                  "scannedAt": "2026-10-14T12:00:00.000Z"
+                }
+              },
+              "cardIssuedAt": "2026-10-14T12:00:00.000Z",
+              "noaIssuedAt": "2026-10-14T12:05:00.000Z"
+            }
+          }
+        },
+        "sessionStorage": {
+          "gnl-demo:wallet-card-seen": "2026-10-14T12:05:00.000Z"
+        }
+      },
+      "provenance": "FLOW 4 (2026-10-14). Self-baseline of the shared wallet screen showing a notice-of-assessment offer (seeded store: the wallet picks its copy from the current offer). Compared by eye with this Figma node before it was frozen. The AFTER state with Flow 3 run first — 4 cards, the notice of assessment on top and expanded. The issued dates are the seeded ones (fixed), so nothing is masked."
     }
   ]
 }

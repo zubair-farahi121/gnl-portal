@@ -83,6 +83,12 @@ export const WALLET_WEIGHT = {
 export const WALLET_TYPE = {
   /** Heading — Inter 900 36/110 %, −0.03em. */
   heading: { fontSize: "36px", fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em" },
+  /**
+   * H4 — Inter 900 28/110 %, NO tracking. Flow 4's W-04 heading ("Notice of
+   * assessment offered", 6412:86522); Flow 3's W-04 is the H3 above.
+   * ADDED 2026-10-14.
+   */
+  headingH4: { fontSize: "28px", fontWeight: 900, lineHeight: 1.1, letterSpacing: "0" },
   /** "Added Successfully" — Inter 900 48/100 %, −0.03em. */
   headingXl: { fontSize: "48px", fontWeight: 900, lineHeight: 1, letterSpacing: "-0.03em" },
   /** Supporting copy — Inter 300 18/150 %, 70 % ink. */
@@ -91,6 +97,12 @@ export const WALLET_TYPE = {
   body: { fontSize: "16px", fontWeight: 300, lineHeight: 1.5, color: "rgba(8,16,16,0.7)" },
   /** Card title — Inter 600 16/150 %. */
   cardTitle: { fontSize: "16px", fontWeight: 600, lineHeight: 1.5 },
+  /**
+   * Issuer sub-line — Inter 600 14 / `normal`, 70 % ink: "StudentAidNL" under
+   * the issuer's name on Flow 4's W-03 / W-04 / W-05 (6420:96729). ADDED
+   * 2026-10-14.
+   */
+  issuerSubline: { fontSize: "14px", fontWeight: 600, lineHeight: "normal", color: "rgba(8,16,16,0.7)" },
   /** Card description — Inter 300 14/120 %, 70 % ink. */
   cardDesc: { fontSize: "14px", fontWeight: 300, lineHeight: 1.2, color: "rgba(8,16,16,0.7)" },
   /** Quick-action card label (W-01) — Inter 600 18/150 %. */

@@ -1,5 +1,7 @@
-import { WalletHeader, WalletScreen, WalletStatusButton } from "@/components/wallet/WalletClient";
-import { WalletVcGlyph } from "@/components/wallet/WalletGlyphs";
+"use client";
+
+import { WalletHeader, WalletScreen, WalletStatusButton, useWalletCredential } from "@/components/wallet/WalletClient";
+import { WalletTasksGlyph, WalletVcGlyph } from "@/components/wallet/WalletGlyphs";
 import { IssuerBlock, WalletHeading, WalletLead, WalletStatusBar } from "@/components/wallet/WalletUi";
 import { WALLET_COPY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
@@ -18,9 +20,16 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_SIZE, WALLET_TYPE } from "@/lib/d
  *                certificate" (600 16) / "Verifiable Digital Credential"
  *                (300 14, 70 %); then, INSIDE the card, the primary button
  *                "View offer" -> `viewed` + W-05
+ *
+ * FLOW 4 (2026-10-14) — Figma 6412:85809, "Notice of assessment offered":
+ * the issuer sub-line, an H4 (28 px) heading where Flow 3's is H3, and the
+ * `Tasks_list` icon beside "Notice of assessment". From the current offer;
+ * a vehicle offer (or none) renders exactly what it did.
  */
 export default function WalletOfferPage() {
   const c = WALLET_COPY.offer;
+  const cred = useWalletCredential();
+  const o = cred.offer;
   return (
     <WalletScreen screen="W4" nodeId="6240:54958">
       <WalletStatusBar />
@@ -28,9 +37,9 @@ export default function WalletOfferPage() {
 
       <div className="flex w-full flex-col items-center gap-[24px] p-[24px]">
         <div className="flex w-full flex-col items-center gap-[16px] py-[12px]">
-          <IssuerBlock />
-          <WalletHeading>{c.heading}</WalletHeading>
-          <WalletLead>{c.body}</WalletLead>
+          <IssuerBlock subline={cred.issuerSubline} />
+          <WalletHeading size={o.headingSize}>{o.heading}</WalletHeading>
+          <WalletLead>{o.body}</WalletLead>
         </div>
 
         {/* 6240:54983 */}
@@ -40,12 +49,10 @@ export default function WalletOfferPage() {
           data-node-id="6240:54983"
         >
           <div className="flex items-center gap-[12px]">
-            <span className="shrink-0">
-              <WalletVcGlyph />
-            </span>
+            <span className="shrink-0">{o.icon === "tasks" ? <WalletTasksGlyph /> : <WalletVcGlyph />}</span>
             <span className="flex flex-col items-start gap-[2px]">
-              <span style={WALLET_TYPE.cardTitle}>{c.cardTitle}</span>
-              <span style={WALLET_TYPE.cardDesc}>{c.cardSubtitle}</span>
+              <span style={WALLET_TYPE.cardTitle}>{o.cardTitle}</span>
+              <span style={WALLET_TYPE.cardDesc}>{o.cardSubtitle}</span>
             </span>
           </div>
           <WalletStatusButton status="viewed" href={FLOW3_ROUTES.review}>

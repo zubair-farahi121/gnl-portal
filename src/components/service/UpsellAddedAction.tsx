@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useDemoState } from "@/lib/demo-state";
 import { UPSELL_ADDED_LABEL } from "@/lib/data/flow3";
+import type { CredentialKind } from "@/lib/mock-issuer";
 
 /*
  * FLOW3_BRIEF.md §10 item 7 (P1) — the "Skip the paper copy" upsell after the
@@ -15,20 +16,27 @@ import { UPSELL_ADDED_LABEL } from "@/lib/data/flow3";
  *
  * Reads the WALLET's record (`cardIssuedAt`) after mount, like every store
  * reader: the prerendered page always shows "Add to wallet".
+ *
+ * Flow 4 (2026-10-14): `kind` picks whose record — the StudentAidNL panel
+ * passes "studentaid" (`noaIssuedAt`), so with the flag on each panel would
+ * reflect its own credential. Same flag, still OFF.
  */
 export function UpsellAddedAction({
   href,
   label,
   className,
   nodeId,
+  kind = "driver-vehicle",
 }: {
   href: string;
   label: string;
   className: string;
   nodeId: string;
+  kind?: CredentialKind;
 }) {
-  const { walletCardIssuedAt } = useDemoState();
-  if (walletCardIssuedAt) {
+  const { walletIssued } = useDemoState();
+  const added = walletIssued.some((c) => c.kind === kind);
+  if (added) {
     return (
       <button
         type="button"

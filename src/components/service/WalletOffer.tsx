@@ -6,14 +6,20 @@ import Link from "next/link";
 
 import { showDemoToast } from "@/components/ui/DemoToast";
 import { useDemoState } from "@/lib/demo-state";
-import { C1_COPY, C1_STATUS, WALLET_WINDOW, desktopState, type DesktopState } from "@/lib/data/flow3";
+import { C1_CONTENT, type C1Content } from "@/lib/data/credentials";
+import { C1_STATUS, WALLET_WINDOW, desktopState, type DesktopState } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import {
+  DEFAULT_KIND,
   OFFER_TTL_MS,
   createOffer,
   isWaiting,
+  latestOfKind,
   peekCurrentOffer,
+  peekOfferOfKind,
+  selectOffer,
   subscribe,
+  type CredentialKind,
   type CredentialOffer,
 } from "@/lib/mock-issuer";
 import { qrMatrix, walletOfferUrl } from "@/lib/qr";
@@ -43,9 +49,27 @@ import { ensureRoom, laptopSync, qrBase, watchRoom } from "@/lib/remote-sync";
  * store is read after mount (the demo-wide rule, src/lib/demo-state.tsx), so
  * the first client render matches, and the offer arrives as an update.
  * ====================================================================
+ *
+ * ====================================================================
+ * PER CREDENTIAL — FLOW 4, 2026-10-14. The provider takes the `kind` of
+ * credential its page offers (Flow 3: the vehicle certificate, the default;
+ * Flow 4: StudentAidNL's notice of assessment) and works on THAT kind's offer:
+ *   - "usable" is judged on the newest offer OF THIS KIND, not on whatever
+ *     offer is current — so opening Flow 4's page after Flow 3 makes a notice
+ *     of assessment offer instead of showing the vehicle one;
+ *   - a usable offer of this kind that is not the current one is made current
+ *     again (`selectOffer`), because the wallet works on the current offer;
+ *   - the QR, state line and countdown follow this kind's offer.
+ * With only vehicle offers in the store (every Flow 3 run) each of these is
+ * exactly the old rule.
+ * ====================================================================
  */
 
 type OfferCtx = {
+  /** This page's credential — copy for the QR label, buttons and toast. */
+  content: C1Content;
+  /** This page's credential kind (a prop, so known at prerender too). */
+  kind: CredentialKind;
   offer: CredentialOffer | null;
   /** Phone path: the shared room the QR names, or null (phone mode off / static build). */
   sync: { base: string; room: string } | null;
@@ -87,8 +111,16 @@ const C1_CSS = `
 }
 `;
 
-export function WalletOfferProvider({ children }: { children: React.ReactNode }) {
-  const { ready, walletOffer } = useDemoState();
+export function WalletOfferProvider({
+  children,
+  kind = DEFAULT_KIND,
+}: {
+  children: React.ReactNode;
+  /** Which credential this C1 page offers. Default: Flow 3's vehicle certificate. */
+  kind?: CredentialKind;
+}) {
+  const { ready, walletOffer, walletOffers } = useDemoState();
+  const content = C1_CONTENT[kind];
   const [offer, setOffer] = useState<CredentialOffer | null>(null);
   const [now, setNow] = useState<number | null>(null);
   const creating = useRef(false);
@@ -96,18 +128,35 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
   const make = useCallback(() => {
     if (creating.current) return;
     creating.current = true;
-    void createOffer().finally(() => {
+    void createOffer(kind).finally(() => {
       creating.current = false;
     });
-  }, []);
+  }, [kind]);
 
-  /* On open: reuse a usable offer, else create one. Also re-runs after a Reset
-     in another window (the offer vanishes -> a new one is made). */
+  /* On open: reuse a usable offer OF THIS KIND, else create one. Also
+     re-runs after a Reset in another window (the offer vanishes -> a new one
+     is made). Re-checked whenever the current offer changes. */
   const currentId = walletOffer?.id ?? null;
   useEffect(() => {
     if (!ready) return;
-    if (!isUsable(peekCurrentOffer(), Date.now())) make();
-  }, [ready, currentId, make]);
+    if (!isUsable(peekOfferOfKind(kind), Date.now())) make();
+  }, [ready, currentId, kind, make]);
+
+  /* ONCE, on open (Flow 4): if this kind's usable offer is not the current
+     one — the other credential's C1 page ran since — point the wallet back
+     at it. Only on open, never on later changes, so two C1 pages open in two
+     windows cannot take the current offer back and forth for ever. */
+  const reselected = useRef(false);
+  useEffect(() => {
+    if (!ready || reselected.current) return;
+    reselected.current = true;
+    const mine = peekOfferOfKind(kind);
+    if (isUsable(mine, Date.now()) && peekCurrentOffer()?.id !== mine.id) selectOffer(mine.id);
+  }, [ready, kind]);
+
+  /* This kind's newest offer — what the QR, the state line and the countdown
+     follow. For Flow 3 alone it is always the current offer, as before. */
+  const mineId = latestOfKind(walletOffers, kind)?.id ?? null;
 
   /* Same-device return (brief §8): the wallet's "◀ MyGovNL" lands here with
      ?from=wallet — announce the result with the GNL toast, then drop the
@@ -117,17 +166,17 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
     const params = new URLSearchParams(window.location.search);
     if (params.get("from") !== "wallet") return;
     window.history.replaceState(null, "", window.location.pathname);
-    if (peekCurrentOffer()?.status === "issued") showDemoToast(C1_COPY.returnToast);
-  }, [ready]);
+    if (peekOfferOfKind(kind)?.status === "issued") showDemoToast(content.copy.returnToast);
+  }, [ready, kind, content]);
 
-  /* Listen to the current offer (brief §5: "The page listens to the offer"). */
+  /* Listen to this page's offer (brief §5: "The page listens to the offer"). */
   useEffect(() => {
-    if (!currentId) {
+    if (!mineId) {
       setOffer(null);
       return;
     }
-    return subscribe(currentId, setOffer);
-  }, [currentId]);
+    return subscribe(mineId, setOffer);
+  }, [mineId]);
 
   /*
    * THE PHONE PATH (2026-09-30, docs/PHONE_PATH.md). Only when the build is
@@ -183,8 +232,8 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
   }, [offer, waiting, now, remainingMs, make]);
 
   const value = useMemo<OfferCtx>(
-    () => ({ offer, sync, state: desktopState(offer?.status), remainingMs, newCode: make }),
-    [offer, sync, remainingMs, make],
+    () => ({ content, kind, offer, sync, state: desktopState(offer?.status), remainingMs, newCode: make }),
+    [content, kind, offer, sync, remainingMs, make],
   );
 
   return (
@@ -212,8 +261,8 @@ export function WalletOfferProvider({ children }: { children: React.ReactNode })
  * never moves.
  */
 export function OfferQr() {
-  const { offer, sync, state } = useOfferCtx();
-  const text = offer ? walletOfferUrl(offer.id, sync) : null;
+  const { content, offer, sync, state } = useOfferCtx();
+  const text = offer ? walletOfferUrl(offer.id, sync, offer.serviceId) : null;
   const qr = useMemo(() => (text ? qrMatrix(text) : null), [text]);
   const quiet = 4;
   const box = qr ? qr.size + quiet * 2 : 1;
@@ -223,13 +272,13 @@ export function OfferQr() {
     <a
       href={WALLET_WINDOW.href}
       target={WALLET_WINDOW.name}
-      aria-label="QR code to add your vehicle registration certificate to your wallet. Opens the wallet in a new window."
+      aria-label={`${content.qrLabel}. Opens the wallet in a new window.`}
       className="relative flex h-[196.5px] w-[220.4px] cursor-pointer items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004b87]"
       data-wallet-qr="true"
       data-qr-text={text ?? ""}
       data-qr-url={text ?? ""}
       data-offer-id={offer?.id ?? ""}
-      data-node-id="6220:86458"
+      data-node-id={content.nodes.qr}
       onClick={(e) => {
         e.preventDefault();
         const w = window.open(WALLET_WINDOW.href, WALLET_WINDOW.name, WALLET_WINDOW.features);
@@ -248,7 +297,7 @@ export function OfferQr() {
             height="196.5"
             shapeRendering="crispEdges"
             role="img"
-            aria-label="QR code to add your vehicle registration certificate to your wallet"
+            aria-label={content.qrLabel}
             className="block transition-opacity duration-300"
             style={{ opacity: dim }}
             data-qr-modules={qr.size}
@@ -289,13 +338,13 @@ export function OfferQr() {
  * animation only clips how much of the "…" is visible.
  */
 export function OfferStateLine() {
-  const { state } = useOfferCtx();
+  const { content, state } = useOfferCtx();
   const text = C1_STATUS[state];
   const base = text.endsWith("…") ? text.slice(0, -1) : text;
   return (
     <p
       className="w-full text-center text-[16px] font-light leading-[1.5] text-[color:var(--gnl-text,#5f6368)] [word-break:break-word]"
-      data-node-id="6220:86460"
+      data-node-id={content.nodes.state}
       data-wallet-status={state}
       role="status"
       aria-live="polite"
@@ -331,24 +380,25 @@ function mmss(ms: number): string {
  * link #004b87 underlined.
  */
 export function OfferExpiryLine() {
-  const { remainingMs, newCode } = useOfferCtx();
+  const { content, remainingMs, newCode } = useOfferCtx();
+  const copy = content.copy;
   return (
     <p
       className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
-      data-node-id="6220:86469"
+      data-node-id={content.nodes.expiry}
     >
-      {C1_COPY.expiry.before}{" "}
+      {copy.expiry.before}{" "}
       <span className="font-bold tabular-nums" data-wallet-countdown="true">
         {mmss(remainingMs)}
       </span>
-      {C1_COPY.expiry.after} {C1_COPY.expiry.trouble}{" "}
+      {copy.expiry.after} {copy.expiry.trouble}{" "}
       <button
         type="button"
         onClick={newCode}
         data-wallet-new-code="true"
         className="cursor-pointer text-[16px] font-normal leading-[1.5] text-[#004b87] underline decoration-solid decoration-from-font [text-decoration-skip-ink:none] [text-underline-position:from-font] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004b87]"
       >
-        {C1_COPY.expiry.link}
+        {copy.expiry.link}
       </button>
     </p>
   );
@@ -365,19 +415,23 @@ export function OfferExpiryLine() {
  * mode, brief §3), with this page's offer.
  */
 export function SameDeviceButtons() {
-  const { offer } = useOfferCtx();
-  const href = `${FLOW3_ROUTES.start}?${offer ? `offer=${encodeURIComponent(offer.id)}&` : ""}from=mygovnl`;
+  const { content, kind, offer } = useOfferCtx();
+  const n = content.phoneNodes;
+  /* `kind=` only for Flow 4 (Flow 3's link is unchanged): before the offer
+     exists (its first 300–800 ms) the wallet still opens the right credential. */
+  const kindParam = kind !== DEFAULT_KIND ? `kind=${encodeURIComponent(kind)}&` : "";
+  const href = `${FLOW3_ROUTES.start}?${offer ? `offer=${encodeURIComponent(offer.id)}&` : ""}${kindParam}from=mygovnl`;
   const cls =
     "box-border flex h-[48px] w-full items-center justify-center gap-[10px] rounded-[8px] px-[16px] py-[12px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004b87]";
   return (
-    <div className="flex w-full flex-col items-start gap-[12px]" data-node-id="6220:86499">
-      <Link href={href} className={`${cls} bg-black`} data-wallet-same-device="apple" data-node-id="6220:86500">
+    <div className="flex w-full flex-col items-start gap-[12px]" data-node-id={n?.buttons}>
+      <Link href={href} className={`${cls} bg-black`} data-wallet-same-device="apple" data-node-id={n?.apple}>
         <img src="/assets/flow3/apple-logo-white.png" alt="" width={20} height={24} className="block h-[24px] w-[20px] object-contain" />
-        <span className="whitespace-nowrap text-[15px] font-bold leading-[normal] text-white">{C1_COPY.addToApple}</span>
+        <span className="whitespace-nowrap text-[15px] font-bold leading-[normal] text-white">{content.copy.addToApple}</span>
       </Link>
-      <Link href={href} className={`${cls} bg-[#1f1f1f]`} data-wallet-same-device="google" data-node-id="6220:86503">
+      <Link href={href} className={`${cls} bg-[#1f1f1f]`} data-wallet-same-device="google" data-node-id={n?.google}>
         <img src="/assets/flow3/google-wallet-logo.png" alt="" width={24} height={24} className="block size-[24px]" />
-        <span className="whitespace-nowrap text-[15px] font-bold leading-[normal] text-white">{C1_COPY.addToGoogle}</span>
+        <span className="whitespace-nowrap text-[15px] font-bold leading-[normal] text-white">{content.copy.addToGoogle}</span>
       </Link>
     </div>
   );

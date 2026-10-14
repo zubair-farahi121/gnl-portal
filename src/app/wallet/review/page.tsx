@@ -1,5 +1,7 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element -- static export, unoptimized images */
-import { WalletHeader, WalletScreen, WalletStatusButton } from "@/components/wallet/WalletClient";
+import { WalletHeader, WalletScreen, WalletStatusButton, useWalletCredential } from "@/components/wallet/WalletClient";
 import { IssuerBlock, WalletActions, WalletHeading, WalletStatusBar } from "@/components/wallet/WalletUi";
 import { WALLET_COPY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
@@ -28,16 +30,26 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_TYPE } from "@/lib/data/wallet-to
  *                wording)
  *   actions      "Add to wallet" (Figma "Accept", renamed 2026-09-30) -> `accepted`, arms W-06, W-06
  *                "Cancel" (Figma "Decline", renamed 2026-09-30)  -> `declined`, W-01
+ *
+ * FLOW 4 (2026-10-14) — Figma 6412:86558 (393 x 2128), the notice of
+ * assessment: the issuer sub-line; the dark card drawn 188 tall with
+ * "StudentAidNL" 8 px under the GNL mark (6420:95310); 19 rows; its own
+ * consent sentence, quoting "Add to wallet" (Figma quotes "Accept"). Same
+ * buttons as Flow 3 (Figma "Accept" / "Decline" -> "Add to wallet" /
+ * "Cancel", decision 2). All from the current offer; a vehicle offer (or
+ * none) renders exactly what it did.
  */
 export default function WalletReviewPage() {
   const c = WALLET_COPY.review;
+  const cred = useWalletCredential();
+  const r = cred.review;
   return (
     <WalletScreen screen="W5" nodeId="6240:55097">
       <WalletStatusBar />
       <WalletHeader back={FLOW3_ROUTES.offer} progress={WALLET_PROGRESS.review} />
 
       <div className="flex w-full flex-col items-start gap-[20px] px-[24px] pt-[8px]">
-        <IssuerBlock gap={12} />
+        <IssuerBlock gap={12} subline={cred.issuerSubline} />
 
         {/* Headings 6345:12128 */}
         <WalletHeading align="left">{c.heading}</WalletHeading>
@@ -45,54 +57,73 @@ export default function WalletReviewPage() {
         {/* 6345:12131 — the certificate card */}
         <div
           className="flex w-full flex-col items-center justify-center gap-[16px] p-[24px] text-center"
-          style={{ background: WALLET_COLOR.brand, borderRadius: "20px", color: "#ffffff" }}
+          style={{
+            background: WALLET_COLOR.brand,
+            borderRadius: "20px",
+            color: "#ffffff",
+            ...(r.cardMinHeight ? { minHeight: r.cardMinHeight } : {}),
+          }}
           data-node-id="6345:12131"
         >
-          <img
-            src="/assets/flow3/gnl-crest-wordmark-white.svg"
-            alt="Government of Newfoundland and Labrador"
-            width={72}
-            height={36}
-            className="block h-[36px] w-[72px] object-contain"
-            data-node-id="6345:12133"
-          />
+          {r.cardSubline ? (
+            /* Frame 14682 6420:95310 — the mark, then the service, 8 px apart. */
+            <div className="flex flex-col items-center gap-[8px]">
+              <img
+                src="/assets/flow3/gnl-crest-wordmark-white.svg"
+                alt="Government of Newfoundland and Labrador"
+                width={72}
+                height={36}
+                className="block h-[36px] w-[72px] object-contain"
+              />
+              <p style={{ fontSize: "14px", fontWeight: 300, lineHeight: 1.2 }}>{r.cardSubline}</p>
+            </div>
+          ) : (
+            <img
+              src="/assets/flow3/gnl-crest-wordmark-white.svg"
+              alt="Government of Newfoundland and Labrador"
+              width={72}
+              height={36}
+              className="block h-[36px] w-[72px] object-contain"
+              data-node-id="6345:12133"
+            />
+          )}
           <p style={{ fontSize: "20px", fontWeight: 600, lineHeight: 1.5 }} data-node-id="6345:12850">
-            {c.cardTitle}
+            {r.cardTitle}
           </p>
         </div>
 
         <p className="w-full" style={WALLET_TYPE.body} data-node-id="6345:12851">
-          {c.intro}
+          {r.intro}
         </p>
 
         {/* 6345:12852 — the rows. A <dl>: they are label / value pairs. */}
         <dl className="flex w-full flex-col" data-wallet-rows="true">
-          {c.rows.map((r, i) => (
+          {r.rows.map((row, i) => (
             <div
-              key={r.label}
+              key={row.label}
               className="flex w-full flex-col items-start gap-[2px] py-[12px]"
-              style={i < c.rows.length - 1 ? { borderBottom: `1px solid ${WALLET_COLOR.line}` } : undefined}
+              style={i < r.rows.length - 1 ? { borderBottom: `1px solid ${WALLET_COLOR.line}` } : undefined}
             >
-              <dt style={WALLET_TYPE.rowLabel}>{r.label}</dt>
+              <dt style={WALLET_TYPE.rowLabel}>{row.label}</dt>
               <dd className="[word-break:break-word]" style={WALLET_TYPE.rowValue}>
-                {r.value}
+                {row.value}
               </dd>
             </div>
           ))}
         </dl>
 
         <p className="w-full" style={WALLET_TYPE.body} data-wallet-consent="true" data-node-id="6354:87423">
-          {c.consent}
+          {r.consent}
         </p>
       </div>
 
       {/* 6345:12881 — at the end of the content */}
       <WalletActions>
         <WalletStatusButton status="accepted" href={FLOW3_ROUTES.connecting} armConnect>
-          {c.accept}
+          {r.accept}
         </WalletStatusButton>
         <WalletStatusButton status="declined" href={FLOW3_ROUTES.walletHome} variant="secondary">
-          {c.decline}
+          {r.decline}
         </WalletStatusButton>
       </WalletActions>
     </WalletScreen>

@@ -14,6 +14,10 @@
  *       phone (W-09 shows 2 cards first) opens it and walks W-03…W-08; the
  *       laptop must go Waiting -> Adding -> Added WITHOUT a reload; the
  *       phone's W-09 then shows 3 cards.
+ *   (n) FLOW 4 (2026-10-14) — the same for StudentAidNL's notice of
+ *       assessment: the phone must ACCEPT that offer shape, show Flow 4's
+ *       wallet copy and the wallet-PIN W-07, and the laptop must go Waiting
+ *       -> Adding -> Added.
  *   (r) DECLINE + RESET — the phone opens a fresh code and declines on W-03:
  *       the laptop goes back to "Waiting for scan…". Then Esc on the laptop
  *       deletes the room on the server (GET -> 404) and forgets it locally.
@@ -50,7 +54,7 @@ import { chromium } from 'playwright';
 const EXEC = process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const BASE = (process.env.DEMO_BASE_URL ?? 'http://127.0.0.1:4173').replace(/\/+$/, '');
 const STATIC_BASE = (process.env.STATIC_BASE_URL ?? '').replace(/\/+$/, '');
-const PARTS = new Set((process.env.PHONE_PARTS ?? 'o,a,r,b,c,p,d').split(',').map((s) => s.trim()));
+const PARTS = new Set((process.env.PHONE_PARTS ?? 'o,a,n,r,b,c,p,d').split(',').map((s) => s.trim()));
 const ROOM = '[a-z0-9]{32}';
 
 const results = [];
@@ -224,6 +228,88 @@ async function flow3() {
 
   ok(!realErrors(lap.errors).length, `a17 laptop console clean ${realErrors(lap.errors).join(' ;; ')}`);
   ok(!realErrors(phone.errors).length, `a18 phone console clean ${realErrors(phone.errors).join(' ;; ')}`);
+  await lap.ctx.close();
+  await phone.ctx.close();
+}
+
+/* ------------------------------------------------------------- (n) -- */
+/*
+ * FLOW 4 (2026-10-14) — the same two-device path for StudentAidNL's notice of
+ * assessment: the offer the phone receives is `studentaid` /
+ * `NoticeOfAssessment`, which the sync's sanitiser used to refuse (it only
+ * knew the vehicle certificate). Laptop on Flow 4's C1 page; the phone opens
+ * the QR and walks W-03..W-08 (wallet PIN, no SMS); the laptop goes Waiting ->
+ * Adding -> Added without a reload; the phone's W-09 has the notice on top.
+ */
+async function flow4() {
+  console.log('\n(n) Flow 4 — the notice-of-assessment QR scanned by a phone');
+  const lap = await device(LAPTOP);
+  const phone = await device(PHONE);
+  const d = lap.page;
+  const p = phone.page;
+  const status = () => d.locator('[data-wallet-status]').first().getAttribute('data-wallet-status');
+  const waitStatus = async (key, ms = 12000) =>
+    d
+      .waitForFunction((k) => document.querySelector('[data-wallet-status]')?.getAttribute('data-wallet-status') === k, key, { timeout: ms })
+      .then(() => true)
+      .catch(() => false);
+
+  await optIn(d);
+  await d.goto(BASE + '/services/studentaid/?verified=1', { waitUntil: 'networkidle' });
+  await d.getByRole('link', { name: 'Add to wallet', exact: true }).first().click();
+  await d.waitForURL('**/services/studentaid/wallet/');
+  await d
+    .waitForFunction(() => /&room=/.test(document.querySelector('[data-wallet-qr]')?.getAttribute('data-qr-url') ?? ''), null, { timeout: 10000 })
+    .catch(() => {});
+  const qr = d.locator('[data-wallet-qr]');
+  const url = (await qr.getAttribute('data-qr-url')) ?? '';
+  const offer = (await qr.getAttribute('data-offer-id')) ?? '';
+  ok(
+    offer && new RegExp(`^${BASE}/wallet/start/\\?offer=${offer}&kind=studentaid&room=${ROOM}$`).test(url),
+    `n1 Flow 4's C1 QR targets <public url>/wallet/start/?offer=<id>&kind=studentaid&room=<room> (${url})`,
+  );
+  ok((await status()) === 'waiting', 'n2 the laptop starts on "Waiting for scan…"');
+  let navs = 0;
+  d.on('framenavigated', (f) => {
+    if (f === d.mainFrame()) navs++;
+  });
+
+  await p.goto(url, { waitUntil: 'load' });
+  await p.waitForURL('**/wallet/connect/', { timeout: 10000 }).catch(() => {});
+  ok(path(p) === '/wallet/connect/', `n3 the phone lands on W-03 (at ${path(p)})`);
+  await p.waitForTimeout(500);
+  const kind = await p.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('gnl-demo:v1') || '{}');
+    const id = s.wallet?.currentOfferId;
+    return id ? `${s.wallet.offers[id].serviceId}/${s.wallet.offers[id].credentialType}` : null;
+  });
+  ok(kind === 'studentaid/NoticeOfAssessment', `n4 the phone received the notice-of-assessment offer (${kind})`);
+  ok(
+    await p.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.').isVisible().catch(() => false),
+    'n5 the phone shows Flow 4\'s W-03 copy',
+  );
+  ok(await waitStatus('adding'), 'n6 the laptop hears the scan: "Adding to your wallet…"');
+  await hop(p, 'n7 W-03 Yes, connect', 'Yes, connect', '/wallet/offer/');
+  await hop(p, 'n8 W-04 View offer', 'View offer', '/wallet/review/');
+  await click(p, 'Add to wallet');
+  await p.waitForURL('**/wallet/code/', { timeout: 10000 }).catch(() => {});
+  ok(path(p) === '/wallet/code/', `n9 W-05 Add to wallet -> W-06 -> W-07 (at ${path(p)})`);
+  ok(await p.getByText('Enter your wallet PIN').first().isVisible().catch(() => false), 'n10 W-07 is the wallet-PIN screen');
+  await p.waitForTimeout(1300);
+  ok(!(await p.locator('[data-wallet-sms]').count()), 'n11 no SMS banner in wallet-PIN mode');
+  for (const k of ['1', '9', '7', '3', '5', '0']) await p.getByRole('button', { name: k, exact: true }).click();
+  await p.getByRole('button', { name: /Continue/ }).click();
+  await p.waitForURL('**/wallet/added/', { timeout: 8000 }).catch(() => {});
+  ok(path(p) === '/wallet/added/', `n12 any six digits -> W-08 (at ${path(p)})`);
+  ok(await waitStatus('added'), 'n13 the laptop hears the issue: "Added to your wallet"');
+  ok(navs === 0, `n14 the laptop never navigated (${navs})`);
+  await p.getByRole('link', { name: /Go to Wallet/ }).click();
+  await p.waitForURL('**/wallet/cards/', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(500);
+  const top = await p.locator('[data-wallet-cards] > *').first().getAttribute('data-wallet-card');
+  ok(top === 'notice-of-assessment', `n15 the notice of assessment is the phone's top card (${top})`);
+  ok(!realErrors(lap.errors).length, `n16 laptop console clean ${realErrors(lap.errors).join(' ;; ')}`);
+  ok(!realErrors(phone.errors).length, `n17 phone console clean ${realErrors(phone.errors).join(' ;; ')}`);
   await lap.ctx.close();
   await phone.ctx.close();
 }
@@ -622,6 +708,7 @@ try {
   if (PARTS.has('d')) await api();
   if (PARTS.has('o')) await optInCheck();
   if (PARTS.has('a')) await flow3();
+  if (PARTS.has('n')) await flow4();
   if (PARTS.has('r')) await declineAndReset();
   if (PARTS.has('b')) {
     await idv('driver-vehicle');

@@ -186,6 +186,24 @@ const ROUTES = [
   ['wallet-cards', '/wallet/cards/'],
   // The P1 presenter stage (hidden; Shift+W). Two iframes, scaled to fit.
   ['wallet-stage', '/demo/wallet-stage/'],
+  // ====================================================================
+  // FLOW 4 — "Issuance of Notice of Assessment" (StudentAidNL), added
+  // 2026-10-14. Its C1 page (and its phone layout below 768), the stage
+  // showing it, and the SAME wallet screens W-03..W-09 holding a notice-of-
+  // assessment offer — the third element is a store seeded before the page
+  // loads (see `seedFor`), because the wallet picks its copy from the current
+  // offer, not from the URL. The 19-row W-05 and the expanded W-09 card are
+  // the ones to watch at 320. (The Trusted StudentAidNL page with its new
+  // panel is `b-service-verified`, above.)
+  // ====================================================================
+  ['flow4-c1', '/services/studentaid/wallet/'],
+  ['flow4-stage', '/demo/wallet-stage/?c=studentaid'],
+  ['flow4-wallet-connect', '/wallet/connect/', 'scanned'],
+  ['flow4-wallet-offer', '/wallet/offer/', 'connected'],
+  ['flow4-wallet-review', '/wallet/review/', 'viewed'],
+  ['flow4-wallet-code', '/wallet/code/', 'accepted'],
+  ['flow4-wallet-added', '/wallet/added/', 'issued'],
+  ['flow4-wallet-cards', '/wallet/cards/', 'issued'],
   // THE PHONE PATH (added 2026-10-04): the presenter's switch (it shows "needs
   // the demo server" on a static build) and the phone's last screen.
   ['demo-phone', '/demo/phone/'],
@@ -197,6 +215,36 @@ const ROUTES = [
   // because it is the only route here that nothing else navigates to.
   ['not-found', '/nope/'],
 ];
+
+/**
+ * Flow 4: a store holding a notice-of-assessment offer in `status` (issued ->
+ * the card is on the phone too, after Flow 3's, so W-09 shows all four).
+ * Written once per context, before the first page script runs.
+ */
+function seedFor(status) {
+  const now = new Date().toISOString();
+  const later = new Date(Date.now() + 8 * 60 * 1000).toISOString();
+  const noa = { id: 'respnoa001', serviceId: 'studentaid', credentialType: 'NoticeOfAssessment', status, createdAt: now, expiresAt: later };
+  const wallet = { currentOfferId: noa.id, offers: { [noa.id]: noa } };
+  if (status === 'issued') {
+    Object.assign(noa, { issuedAt: now, scannedAt: now });
+    wallet.noaIssuedAt = now;
+    wallet.cardIssuedAt = now;
+  }
+  return JSON.stringify({ v: 1, services: { studentaid: { status: 'onboarded', step: 'ready' } }, wallet });
+}
+
+async function seeded(ctx, status) {
+  if (!status) return;
+  await ctx.addInitScript((s) => {
+    try {
+      if (!sessionStorage.getItem('gnl-demo:resp-seeded')) {
+        localStorage.setItem('gnl-demo:v1', s);
+        sessionStorage.setItem('gnl-demo:resp-seeded', '1');
+      }
+    } catch { /* ignore */ }
+  }, seedFor(status));
+}
 
 const WIDTHS = [320, 375, 393, 768, 1024, 1280, 1440, 1920];
 const SHOT_WIDTHS = [320, 390, 768, 1024, 1280];
@@ -233,9 +281,10 @@ const browser = await chromium.launch({ executablePath: EXEC, args: QUIET_ARGS }
 const fails = [];
 const consoleIssues = [];
 
-for (const [name, route] of ROUTES) {
+for (const [name, route, seed] of ROUTES) {
   for (const w of WIDTHS) {
     const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1 });
+    await seeded(ctx, seed);
     const page = await ctx.newPage();
     const msgs = [];
     page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') msgs.push(`${m.type()}: ${m.text()}`); });
@@ -300,6 +349,7 @@ for (const [name, route] of ROUTES) {
   }
   for (const w of SHOT_WIDTHS) {
     const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1 });
+    await seeded(ctx, seed);
     const page = await ctx.newPage();
     await page.goto(BASE + route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(250);

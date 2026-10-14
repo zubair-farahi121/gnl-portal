@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
+import { VcUpsellPanel } from "@/components/service/LinkedItemCard";
 import { ASSETS } from "@/lib/assets";
 import { isTrusted, useDemoState } from "@/lib/demo-state";
 import {
@@ -14,7 +15,9 @@ import {
   SERVICE_HEADER,
   SERVICE_HEADER_VERIFIED,
   VERIFICATION_CARD,
+  type VcUpsell,
 } from "@/lib/data/driver-vehicle";
+import { NOA_UPSELL } from "@/lib/data/flow4";
 import {
   STUDENTAID_CONTACT,
   STUDENTAID_PORTAL_ROW,
@@ -120,6 +123,11 @@ type ServicePageContent = {
   scopes: readonly StudentAidScope[];
   contact: typeof STUDENTAID_CONTACT;
   portalRow: typeof STUDENTAID_PORTAL_ROW;
+  /**
+   * FLOW 4 (2026-10-14) — the wallet panel under the portal row, Trusted
+   * state only. See the FLOW 4 note on ContentLeft.
+   */
+  walletUpsell?: VcUpsell;
 };
 
 const CONTENT: Partial<Record<ServiceId, ServicePageContent>> = {
@@ -127,6 +135,7 @@ const CONTENT: Partial<Record<ServiceId, ServicePageContent>> = {
     scopes: STUDENTAID_SCOPES,
     contact: STUDENTAID_CONTACT,
     portalRow: STUDENTAID_PORTAL_ROW,
+    walletUpsell: NOA_UPSELL,
   },
 };
 
@@ -359,6 +368,24 @@ function ContentLeft({
       )}
 
       <PortalRow row={content.portalRow} trusted={trusted} />
+
+      {/*
+        FLOW 4's ENTRY — ADDED 2026-10-14. Figma 6408:84644
+        (StudentAidNL-service-page_trusted) draws "Skip retyping your funding
+        details" (6412:85602) 24 px under "Access the StudentAid Portal": Flow
+        3's "Skip the paper copy" panel (VcUpsellPanel), reused with
+        StudentAidNL's strings, its node ids and a link to Flow 4's C1 page.
+        Trusted state only, as drawn; the unverified PP-03 page is unchanged.
+
+        ONLY THE PANEL IS TAKEN FROM 6408:84644. That frame is a newer Trusted
+        StudentAidNL design than this page (PP-23, derived 2026-09-28 before
+        any Trusted frame existed) and differs from it outside the panel —
+        subtitle copy, badge position, a chevron instead of the external-link
+        glyph, a "Remove consent" button in Data & Privacy. Those are NOT
+        redesigned here; they are listed in DEMO_AUDIT.md "Flow 4" for a
+        decision. 860 wide at 1440 here; 860 wide in the frame too.
+      */}
+      {trusted && content.walletUpsell ? <VcUpsellPanel upsell={content.walletUpsell} kind="studentaid" /> : null}
     </div>
   );
 }

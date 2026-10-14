@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { FLOW, FLOW_3, FLOW_B } from "@/lib/flow";
+import { FLOW, FLOW_3, FLOW_4, FLOW_B } from "@/lib/flow";
+import { stageRoute } from "@/lib/data/credentials";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { useDemoState } from "@/lib/demo-state";
+import { offerKind } from "@/lib/mock-issuer";
 
 /** Wallet paths whose own close ✕ answers Escape (see below). */
 const WALLET_ESC_CLOSES: ReadonlySet<string> = new Set([
@@ -33,7 +35,8 @@ function isTypingTarget(t: EventTarget | null): t is HTMLElement {
  *   ArrowRight / ArrowLeft — step through the flow
  *   Escape                 — reset to a clean unverified state (on wallet
  *                            screens with a close ✕: that ✕ — Flow 3)
- *   Shift+W                — the Flow 3 presenter stage (/demo/wallet-stage/)
+ *   Shift+W                — the Flow 3 presenter stage (/demo/wallet-stage/);
+ *                            from a StudentAidNL page, Flow 4's (?c=studentaid)
  *
  * NONE of these fire while focus is in a text field (input, textarea, select
  * or contenteditable) — ADDED 2026-09-30 with the login page's real inputs.
@@ -48,7 +51,9 @@ export function DemoNav() {
    * `gnl-demo:v1`, the other being the `/reset` route. The header's Log Out
    * deliberately does NOT — see §7.1 and BtnSignOut.
    */
-  const { resetAll } = useDemoState();
+  const { resetAll, walletOffer } = useDemoState();
+  /* Flow 4: which credential the wallet is working on (see the FLOW_4 note). */
+  const walletKind = offerKind(walletOffer);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -74,12 +79,22 @@ export function DemoNav() {
        * changes behaviour (the shared Trusted page resolves to FLOW, as it
        * always did). See the FLOW_3 note in src/lib/flow.ts.
        */
+      /*
+       * FLOW_4 — added 2026-10-14, by the same rule, for a path in FLOW_4 and
+       * in none of the older lists (Flow 4's C1 page); and for the shared
+       * wallet paths WHILE the current offer is a notice of assessment.
+       * With a vehicle offer, or none, the wallet resolves to FLOW_3 exactly
+       * as before. See the FLOW_4 note in src/lib/flow.ts.
+       */
+      const older = at(FLOW) >= 0 || at(FLOW_B) >= 0;
       const list: readonly string[] =
         at(FLOW) < 0 && at(FLOW_B) >= 0
           ? FLOW_B
-          : at(FLOW) < 0 && at(FLOW_3) >= 0
-            ? FLOW_3
-            : FLOW;
+          : !older && at(FLOW_4) >= 0 && (at(FLOW_3) < 0 || walletKind === "studentaid")
+            ? FLOW_4
+            : at(FLOW) < 0 && at(FLOW_3) >= 0
+              ? FLOW_3
+              : FLOW;
       const i = at(list);
       if (e.key === "ArrowRight" && i >= 0 && i < list.length - 1) {
         router.push(list[i + 1]);
@@ -95,7 +110,18 @@ export function DemoNav() {
        */
       if (e.key === "W" && e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
         // Typing is already ruled out by the guard at the top.
-        router.push(FLOW3_ROUTES.stage);
+        // Flow 4 (2026-10-14): from a StudentAidNL page, the stage shows
+        // Flow 4's C1 page. From a wallet or demo page, the bare path, which
+        // follows the current offer (see WalletStage). From anywhere else,
+        // Flow 3's page EXPLICITLY, so a Flow 4 run earlier in the session
+        // can never turn the Driver and Vehicle stage into Flow 4's.
+        router.push(
+          pathname.startsWith("/services/studentaid/")
+            ? stageRoute("studentaid")
+            : pathname.startsWith("/wallet/") || pathname.startsWith("/demo/")
+              ? FLOW3_ROUTES.stage
+              : `${FLOW3_ROUTES.stage}?c=driver-vehicle`,
+        );
         return;
       }
       /*
@@ -125,7 +151,7 @@ export function DemoNav() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pathname, router, resetAll]);
+  }, [pathname, router, resetAll, walletKind]);
 
   return null;
 }

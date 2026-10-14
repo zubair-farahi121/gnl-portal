@@ -1308,3 +1308,112 @@ folder) and the team meeting's wording and persona decisions.
 | `npm run clicks` | exit 0 — "Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted) and Flow 3 (…) intact at 1440 / 768 / 390" |
 | `npm run camera` | exit 0 — "camera gate: live path OK, tracks cleaned up, mock forceable" |
 | `npm run responsive` | exit 0 — 56 routes; "none — no horizontal scroll at any width on any route"; console issues: none |
+
+---
+
+## Flow 4 — "Issuance of Notice of Assessment" (StudentAidNL), 2026-10-14
+
+Branch `flow4`. User: "ok let implment this 4th flow also where it shoud be".
+Figma section **6422:98300**, read with `get_metadata` / `get_design_context` /
+`get_screenshot` / `get_variable_defs` only — nothing in Figma was changed.
+The two Yoti frames with a real person's face were not opened.
+
+Flow 4 is Flow 3 with a different credential: Trusted StudentAidNL → C1 page
+with a QR → the **same wallet app** W-01…W-09 → "Added to your wallet".
+
+### What was built
+
+| Piece | Where | Figma |
+|---|---|---|
+| Entry panel "Skip retyping your funding details" + `New`, **Add to wallet** | Trusted StudentAidNL (`/services/studentaid/?verified=1`), under "Access the StudentAid Portal" — Flow 3's `VcUpsellPanel`, exported and reused | 6412:85602 in 6408:84644 |
+| C1 "Add your notice of assessment to your wallet" | `/services/studentaid/wallet/` (`src/app/services/[serviceId]/wallet/`, prerendered for `studentaid` only) | 6412:85663 (waiting), 6415:90752 / 6415:91577 (adding) |
+| C1 page body | `src/components/service/WalletOfferPage.tsx` — moved out of Flow 3's page and driven by a `C1Content` per credential; Flow 3's route renders it with its old strings and node ids | — |
+| Wallet copy per credential | `src/lib/data/credentials.ts` (`WALLET_CREDENTIALS`, `C1_CONTENT`), Flow 4's strings in `src/lib/data/flow4.ts`; the wallet reads the **current offer's** kind (`useWalletCredential`) | W-03 6412:86796, W-04 6412:85809, W-05 6412:86558, W-07 6412:86737, W-08 6412:86625, W-09 6412:86648 |
+| Offer kind | `src/lib/mock-issuer.ts`: `serviceId` `driver-vehicle` / `studentaid`, `credentialType` `VehicleRegistrationCertificate` / `NoticeOfAssessment`; `createOffer(kind)`; ONE offer per kind is kept (`withOffer`) | — |
+| Issued state | `wallet.noaIssuedAt` beside Flow 3's unchanged `wallet.cardIssuedAt`; `walletIssued` newest first; `resetAll` clears both (it drops the whole key) | — |
+| W-07 code mode per credential | vehicle certificate: `"sms"` (flow3.ts `CODE_MODE`, unchanged); notice of assessment: `"wallet_pin"`, any 6 digits, no SMS banner. The `wallet_pin` placeholders in flow3.ts are now Figma's copy (6412:86750 / 6412:86751) | 6412:86737 |
+| W-09 | every issued credential, newest on top and expanded, older ones collapsed (6412:86685), then Photo ID / Proof of age; count = 2 + issued (2→3, or 3→4 after Flow 3) | 6412:86648 |
+| Presenter stage | Shift+W on a StudentAidNL page → `/demo/wallet-stage/?c=studentaid` (Flow 4's C1 frame); no `c` → the current offer's kind, else Flow 3 as before | — |
+| Arrow keys | `FLOW_4` in `src/lib/flow.ts`: Flow 4's C1 ← Trusted StudentAidNL / → W-01; the shared wallet paths use FLOW_4 only while the current offer is a notice of assessment | — |
+| Phone path | `sanitizeWallet` accepts both offer shapes (kind and type must pair); applying a remote offer keeps the other credential's offer | — |
+
+Flow 3 renders exactly as before: with a vehicle offer, or none, every
+credential lookup returns Flow 3's existing constants. Proven by the three
+Flow 3 baselines at 0.000 %, plus a before/after pixel comparison of 23 extra
+Flow 3 / Flow A states (W-01…W-09 with and without a seeded vehicle offer,
+both ends of the long screens, C1 at 1440 and 390, Trusted Driver and Vehicle
+at 1440 and 390, the unverified StudentAidNL page) — all identical.
+
+### Deliberate deviations from Figma (team decisions, and every other one)
+
+| Where | Figma | Build | Why |
+|---|---|---|---|
+| Persona (W-05 6412:86595, W-09 6412:86678) | Jason Momoa | **Jason Moore**, from `DEMO_USER` | Decision 1 (as Flow 3) |
+| W-05 buttons (6412:86620 / 86621) | Accept / Decline | **Add to wallet / Cancel** | Decision 2 (as Flow 3) |
+| W-05 consent (6412:86617) | By selecting "Accept," … | By selecting "Add to wallet," … | Follows the renamed button |
+| C1 subtitle (6412:85672) | "…with Apple Wallet or Google Wallet…" | "…with your digital wallet…" | Decision 3 (as Flow 3); the Works-with marks stay |
+| W-07 | — | wallet PIN, any 6 digits | Decision 4 — Flow 3 keeps its SMS code |
+| W-09 "Issued …" (6412:86673) | Issued Aug 18, 2026 | Issued **today**, short month as drawn | Decision 5 (Figma dates are placeholders) |
+| W-09 vehicle card (6412:86690) | Issued October 31, 2026 | the day it was really added | Same rule |
+| W-01 (6412:86701) | no "Today" card; "3 cards total"; clock 11:34 | Flow 3's W-01 unchanged (Today card, live count, 9:41) | It is the same screen; Flow 3 must not change |
+| W-02 (6412:85792) | "…the **login** QR code…" | Flow 3's fixed hint | Same screen, same fix (FLOW3_BRIEF §10.1) |
+| Status bars | placeholder icon | Flow 3's real icons, 9:41 | Same app |
+| Flow 4 has no phone C1 frame | — | F3-03's layout with Flow 4's strings; a labelled notice-of-assessment stand-in image; "Get help adding your notice of assessment" (derived from F3-03's licence line) | Phone width must work |
+| Icons `Tasks_list`, `Checkmark_magnifying glass_screen`, `Graduation cap_screen`, `Eye` | component SVGs | drawn stand-ins on Figma's boxes; the C1 benefit icons in #004b87 (the frame binds no colour variable) | figma.com asset URLs are refused by this container's proxy — the repo's standing approach |
+| Trusted StudentAidNL page | 6408:84644 is a newer design of the whole page | **only the panel** was added | See the next table — reported, not redesigned |
+
+### Trusted StudentAidNL — 6408:84644 differs from the built page outside the panel
+
+The build's Trusted state (PP-23) was derived on 2026-09-28 when no Trusted
+frame existed. 6408:84644 now draws one. Not changed, for a decision:
+
+| | 6408:84644 | Build (PP-23) |
+|---|---|---|
+| Subtitle | two lines: "Continue to StudentAidNL" / "Select the link below to proceed to the StudentAidNL portal." | "View and manage your StudentAidNL services" |
+| Title row | title fills the row; Trusted badge and bell pushed to the right edge | badge and bell right after the title |
+| Portal row | white, #d0d5dd border, label #212326 not underlined, a 32 px chevron | white, label #004b87 underlined, external-link glyph |
+| Data & Privacy | body 16 px / 22; "Terms of Use" above the last divider; a grey **Remove consent** button | body 14 px; Terms of Use below the divider; no button |
+| Height | 1524 | 1450 |
+
+### Open questions (Flow 4)
+
+1. **Trusted StudentAidNL page** — adopt 6408:84644 in full (table above)? It
+   would move a Flow B screen; nothing else depends on it.
+2. **"Full-time" (W-05 6412:86610) vs "Full time" (W-09 6418:93848)** —
+   reproduced both.
+3. **W-05 "Issued: August 18, 2026"** (a data row, kept verbatim) next to
+   W-09's "Issued <today>" (decision 5) — two different issued dates on one
+   credential. Should the W-05 row also be today?
+4. **"Notice of assessment" capitalisation** — capital N in W-05's intro
+   (6412:86588) and W-08's body (6412:86642), lower case everywhere else.
+   Reproduced.
+5. **W-04 heading size** — Flow 4's is H4 28 px (6412:86522), Flow 3's is H3
+   36 px. Reproduced per credential.
+6. **Flow 3's Figma frames moved too** — the Flow 3 W-04 now shows "Driver and
+   Vehicle" under the issuer (6420:94595), a `Truck_delivery` icon and
+   "Verifiable digital credential" in lower case. Not applied: Flow 3 must
+   look exactly the same. Apply in a separate change?
+7. **Flow 4 phone layout** — no Figma frame; the derived help line and the
+   stand-in image need a designer's eye.
+8. **Real icon exports** for `Tasks_list` and the three C1 benefit icons
+   (drop-in swaps; drawn on Figma's boxes).
+9. **Hard reload of a mid-flow Flow 4 wallet screen** shows Flow 3's copy for
+   one frame before the store is read (the demo-wide hydration rule; client
+   navigations inside the wallet are not affected). Same trade-off as the
+   Trusted pages' first paint.
+
+### Gate results — 2026-10-14, final build of branch `flow4`
+
+| Gate | Result |
+|---|---|
+| `npm run build` | clean, **60 pages** (59 + `/services/studentaid/wallet/`) |
+| `npx tsc --noEmit` | clean |
+| `npm run shots && npm run diff` | 33 passed; **GATE: PASS — 0.000 % on all 33 frames** (the 25 existing, unchanged, plus 8 NEW Flow 4 frames — `design/baselines/PROVENANCE.md`). No existing frame was re-baselined |
+| `npm run clicks` | exit 0 — every Flow A / Flow B / Flow 3 check unchanged, plus Flow 4 at 1440 / 768 / 393, Flow 3 then Flow 4 (2 → 3 → 4 cards, one Esc resets both) and the Flow 4 stage |
+| `npm run camera` | exit 0 — "camera gate: live path OK, tracks cleaned up, mock forceable" |
+| `npm run responsive` | exit 0 against `server/demo-server.mjs` — **66 routes** (10 new), no horizontal scroll, no console issues. Against a plain `serve`, `/demo/phone/` logs its `/api/health` 404 (it probes for the demo server) — the same on `main`, not caused here |
+| `npm run phone` | **155/155 PASS** (demo-server + plain `serve` for static mode and parity), including the new part (n): Flow 4 over the room |
+
+Environment note: Turbopack refuses a `node_modules` that is a symlink pointing
+outside the project, so this worktree uses a hard-linked copy of the main
+checkout's `node_modules` (gitignored; nothing committed).

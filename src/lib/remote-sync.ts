@@ -10,7 +10,7 @@ import {
 } from "@/lib/demo-state";
 import { SERVICES, type ServiceId } from "@/lib/data/service-config";
 import { MOBILE_ROUTE } from "@/lib/data/phone-path";
-import type { CredentialOffer, OfferStatus } from "@/lib/mock-issuer";
+import { CREDENTIAL_TYPE, isCredentialKind, withOffer, type CredentialOffer, type OfferStatus } from "@/lib/mock-issuer";
 
 /* ====================================================================
  * REMOTE SYNC — "the phone path". ADDED 2026-09-30, docs/PHONE_PATH.md.
@@ -285,7 +285,14 @@ function walletMirror(store: DemoStore): WalletMirror {
   return id && offer ? { currentOfferId: id, offers: { [id]: offer } } : null;
 }
 
-/** Remote wallet -> a clean mirror, or `undefined` if it is not one. */
+/**
+ * Remote wallet -> a clean mirror, or `undefined` if it is not one.
+ *
+ * FLOW 4 (2026-10-14): an offer may be either credential the mock issuer
+ * makes — Flow 3's driver-vehicle / VehicleRegistrationCertificate or Flow
+ * 4's studentaid / NoticeOfAssessment — and the pair must be one of those
+ * (CREDENTIAL_TYPE). Anything else is still refused, field by field.
+ */
 function sanitizeWallet(v: unknown): WalletMirror | undefined {
   if (v === null || v === undefined) return null;
   if (typeof v !== "object") return undefined;
@@ -293,12 +300,12 @@ function sanitizeWallet(v: unknown): WalletMirror | undefined {
   if (typeof id !== "string" || !OFFER_ID_RE.test(id) || !offers || typeof offers !== "object") return undefined;
   const o = (offers as Record<string, unknown>)[id] as Record<string, unknown> | undefined;
   if (!o || typeof o !== "object") return undefined;
-  if (o.id !== id || o.serviceId !== "driver-vehicle" || o.credentialType !== "VehicleRegistrationCertificate") return undefined;
+  if (o.id !== id || !isCredentialKind(o.serviceId) || o.credentialType !== CREDENTIAL_TYPE[o.serviceId]) return undefined;
   if (!STATUSES.includes(o.status as OfferStatus) || !isIso(o.createdAt) || !isIso(o.expiresAt)) return undefined;
   const offer: CredentialOffer = {
     id,
-    serviceId: "driver-vehicle",
-    credentialType: "VehicleRegistrationCertificate",
+    serviceId: o.serviceId,
+    credentialType: CREDENTIAL_TYPE[o.serviceId],
     status: o.status as OfferStatus,
     createdAt: o.createdAt,
     expiresAt: o.expiresAt,
@@ -315,7 +322,11 @@ function applyWallet(remote: WalletMirror) {
   if (JSON.stringify(walletMirror(store)) === lastWallet) return;
   const wallet = { ...store.wallet };
   if (remote) {
-    wallet.offers = { ...remote.offers };
+    /* Flow 4: replace this credential's offer, keep the OTHER credential's
+       (`withOffer`) — so a phone running Flow 4 does not wipe Flow 3's issued
+       offer from the laptop. With one credential in play, as before: the
+       remote offer replaces the local one. */
+    wallet.offers = withOffer(store.wallet?.offers, remote.offers[remote.currentOfferId]);
     wallet.currentOfferId = remote.currentOfferId;
   } else {
     delete wallet.offers;

@@ -105,3 +105,30 @@ illustration box (24,444 → 369,789); nothing else on the frame moved.
 "Confirmation required" badge is now Bootstrap `lock-fill`, as the feedback
 brief lists, instead of the outline `lock` chosen on 2026-09-30. Differing
 pixels: the 8x7 glyph at 374,181 only.
+
+## Added 2026-10-14 — Flow 4 (eight NEW frames, nothing overwritten)
+
+Branch `flow4`, "Issuance of Notice of Assessment" (Figma section 6422:98300).
+`npm run baseline` reported eight `NEW` and every existing frame `unchanged`
+(byte-identical shots); the eight PNGs were written and this file was restored
+by hand, so the history above is kept. The 25 existing frames still diff at
+0.000%.
+
+| Frame | Node | Route / state |
+|---|---|---|
+| `studentaid-verified` | 6408:84644 | `/services/studentaid/?verified=1` — PP-23 + the new panel |
+| `wallet-c1-noa` | 6412:85663 | `/services/studentaid/wallet/` — QR and countdown masked |
+| `wallet-noa-connect` | 6412:86796 | W-03, seeded notice-of-assessment offer |
+| `wallet-noa-offer` | 6412:85809 | W-04, seeded |
+| `wallet-noa-review` | 6412:86558 | W-05 (top of the scroll), seeded |
+| `wallet-noa-code` | 6412:86737 | W-07 wallet-PIN mode, empty, seeded |
+| `wallet-noa-added` | 6412:86625 | W-08, seeded |
+| `wallet-noa-cards` | 6412:86648 | W-09 after Flow 3 + Flow 4 — 4 cards, seeded fixed dates |
+
+The six wallet frames load a seeded `gnl-demo:v1` store (`seed` in
+`design/frames.json`, applied by `tests/visual/screens.spec.ts`), because the
+wallet takes its copy from the current offer, not from the URL. Same caveat
+as every frame here: a picture of the build, compared by eye with the Figma
+screenshots, not a Figma export. `studentaid-verified` in particular freezes
+the page as BUILT: only its panel follows 6408:84644 — that frame differs from
+the derived PP-23 page outside the panel (see DEMO_AUDIT.md "Flow 4").

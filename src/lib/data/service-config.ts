@@ -410,6 +410,38 @@ export const FLOW3_ROUTES = {
 } as const;
 
 /**
+ * FLOW 4 — "Issuance of Notice of Assessment" (StudentAidNL). ADDED 2026-10-14.
+ * Figma section 6422:98300.
+ *
+ * ONE NEW PATH. The wallet is the SAME app as in Flow 3 (W-01..W-09 are the
+ * same screens, FLOW3_ROUTES above; only their copy differs, picked from the
+ * current offer's credential — src/lib/data/credentials.ts). What Flow 4 adds
+ * is its own C1 page, hanging off StudentAidNL for the same reasons Flow 3's
+ * hangs off Driver and Vehicle: the "Skip retyping your funding details"
+ * upsell sits on the Trusted StudentAidNL page, and the breadcrumb goes back
+ * there.
+ *
+ * A PLAIN PATH, NOT A `serviceRoutes()` KEY — the rule FLOW3_ROUTES.c1 states:
+ * adding `wallet` there would claim /services/driver-vehicle/wallet/ is built
+ * by the same page as this one, which it is not. The page itself is
+ * src/app/services/[serviceId]/wallet/, prerendered for `walletOfferParams()`
+ * only (the `[serviceId]` precedent: a dynamic sibling of the static
+ * driver-vehicle folder, which still serves Flow 3's C1 page unchanged).
+ */
+export const FLOW4_ROUTES = {
+  /** C1 "Add your notice of assessment to your wallet" — 6412:85663. */
+  c1: "/services/studentaid/wallet/",
+} as const;
+
+/**
+ * The services whose C1 wallet page `/services/[serviceId]/wallet/` builds.
+ * Today: `studentaid` only — Driver and Vehicle's is the static Flow 3 page.
+ */
+export function walletOfferParams(): { serviceId: ServiceId }[] {
+  return [{ serviceId: "studentaid" }];
+}
+
+/**
  * The document label as the "Accepted documents" frame spells it.
  *
  * Both strings are verbatim from Figma 6087:31396 and must stay that way:

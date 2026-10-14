@@ -1,8 +1,11 @@
+"use client";
+
 import {
   WalletEnsureStatus,
   WalletHeader,
   WalletLinkWithArrow,
   WalletScreen,
+  useWalletCredential,
 } from "@/components/wallet/WalletClient";
 import { WalletSuccessGlyph } from "@/components/wallet/WalletGlyphs";
 import { WalletHeading, WalletLead, WalletStatusBar } from "@/components/wallet/WalletUi";
@@ -25,9 +28,13 @@ import { WALLET_COLOR, WALLET_PROGRESS } from "@/lib/data/wallet-tokens";
  *                #2E8E74) DRAWING IN; "Added Successfully" (900 48/100 %);
  *                the supporting copy at 280 wide
  *   button       p-24: primary "Go to Wallet" with the white → -> W-09
+ *
+ * FLOW 4 (2026-10-14) — Figma 6412:86625: the same screen; only the
+ * supporting copy names the notice of assessment. From the current offer.
  */
 export default function WalletAddedPage() {
   const c = WALLET_COPY.added;
+  const cred = useWalletCredential();
   return (
     <WalletScreen screen="W8" nodeId="6240:55218">
       <WalletEnsureStatus screen="W-08" />
@@ -44,7 +51,7 @@ export default function WalletAddedPage() {
         </div>
         <div className="flex w-full flex-col items-center gap-[12px]">
           <WalletHeading size="xl">{c.heading}</WalletHeading>
-          <WalletLead width={280}>{c.body}</WalletLead>
+          <WalletLead width={280}>{cred.addedBody}</WalletLead>
         </div>
       </div>
 

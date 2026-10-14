@@ -1615,7 +1615,7 @@ async function runFlow3Stage(width) {
   await p.goto(BASE + '/services/driver-vehicle/?verified=1', { waitUntil: 'networkidle' });
   await p.waitForTimeout(400);
   await p.keyboard.press('Shift+W');
-  await p.waitForURL('**/demo/wallet-stage/', { timeout: 5000 }).catch(() => {});
+  await p.waitForURL('**/demo/wallet-stage/**', { timeout: 5000 }).catch(() => {});
   if (new URL(p.url()).pathname !== '/demo/wallet-stage/') fails.push(`@${width} S-1: Shift+W went to ${new URL(p.url()).pathname}`);
   await p.waitForTimeout(1500);
   const c1 = p.frameLocator('[data-stage-frame="c1"]');
@@ -1673,6 +1673,382 @@ async function runFlow3Hydration(width) {
   await hctx.close();
 }
 
+/* ==========================================================================
+ * FLOW 4 — "Issuance of Notice of Assessment" (StudentAidNL). ADDED 2026-10-14.
+ * Figma section 6422:98300; DEMO_AUDIT.md "Flow 4".
+ *
+ * The SAME wallet as Flow 3, offering a different credential, so these
+ * stories check what DIFFERS and that the two credentials live side by side:
+ *   N-ENTRY  Trusted StudentAidNL shows "Skip retyping your funding details";
+ *            its "Add to wallet" opens /services/studentaid/wallet/.
+ *   N-C1     a NOTICE OF ASSESSMENT offer (store kind `studentaid`), QR ->
+ *            /wallet/start/?offer=<id>, breadcrumb back to Trusted
+ *            StudentAidNL, ArrowLeft to it too.
+ *   N-W03..N-W09  the wallet's Flow 4 copy (W-03 issuer sub-line and body,
+ *            W-04 heading, W-05 rows / consent / "Add to wallet" & "Cancel",
+ *            W-07 wallet PIN with NO SMS banner and any six digits, W-08 body,
+ *            W-09 the notice of assessment on top, expanded, "Issued <today>"
+ *            short month, 2 -> 3 cards) and the live C1 sync (Waiting ->
+ *            Adding -> Added, no reload).
+ *   N-BOTH   Flow 3 THEN Flow 4 in one session: 2 -> 3 -> 4 cards, the vehicle
+ *            certificate collapsed under the notice of assessment, Flow 3's C1
+ *            still "Added" afterwards; then ONE Esc resets both.
+ *   N-MOBILE 393: phone layout (no QR) -> Add to Apple Wallet -> W-03 … W-09
+ *            -> "◀ MyGovNL" back to Flow 4's C1 page with the toast.
+ *   N-STAGE  Shift+W on StudentAidNL -> the stage shows Flow 4's C1 page.
+ * Every Flow 3 check above runs unchanged.
+ * ========================================================================== */
+
+function noaToday() {
+  const d = new Date();
+  return `Issued ${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+const NOA_CONSENT = 'By selecting "Add to wallet," your digital notice of assessment credential is added to your wallet. It\'s stored securely, and you decide when it\'s shared.';
+
+/** The C1 page's status helpers, for any page that shows one. */
+function c1Probe(pg, width, tag) {
+  const statusOf = async () => (await pg.locator('[data-wallet-status]').first().textContent())?.trim();
+  const waitStatus = async (label, key, ms = 6000) => {
+    try {
+      await pg.waitForFunction((k) => document.querySelector('[data-wallet-status]')?.getAttribute('data-wallet-status') === k, key, { timeout: ms });
+      const t = await statusOf();
+      if (t !== STATUS[key]) fails.push(`@${width} ${tag} ${label}: state line reads "${t}", expected "${STATUS[key]}"`);
+    } catch {
+      fails.push(`@${width} ${tag} ${label}: C1 still reads "${await statusOf()}", expected "${STATUS[key]}"`);
+    }
+  };
+  return { statusOf, waitStatus };
+}
+
+const storeOf = (pg) => pg.evaluate(() => JSON.parse(localStorage.getItem('gnl-demo:v1') || '{}'));
+
+/** W-01 -> W-09 for a notice of assessment, in wallet page `w`. Returns nothing; pushes fails. */
+async function walkNoaWallet(w, width, tag, { onAdding, keypad = true } = {}) {
+  const at = () => new URL(w.url()).pathname;
+  const expectAt = (label, want) => { if (at() !== want) fails.push(`@${width} ${tag} ${label}: expected ${want} got ${at()}`); };
+  if (at() !== '/wallet/connect/') {
+    await w.locator('[data-wallet-scan-card]').click();
+    await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  }
+  expectAt('N-W03 -> W-03', '/wallet/connect/');
+  await w.waitForTimeout(400);
+  const sub = w.locator('[data-wallet-issuer-subline]');
+  if (!((await sub.textContent().catch(() => '')) ?? '').includes('StudentAidNL')) fails.push(`@${width} ${tag} N-W03a: no "StudentAidNL" under the issuer on W-03`);
+  if (!(await w.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.', { exact: true }).isVisible())) fails.push(`@${width} ${tag} N-W03b: W-03 body differs`);
+  if (onAdding) await onAdding();
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  if (!(await w.getByRole('heading', { name: 'Notice of assessment offered', exact: true }).isVisible())) fails.push(`@${width} ${tag} N-W04: W-04 heading differs`);
+  const h4 = await w.getByRole('heading', { name: 'Notice of assessment offered' }).evaluate((el) => getComputedStyle(el).fontSize).catch(() => '');
+  if (h4 !== '28px') fails.push(`@${width} ${tag} N-W04b: W-04 heading is ${h4}, expected 28px (H4)`);
+  await w.getByRole('button', { name: 'View offer', exact: true }).click();
+  await w.waitForURL('**/wallet/review/');
+  const rows = (await w.locator('[data-wallet-rows]').textContent()) ?? '';
+  for (const v of ['StudentAidNL, Government of Newfoundland and Labrador', 'Jason Moore', 'SA-2026-048217', 'Memorial University', 'Full-time', '$17,420', 'SFAA-2026-0004471', 'Not revoked, current version']) {
+    if (!rows.includes(v)) fails.push(`@${width} ${tag} N-W05a: W-05 rows missing "${v}"`);
+  }
+  if (rows.includes('Momoa')) fails.push(`@${width} ${tag} N-W05b: W-05 shows Figma's "Jason Momoa" instead of the persona`);
+  const nrows = await w.locator('[data-wallet-rows] > div').count();
+  if (nrows !== 19) fails.push(`@${width} ${tag} N-W05c: W-05 has ${nrows} rows, expected 19`);
+  if (((await w.locator('[data-wallet-consent]').textContent()) ?? '').trim() !== NOA_CONSENT) fails.push(`@${width} ${tag} N-W05d: W-05 consent differs`);
+  for (const old of ['Accept', 'Decline']) {
+    if (await w.getByRole('button', { name: old, exact: true }).count()) fails.push(`@${width} ${tag} N-W05e: W-05 still shows "${old}"`);
+  }
+  await w.getByRole('button', { name: 'Add to wallet', exact: true }).click();
+  await w.waitForURL('**/wallet/connecting/');
+  await w.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
+  expectAt('N-W06 -> W-07', '/wallet/code/');
+  await w.getByText('Enter your wallet PIN').first().waitFor({ timeout: 4000 }).catch(() => fails.push(`@${width} ${tag} N-W07a: W-07 is not the wallet-PIN screen`));
+  if (!(await w.getByText('Enter the PIN you created when you set up your wallet app. This confirms it\'s you adding the credential.', { exact: true }).isVisible().catch(() => false))) fails.push(`@${width} ${tag} N-W07b: W-07 body differs`);
+  await w.waitForTimeout(1500);
+  if (await w.locator('[data-wallet-sms]').count()) fails.push(`@${width} ${tag} N-W07c: an SMS banner appeared on the wallet-PIN screen`);
+  if (keypad) {
+    for (const d of ['7', '0', '3', '1', '5', '9']) await w.getByRole('button', { name: d, exact: true }).click();
+  } else {
+    await w.keyboard.type('246810');
+  }
+  const digits = await w.locator('[data-wallet-code]').getAttribute('data-digits');
+  if (digits?.length !== 6) fails.push(`@${width} ${tag} N-W07d: W-07 holds "${digits}"`);
+  if (keypad) await w.getByRole('button', { name: /Continue/ }).click();
+  else await w.keyboard.press('Enter');
+  await w.waitForURL('**/wallet/added/', { timeout: 4000 }).catch(() => {});
+  expectAt('N-W07e any six digits -> W-08', '/wallet/added/');
+  if (!(await w.getByText('Your Notice of assessment is secure and ready for use.', { exact: true }).isVisible().catch(() => false))) fails.push(`@${width} ${tag} N-W08: W-08 body differs`);
+  await w.getByRole('link', { name: /Go to Wallet/ }).click();
+  await w.waitForURL('**/wallet/cards/');
+  await w.waitForTimeout(500);
+  const top = w.locator('[data-wallet-cards] > *').first();
+  if ((await top.getAttribute('data-wallet-card')) !== 'notice-of-assessment') fails.push(`@${width} ${tag} N-W09a: the notice of assessment is not on top`);
+  const t = (await top.textContent()) ?? '';
+  for (const v of ['Notice of assessment', 'StudentAidNL, MyGovNL', noaToday(), 'Jason Moore', 'Memorial University', '2026-2027', 'Full time']) {
+    if (!t.includes(v)) fails.push(`@${width} ${tag} N-W09b: the new card is missing "${v}"`);
+  }
+}
+
+async function runFlow4Desktop(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 900 } });
+  const c1 = await ctx.newPage();
+  const errs = [];
+  watchConsole(c1, errs);
+  const at = (pg) => new URL(pg.url()).pathname;
+  const expectAt = (label, want, pg) => { if (at(pg) !== want) fails.push(`@${width} ${label}: expected ${want} got ${at(pg)}`); };
+  const { waitStatus } = c1Probe(c1, width, 'F4');
+
+  /* N-ENTRY */
+  await c1.goto(BASE + '/services/studentaid/?verified=1', { waitUntil: 'networkidle' });
+  await c1.waitForTimeout(400);
+  if (!(await c1.getByText('Skip retyping your funding details', { exact: true }).isVisible())) fails.push(`@${width} N-ENTRY1: no "Skip retyping your funding details" panel on Trusted StudentAidNL`);
+  const add = c1.getByRole('link', { name: 'Add to wallet', exact: true });
+  if ((await add.count()) !== 1) fails.push(`@${width} N-ENTRY2: ${await add.count()} "Add to wallet" links on Trusted StudentAidNL`);
+  await add.first().click();
+  await c1.waitForURL('**/services/studentaid/wallet/');
+  expectAt('N-ENTRY3 Add to wallet -> Flow 4 C1', '/services/studentaid/wallet/', c1);
+
+  /* N-C1 */
+  await c1.waitForFunction(() => document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'), null, { timeout: 5000 })
+    .catch(() => fails.push(`@${width} N-C1a: no offer was created`));
+  if (!(await c1.getByRole('heading', { name: 'Add your notice of assessment to your wallet', exact: true }).first().isVisible())) fails.push(`@${width} N-C1b: heading differs`);
+  if (!(await c1.getByText('Your notice of assessment is verified and active. Scan the code with your digital wallet to add it.', { exact: true }).first().isVisible())) fails.push(`@${width} N-C1c: subtitle differs`);
+  await waitStatus('N-C1d', 'waiting', 3000);
+  const id = await c1.locator('[data-wallet-qr]').getAttribute('data-offer-id');
+  const qrText = (await c1.locator('[data-wallet-qr]').getAttribute('data-qr-text')) ?? '';
+  if (!qrText.endsWith(`/wallet/start/?offer=${id}&kind=studentaid`)) fails.push(`@${width} N-C1e: the QR encodes "${qrText}"`);
+  /* N-C1i (2026-10-14): a phone with NO copy of the offer (a static host such
+     as Vercel; a fresh browser here) must open the NOTICE OF ASSESSMENT from
+     this QR, never Flow 3's vehicle certificate. */
+  {
+    const phoneCtx = await b.newContext({ viewport: { width: 393, height: 852 } });
+    const phone = await phoneCtx.newPage();
+    await phone.goto(qrText, { waitUntil: 'networkidle' });
+    await phone.waitForURL('**/wallet/connect/', { timeout: 8000 }).catch(() => {});
+    const body = (await phone.locator('body').innerText()).toLowerCase();
+    const pst = await storeOf(phone);
+    const cur = pst.wallet?.offers?.[pst.wallet?.currentOfferId];
+    if (new URL(phone.url()).pathname !== '/wallet/connect/' || !body.includes('notice of assessment') || cur?.serviceId !== 'studentaid') {
+      fails.push(`@${width} N-C1i: a fresh phone opening the Flow 4 QR got ${new URL(phone.url()).pathname}, kind ${cur?.serviceId}, notice-of-assessment text ${body.includes('notice of assessment')}`);
+    }
+    /* N-C1j: the SAME phone then opens a Flow 3 QR it has no copy of (no
+       `kind` in the link): it must open the VEHICLE CERTIFICATE, not reuse
+       the notice of assessment it is holding. */
+    await phone.goto(`${BASE}/wallet/start/?offer=f3unknown0001`, { waitUntil: 'networkidle' });
+    await phone.waitForURL('**/wallet/connect/', { timeout: 8000 }).catch(() => {});
+    const body2 = (await phone.locator('body').innerText()).toLowerCase();
+    const pst2 = await storeOf(phone);
+    const cur2 = pst2.wallet?.offers?.[pst2.wallet?.currentOfferId];
+    if (cur2?.serviceId !== 'driver-vehicle' || !body2.includes('vehicle registration certificate') || body2.includes('notice of assessment')) {
+      fails.push(`@${width} N-C1j: a Flow 3 QR after a Flow 4 one opened kind ${cur2?.serviceId}`);
+    }
+    /* N-C1k: with a Flow 4 offer in this browser, Shift+W on a Driver and
+       Vehicle page still shows FLOW 3's stage. */
+    await phone.goto(`${BASE}/wallet/start/?offer=f4unknown0001&kind=studentaid`, { waitUntil: 'networkidle' });
+    await phone.waitForURL('**/wallet/connect/', { timeout: 8000 }).catch(() => {});
+    await phone.goto(`${BASE}/services/driver-vehicle/?verified=1`, { waitUntil: 'networkidle' });
+    await phone.locator('body').click({ position: { x: 5, y: 300 } }).catch(() => {});
+    await phone.keyboard.press('Shift+W');
+    await phone.waitForURL('**/demo/wallet-stage/**', { timeout: 5000 }).catch(() => {});
+    const su = new URL(phone.url());
+    if (su.pathname !== '/demo/wallet-stage/' || su.searchParams.get('c') !== 'driver-vehicle') fails.push(`@${width} N-C1k: Shift+W on Driver and Vehicle after Flow 4 went to ${su.pathname}${su.search}`);
+    await phoneCtx.close();
+  }
+  const st = await storeOf(c1);
+  const o = st.wallet?.offers?.[id];
+  if (!o || o.serviceId !== 'studentaid' || o.credentialType !== 'NoticeOfAssessment' || st.wallet.currentOfferId !== id) fails.push(`@${width} N-C1f: the offer is not the current notice-of-assessment offer (${JSON.stringify(o)})`);
+  await c1.getByRole('link', { name: '← Back to StudentAidNL', exact: true }).click();
+  await c1.waitForURL((u) => u.pathname === '/services/studentaid/');
+  expectAt('N-C1g breadcrumb -> Trusted StudentAidNL', '/services/studentaid/', c1);
+  await c1.goBack();
+  await c1.waitForURL('**/services/studentaid/wallet/');
+  await c1.waitForTimeout(500);
+  await c1.keyboard.press('ArrowLeft');
+  await c1.waitForURL((u) => u.pathname === '/services/studentaid/', { timeout: 4000 }).catch(() => {});
+  expectAt('N-C1h ArrowLeft -> Trusted StudentAidNL', '/services/studentaid/', c1);
+  await c1.goBack();
+  await c1.waitForURL('**/services/studentaid/wallet/');
+  await c1.waitForTimeout(600);
+  if ((await c1.locator('[data-wallet-qr]').getAttribute('data-offer-id')) !== id) fails.push(`@${width} N-C1i: coming back replaced the offer`);
+
+  /* The wallet window, from the QR. */
+  const loads = { n: 0 };
+  c1.on('framenavigated', (f) => { if (f === c1.mainFrame()) loads.n++; });
+  await c1.evaluate(() => { window.__flow4NoReload = 'still-here'; });
+  const [w] = await Promise.all([ctx.waitForEvent('page'), c1.locator('[data-wallet-qr]').click()]);
+  watchConsole(w, errs);
+  await w.waitForLoadState('networkidle');
+  expectAt('N-W01 the QR opens W-01', '/wallet/', w);
+  await w.waitForTimeout(400);
+  const count = async () => (await w.locator('[data-wallet-count]').first().textContent())?.trim();
+  if ((await count()) !== '2 cards total') fails.push(`@${width} N-W01a: W-01 reads "${await count()}" before issuing`);
+  await walkNoaWallet(w, width, 'F4', { onAdding: () => waitStatus('N-SYNC1 after the scan', 'adding') });
+  await waitStatus('N-SYNC2 after issuing', 'added');
+  if ((await c1.evaluate(() => window.__flow4NoReload)) !== 'still-here' || loads.n !== 0) fails.push(`@${width} N-SYNC3: Flow 4's C1 page reloaded`);
+  if ((await w.locator('[data-wallet-cards] > *').count()) !== 3) fails.push(`@${width} N-W09c: W-09 shows ${await w.locator('[data-wallet-cards] > *').count()} cards, expected 3`);
+  if ((await count()) !== '3 cards total') fails.push(`@${width} N-W09d: W-09 reads "${await count()}"`);
+  const s2 = await storeOf(w);
+  if (!s2.wallet?.noaIssuedAt || s2.wallet?.cardIssuedAt) fails.push(`@${width} N-W09e: issued state is noa=${s2.wallet?.noaIssuedAt} vrc=${s2.wallet?.cardIssuedAt}`);
+  await c1.reload({ waitUntil: 'networkidle' });
+  await waitStatus('N-KEEP C1 after a refresh', 'added', 3000);
+  console.log(`  @${width} Flow 4: Trusted StudentAidNL -> C1 -> W-01 … W-09 (wallet PIN, 2 -> 3 cards), C1 Waiting -> Adding -> Added with no reload`);
+
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 4 desktop console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
+/** Flow 3 then Flow 4 in ONE session: 2 -> 3 -> 4 cards; then one Esc resets both. */
+async function runFlow34Both(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 900 } });
+  const c1 = await ctx.newPage();
+  const errs = [];
+  watchConsole(c1, errs);
+  const { waitStatus } = c1Probe(c1, width, 'BOTH');
+  const count = async (pg) => (await pg.locator('[data-wallet-count]').first().textContent())?.trim();
+
+  /* Flow 3, quickly: C1 -> QR -> W-01 … W-09. */
+  await c1.goto(BASE + '/services/driver-vehicle/wallet/', { waitUntil: 'networkidle' });
+  await c1.waitForFunction(() => document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'), null, { timeout: 5000 });
+  const [w] = await Promise.all([ctx.waitForEvent('page'), c1.locator('[data-wallet-qr]').click()]);
+  watchConsole(w, errs);
+  await w.waitForLoadState('networkidle');
+  await w.waitForTimeout(300);
+  if ((await count(w)) !== '2 cards total') fails.push(`@${width} N-BOTH1: W-01 reads "${await count(w)}" at the start`);
+  await w.locator('[data-wallet-scan-card]').click();
+  await w.waitForURL('**/wallet/connect/', { timeout: 6000 });
+  if (await w.locator('[data-wallet-issuer-subline]').count()) fails.push(`@${width} N-BOTH2: Flow 3's W-03 shows Flow 4's issuer sub-line`);
+  await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
+  await w.waitForURL('**/wallet/offer/');
+  if (!(await w.getByRole('heading', { name: 'Certificate offered', exact: true }).isVisible())) fails.push(`@${width} N-BOTH3: Flow 3's W-04 heading changed`);
+  await w.getByRole('button', { name: 'View offer', exact: true }).click();
+  await w.waitForURL('**/wallet/review/');
+  await w.getByRole('button', { name: 'Add to wallet', exact: true }).click();
+  await w.waitForURL('**/wallet/code/', { timeout: 6000 });
+  await w.getByText('Enter your verification code').first().waitFor();
+  await w.locator('[data-wallet-sms]').waitFor({ timeout: 3000 }).catch(() => fails.push(`@${width} N-BOTH4: Flow 3's SMS banner is gone`));
+  await w.keyboard.type('123456');
+  await w.keyboard.press('Enter');
+  await w.waitForURL('**/wallet/added/', { timeout: 4000 });
+  await waitStatus('N-BOTH5 Flow 3 C1', 'added');
+  await w.getByRole('link', { name: /Go to Wallet/ }).click();
+  await w.waitForURL('**/wallet/cards/');
+  await w.waitForTimeout(400);
+  if ((await count(w)) !== '3 cards total') fails.push(`@${width} N-BOTH6: after Flow 3 W-09 reads "${await count(w)}"`);
+
+  /* Flow 4 in the same session: Trusted StudentAidNL -> C1 -> the SAME wallet window. */
+  await c1.goto(BASE + '/services/studentaid/?verified=1', { waitUntil: 'networkidle' });
+  await c1.waitForTimeout(300);
+  await c1.getByRole('link', { name: 'Add to wallet', exact: true }).click();
+  await c1.waitForURL('**/services/studentaid/wallet/');
+  await c1.waitForFunction(() => document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'), null, { timeout: 5000 });
+  await waitStatus('N-BOTH7 Flow 4 C1 starts waiting (not Flow 3\'s "Added")', 'waiting', 3000);
+  await c1.locator('[data-wallet-qr]').click(); // the named window is reused
+  await w.waitForURL('**/wallet/', { timeout: 5000 }).catch(() => {});
+  await w.waitForTimeout(400);
+  if ((await count(w)) !== '3 cards total') fails.push(`@${width} N-BOTH8: W-01 reads "${await count(w)}" before Flow 4`);
+  await walkNoaWallet(w, width, 'BOTH', { keypad: false });
+  await waitStatus('N-BOTH9 Flow 4 C1', 'added');
+  const cards = w.locator('[data-wallet-cards] > *');
+  if ((await cards.count()) !== 4) fails.push(`@${width} N-BOTH10: W-09 shows ${await cards.count()} cards, expected 4`);
+  if ((await count(w)) !== '4 cards total') fails.push(`@${width} N-BOTH11: W-09 reads "${await count(w)}"`);
+  const second = cards.nth(1);
+  if ((await second.getAttribute('data-wallet-card')) !== 'vehicle-registration-certificate' || (await second.getAttribute('data-wallet-collapsed')) !== 'true') fails.push(`@${width} N-BOTH12: the vehicle certificate is not second and collapsed`);
+  if (!((await second.textContent()) ?? '').includes(today())) fails.push(`@${width} N-BOTH13: the collapsed vehicle card does not read "${today()}"`);
+  /* Flow 3's C1 page still knows its certificate was added. */
+  const c3 = await ctx.newPage();
+  watchConsole(c3, errs);
+  await c3.goto(BASE + '/services/driver-vehicle/wallet/', { waitUntil: 'networkidle' });
+  await c3.waitForTimeout(900);
+  const s3 = (await c3.locator('[data-wallet-status]').first().getAttribute('data-wallet-status'));
+  if (s3 !== 'added') fails.push(`@${width} N-BOTH14: Flow 3's C1 reads "${s3}" after Flow 4 ran, expected "added"`);
+  await c3.close();
+  await c1.waitForTimeout(600);
+
+  /* ONE Esc (in the wallet, on W-09) resets both credentials. */
+  await w.keyboard.press('Escape');
+  await w.waitForURL('**/wallet/', { timeout: 4000 }).catch(() => {});
+  await waitStatus('N-RESET1 Flow 4 C1 after Esc', 'waiting');
+  await w.waitForTimeout(400);
+  if ((await count(w)) !== '2 cards total') fails.push(`@${width} N-RESET2: after Esc W-01 reads "${await count(w)}"`);
+  const s4 = await storeOf(w);
+  if (s4.wallet?.cardIssuedAt || s4.wallet?.noaIssuedAt) fails.push(`@${width} N-RESET3: Esc left issued state behind`);
+  console.log(`  @${width} Flow 3 then Flow 4: 2 -> 3 -> 4 cards (vehicle certificate collapsed under the notice of assessment), Flow 3 C1 still "Added", one Esc resets both`);
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 3+4 console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
+async function runFlow4Mobile(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 852 } });
+  const p = await ctx.newPage();
+  const errs = [];
+  watchConsole(p, errs);
+  const at = () => new URL(p.url()).pathname;
+  const expectAt = (label, want) => { if (at() !== want) fails.push(`@${width} ${label}: expected ${want} got ${at()}`); };
+  await p.goto(BASE + '/services/studentaid/?verified=1', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  await p.getByRole('link', { name: 'Add to wallet', exact: true }).first().click();
+  await p.waitForURL('**/services/studentaid/wallet/');
+  await p.waitForTimeout(900);
+  if (await p.locator('[data-wallet-qr]').isVisible()) fails.push(`@${width} NM-1: a QR is visible on Flow 4's phone layout`);
+  const apple = p.getByRole('link', { name: 'Add to Apple Wallet', exact: true });
+  if (!(await apple.isVisible())) fails.push(`@${width} NM-2: no "Add to Apple Wallet" on Flow 4's phone layout`);
+  await p.getByRole('button', { name: 'Get help adding your notice of assessment', exact: true }).click();
+  if (!(await p.getByText('Not part of this demo').first().isVisible().catch(() => false))) fails.push(`@${width} NM-3: the help link shows no toast`);
+  await apple.click();
+  await p.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
+  expectAt('NM-4 Add to Apple Wallet -> W-03', '/wallet/connect/');
+  await walkNoaWallet(p, width, 'NM', { keypad: false });
+  if ((await p.locator('[data-wallet-cards] > *').count()) !== 3) fails.push(`@${width} NM-5: W-09 shows ${await p.locator('[data-wallet-cards] > *').count()} cards`);
+  const back = p.locator('[data-wallet-mygovnl]');
+  if (!(await back.isVisible().catch(() => false))) {
+    fails.push(`@${width} NM-6: no "◀ MyGovNL" link in the same-device wallet`);
+  } else {
+    await p.waitForTimeout(1200);
+    await back.click();
+    await p.waitForURL((u) => u.pathname === '/services/studentaid/wallet/', { timeout: 5000 }).catch(() => {});
+    expectAt('NM-7 ◀ MyGovNL -> Flow 4 C1', '/services/studentaid/wallet/');
+    await p.waitForTimeout(700);
+    if (!(await p.locator('.gnl-toast', { hasText: 'Added to your wallet' }).first().isVisible().catch(() => false))) fails.push(`@${width} NM-8: no "Added to your wallet" toast on return`);
+  }
+  console.log(`  @${width} Flow 4 mobile: Trusted StudentAidNL -> phone C1 -> Add to Apple Wallet -> W-03 … W-09 -> ◀ MyGovNL`);
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 4 mobile console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
+async function runFlow4Stage(width) {
+  const ctx = await b.newContext({ viewport: { width, height: 1000 } });
+  const p = await ctx.newPage();
+  const errs = [];
+  watchConsole(p, errs);
+  const html = await (await p.request.get(BASE + '/services/studentaid/wallet/')).text();
+  if (!html.includes(STATUS.waiting) || !html.includes('Add your notice of assessment to your wallet')) fails.push(`@${width} N-HYD1: the prerendered Flow 4 C1 HTML is not the waiting page`);
+  await p.goto(BASE + '/services/studentaid/?verified=1', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  await p.keyboard.press('Shift+W');
+  await p.waitForURL('**/demo/wallet-stage/**', { timeout: 5000 }).catch(() => {});
+  const u = new URL(p.url());
+  if (u.pathname !== '/demo/wallet-stage/' || u.searchParams.get('c') !== 'studentaid') fails.push(`@${width} N-STAGE1: Shift+W on StudentAidNL went to ${u.pathname}${u.search}`);
+  await p.waitForTimeout(1800);
+  if ((await p.locator('[data-stage-frame="c1"]').getAttribute('data-stage-credential')) !== 'studentaid') fails.push(`@${width} N-STAGE2: the stage's C1 frame is not Flow 4's`);
+  const c1 = p.frameLocator('[data-stage-frame="c1"]');
+  const wf = p.frameLocator('[data-stage-frame="wallet"]');
+  if (!(await c1.getByRole('heading', { name: 'Add your notice of assessment to your wallet' }).first().isVisible().catch(() => false))) fails.push(`@${width} N-STAGE3: the stage's C1 frame does not show Flow 4's page`);
+  await wf.locator('[data-wallet-scan-card]').click();
+  let seen = null;
+  for (let i = 0; i < 40 && seen !== 'adding'; i++) { await p.waitForTimeout(200); seen = await c1.locator('[data-wallet-status]').getAttribute('data-wallet-status'); }
+  if (seen !== 'adding') fails.push(`@${width} N-STAGE4: scanning in the stage's wallet left Flow 4's C1 at "${seen}"`);
+  /* The C1 frame turns "Adding" when the offer is marked scanned, a moment
+     BEFORE the wallet frame's router lands on W-03 — so wait for it (up to
+     3 s) instead of reading it at that instant (flaked once, 2026-10-14). */
+  const w03 = await wf.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.')
+    .waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+  if (!w03) fails.push(`@${width} N-STAGE5: the stage's wallet does not show Flow 4's W-03`);
+  console.log(`  @${width} Flow 4 stage: Shift+W on StudentAidNL -> Flow 4 C1 frame, wallet frame -> "Adding"`);
+  const real = flow3Real(errs);
+  if (real.length) fails.push(`@${width} Flow 4 stage console: ${real.join(' ;; ')}`);
+  await ctx.close();
+}
+
 for (const w of [1440, 768, 390]) await run(w);
 for (const w of [1440, 768, 390]) await runFlowBCid(w);
 for (const w of [1440, 768, 390]) await runFlowB(w);
@@ -1680,11 +2056,15 @@ for (const w of [1440, 768]) await runFlow3Desktop(w);
 await runFlow3Mobile(393);
 await runFlow3Stage(1440);
 for (const w of [1440, 393]) await runFlow3Hydration(w);
+for (const w of [1440, 768]) await runFlow4Desktop(w);
+await runFlow34Both(1440);
+await runFlow4Mobile(393);
+await runFlow4Stage(1440);
 await b.close();
 
 console.log(
   fails.length
     ? 'CLICK FAILURES:\n' + fails.join('\n')
-    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted) and Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) intact at 1440 / 768 / 390',
+    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted), Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) and Flow 4 (notice of assessment at 1440 / 768 and 393; Flow 3 then Flow 4, 2 -> 3 -> 4 cards and one Esc; the stage) intact at 1440 / 768 / 390',
 );
 if (fails.length) process.exit(1);

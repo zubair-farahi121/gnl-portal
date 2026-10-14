@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ASSETS } from "@/lib/assets";
-import type { LinkedItem, LinkedItemAction } from "@/lib/data/driver-vehicle";
+import type { LinkedItem, LinkedItemAction, VcUpsell } from "@/lib/data/driver-vehicle";
 import { UpsellAddedAction } from "@/components/service/UpsellAddedAction";
 import { UPSELL_ADDED_STATE_ENABLED } from "@/lib/data/flow3";
+import type { CredentialKind } from "@/lib/mock-issuer";
 
 /*
  * `item-card-*` — Figma 6076:24356 / 6220:86386 / 6076:24368 / 6076:24378 /
@@ -217,7 +218,36 @@ const CARD =
  * — see the note on the link itself. Every OTHER button on these cards is
  * still inert.
  */
-function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }) {
+/** The CHEV card's ids — the panel's own until 2026-10-14. */
+const VC_UPSELL_NODES: NonNullable<VcUpsell["nodeIds"]> = {
+  avatar: "6257:73253",
+  qr: "6259:73307",
+  details: "6257:73255",
+  titleRow: "6259:73327",
+  title: "6257:73256",
+  pill: "6259:73324",
+  pillText: "6259:73325",
+  body: "6257:73257",
+  actions: "6257:73259",
+  action: "6257:73260",
+};
+
+/*
+ * EXPORTED 2026-10-14 for FLOW 4: the Trusted StudentAidNL page's "Skip
+ * retyping your funding details" panel (Figma 6412:85602, under "Access the
+ * StudentAid Portal") is this panel — same layer name ("VRC VC upsell"), same
+ * geometry, same classes — with its own strings, ids and link. `kind` says
+ * whose credential the flagged "added" state (UPSELL_ADDED_STATE_ENABLED, OFF)
+ * would read. The CHEV card passes neither and renders as before.
+ */
+export function VcUpsellPanel({
+  upsell,
+  kind = "driver-vehicle",
+}: {
+  upsell: VcUpsell;
+  kind?: CredentialKind;
+}) {
+  const n = upsell.nodeIds ?? VC_UPSELL_NODES;
   return (
     <div
       className="flex w-full shrink-0 items-center gap-[16px] rounded-[6px] bg-[#e9ecef] p-[16px] max-md:flex-col max-md:items-start"
@@ -227,9 +257,9 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
       {/* avatar-box 6257:73253 */}
       <div
         className="flex size-[64px] shrink-0 items-center justify-center rounded-[6px] bg-[#e9ecef] p-[12px]"
-        data-node-id="6257:73253"
+        data-node-id={n.avatar}
       >
-        <div className="relative size-[45px] shrink-0" data-node-id="6259:73307">
+        <div className="relative size-[45px] shrink-0" data-node-id={n.qr}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt=""
@@ -242,24 +272,24 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
       {/* item-details 6257:73255 */}
       <div
         className="flex min-w-px flex-[1_0_0] flex-col items-start gap-[6px] max-md:w-full"
-        data-node-id="6257:73255"
+        data-node-id={n.details}
       >
         {/* Frame 14676 6259:73327 */}
-        <div className="flex shrink-0 items-start gap-[8px]" data-node-id="6259:73327">
+        <div className="flex shrink-0 items-start gap-[8px]" data-node-id={n.titleRow}>
           <p
             className="shrink-0 text-[14px] font-bold leading-[1.5] whitespace-nowrap text-[#004b87]"
-            data-node-id="6257:73256"
+            data-node-id={n.title}
           >
             {upsell.title}
           </p>
           {/* New_pill 6259:73324 */}
           <div
             className="flex shrink-0 items-center rounded-[4px] bg-[#004b87] px-[8px] py-[4px]"
-            data-node-id="6259:73324"
+            data-node-id={n.pill}
           >
             <p
               className="shrink-0 text-[12px] font-bold leading-[14px] whitespace-nowrap text-white"
-              data-node-id="6259:73325"
+              data-node-id={n.pillText}
             >
               {upsell.badge}
             </p>
@@ -267,7 +297,7 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
         </div>
         <p
           className="min-w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#004b87] [word-break:break-word]"
-          data-node-id="6257:73257"
+          data-node-id={n.body}
         >
           {upsell.body}
         </p>
@@ -276,7 +306,7 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
       {/* actions-box 6257:73259 */}
       <div
         className="flex shrink-0 flex-col items-start max-md:w-full max-md:items-stretch"
-        data-node-id="6257:73259"
+        data-node-id={n.actions}
       >
         {/*
           FLOW 3's ENTRY POINT — CHANGED 2026-09-29 from an inert <button>
@@ -302,13 +332,14 @@ function VcUpsellPanel({ upsell }: { upsell: NonNullable<LinkedItem["upsell"]> }
             href={upsell.actionHref}
             label={upsell.actionLabel}
             className={BTN_PRIMARY}
-            nodeId="6257:73260"
+            nodeId={n.action}
+            kind={kind}
           />
         ) : (
           <Link
             href={upsell.actionHref}
             className={`${BTN_PRIMARY} cursor-pointer select-none`}
-            data-node-id="6257:73260"
+            data-node-id={n.action}
           >
             {upsell.actionLabel}
           </Link>

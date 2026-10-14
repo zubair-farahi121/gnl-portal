@@ -16,8 +16,11 @@ import {
  * in the code as a demo mock." ADDED 2026-09-29.
  *
  * It plays the part of GNL's issuing service in Flow 3 ("Issuance of Vehicle
- * Registration Certificate", Figma section 6343:84884). The C1 page
- * (F3-02, 6220:86445) calls `createOffer()` and shows the offer as a QR
+ * Registration Certificate", Figma section 6343:84884) and, since 2026-10-14,
+ * Flow 4 ("Issuance of Notice of Assessment", StudentAidNL, 6422:98300): the
+ * same issuer, an offer now says WHICH credential it is (`CredentialKind`).
+ * The C1 page (F3-02, 6220:86445; Flow 4's 6412:85663) calls `createOffer()`
+ * and shows the offer as a QR
  * code; the wallet mock (W-01..W-09) calls `updateOffer()` as the user moves
  * through it; the C1 page `subscribe()`s and changes its state line.
  *
@@ -53,10 +56,44 @@ export type OfferStatus =
   | "issued" //        credential stored in the wallet (W-08)
   | "declined"; //     user declined in the wallet (W-03 / W-05)
 
+/**
+ * WHICH CREDENTIAL AN OFFER IS FOR — ADDED 2026-10-14 with Flow 4
+ * ("Issuance of Notice of Assessment", Figma section 6422:98300).
+ *
+ * The kind is the issuing SERVICE's id, and each kind has exactly one
+ * credential type. Flow 3's pair is unchanged; Flow 4 adds StudentAidNL's.
+ * Everything that differs between the two credentials on screen (copy, rows,
+ * icons, the W-07 code mode) is looked up from the kind — see
+ * src/lib/data/credentials.ts — so the issuer itself stays credential-blind.
+ */
+export const CREDENTIAL_TYPE = {
+  "driver-vehicle": "VehicleRegistrationCertificate",
+  studentaid: "NoticeOfAssessment",
+} as const;
+
+export type CredentialKind = keyof typeof CREDENTIAL_TYPE;
+export type CredentialType = (typeof CREDENTIAL_TYPE)[CredentialKind];
+
+/**
+ * The kind every pre-Flow-4 caller meant. `createOffer()` with no argument,
+ * an offer from an older store, and "no offer at all" all read as Flow 3's
+ * vehicle certificate — which is what keeps Flow 3 byte-for-byte the same.
+ */
+export const DEFAULT_KIND: CredentialKind = "driver-vehicle";
+
+export function isCredentialKind(v: unknown): v is CredentialKind {
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(CREDENTIAL_TYPE, v);
+}
+
+/** The kind of an offer; null / unknown -> DEFAULT_KIND (Flow 3). */
+export function offerKind(o: Pick<CredentialOffer, "serviceId"> | null | undefined): CredentialKind {
+  return o && isCredentialKind(o.serviceId) ? o.serviceId : DEFAULT_KIND;
+}
+
 export interface CredentialOffer {
   id: string;
-  serviceId: "driver-vehicle";
-  credentialType: "VehicleRegistrationCertificate";
+  serviceId: CredentialKind;
+  credentialType: CredentialType;
   status: OfferStatus;
   createdAt: string;
   /** createdAt + OFFER_TTL_MS — drives the optional countdown on F3-02. */
@@ -133,24 +170,71 @@ export function peekCurrentOffer(): CredentialOffer | null {
 }
 
 /**
- * Create an offer and make it the current one. Older offers are dropped —
- * the demo has one QR on screen at a time, and the wallet's issued card is
- * kept separately (`wallet.cardIssuedAt`), so nothing the audience sees is lost.
+ * The most recent offer of one kind (the one that kind's C1 page shows), or
+ * null. Flow 4: with two credentials there can be one offer of each kind —
+ * see `withOffer`.
  */
-export function createOffer(): Promise<CredentialOffer> {
+export function peekOfferOfKind(kind: CredentialKind): CredentialOffer | null {
+  if (typeof window === "undefined") return null;
+  return latestOfKind(readStore().wallet?.offers, kind);
+}
+
+export function latestOfKind(
+  offers: Record<string, CredentialOffer> | undefined,
+  kind: CredentialKind,
+): CredentialOffer | null {
+  let best: CredentialOffer | null = null;
+  for (const o of Object.values(offers ?? {})) {
+    if (offerKind(o) !== kind) continue;
+    if (!best || Date.parse(o.createdAt) > Date.parse(best.createdAt)) best = o;
+  }
+  return best;
+}
+
+/**
+ * `offers` with `offer` added and every OTHER offer of the same kind dropped.
+ *
+ * CHANGED 2026-10-14 (Flow 4). It used to be "older offers are dropped" — all
+ * of them — because there was one credential. Now ONE OFFER PER KIND is kept:
+ * running Flow 4 after Flow 3 must not wipe Flow 3's issued offer, or the
+ * vehicle C1 page would fall back to "Waiting for scan…" for a certificate
+ * that is already in the wallet. With only the vehicle kind in play (every
+ * Flow 3 run) this is exactly the old rule.
+ */
+export function withOffer(
+  offers: Record<string, CredentialOffer> | undefined,
+  offer: CredentialOffer,
+): Record<string, CredentialOffer> {
+  const kind = offerKind(offer);
+  const next: Record<string, CredentialOffer> = {};
+  for (const [id, o] of Object.entries(offers ?? {})) {
+    if (offerKind(o) !== kind) next[id] = o;
+  }
+  next[offer.id] = offer;
+  return next;
+}
+
+/**
+ * Create an offer of `kind` and make it the current one. Older offers OF THE
+ * SAME KIND are dropped (`withOffer`) — the demo has one QR on screen at a
+ * time per credential, and the wallet's issued cards are kept separately
+ * (`wallet.cardIssuedAt` / `wallet.noaIssuedAt`), so nothing the audience
+ * sees is lost. No argument = Flow 3's vehicle certificate, as before.
+ */
+export function createOffer(kind: CredentialKind = DEFAULT_KIND): Promise<CredentialOffer> {
   return enqueue(() => {
     const now = Date.now();
     const offer: CredentialOffer = {
       id: newId(),
-      serviceId: "driver-vehicle",
-      credentialType: "VehicleRegistrationCertificate",
+      serviceId: kind,
+      credentialType: CREDENTIAL_TYPE[kind],
       status: "created",
       createdAt: new Date(now).toISOString(),
       expiresAt: new Date(now + OFFER_TTL_MS).toISOString(),
     };
     mutate((prev) => ({
       ...prev,
-      wallet: { ...prev.wallet, offers: { [offer.id]: offer }, currentOfferId: offer.id },
+      wallet: { ...prev.wallet, offers: withOffer(prev.wallet?.offers, offer), currentOfferId: offer.id },
     }));
     return offer;
   });

@@ -11,11 +11,12 @@ import {
   WALLET_BUTTON_CLASS,
   walletButtonStyle,
 } from "@/components/wallet/WalletUi";
-import { useDemoState } from "@/lib/demo-state";
+import { BASE_WALLET_CARDS, useDemoState } from "@/lib/demo-state";
+import { C1_ROUTE, WALLET_CREDENTIALS, type WalletCredential } from "@/lib/data/credentials";
 import { SAME_DEVICE_KEY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { WALLET_COLOR, WALLET_SIZE } from "@/lib/data/wallet-tokens";
-import { peekCurrentOffer, updateOffer, type OfferStatus } from "@/lib/mock-issuer";
+import { offerKind, peekCurrentOffer, updateOffer, type OfferStatus } from "@/lib/mock-issuer";
 
 /*
  * WALLET — the client pieces the screens share. ADDED 2026-09-29 with the
@@ -37,6 +38,27 @@ export function useOfferStatus() {
     if (cur) void updateOffer(cur.id, { status });
   }, []);
   return { offer: walletOffer, set };
+}
+
+/**
+ * WHICH CREDENTIAL THE WALLET IS LOOKING AT — ADDED 2026-10-14 with Flow 4.
+ *
+ * The CURRENT offer's kind (the offer the C1 page made and the QR / deep link
+ * pointed the wallet at), and its entry in WALLET_CREDENTIALS. No offer, or
+ * an offer from a pre-Flow-4 store, reads as Flow 3's vehicle certificate.
+ *
+ * HYDRATION: the store is empty on the server and on the first client render,
+ * so every wallet screen is PRERENDERED with the vehicle certificate's copy
+ * and switches after mount if the current offer is a notice of assessment —
+ * the demo-wide rule (src/lib/demo-state.tsx). On a client navigation
+ * (every hop inside the wallet, and /wallet/start/ -> W-03) the store is
+ * already read, so the right copy is there on the first paint; only a hard
+ * reload of a mid-flow Flow 4 screen shows Flow 3's copy for a frame, as the
+ * Trusted pages show their unverified state for a frame.
+ */
+export function useWalletCredential(): WalletCredential {
+  const { walletOffer } = useDemoState();
+  return WALLET_CREDENTIALS[offerKind(walletOffer)];
 }
 
 /* ------------------------------------------------------ screen wrapper -- */
@@ -247,13 +269,17 @@ export function WalletEnsureStatus({ screen }: { screen: "W-03" | "W-08" }) {
 
 /**
  * "2 cards total" before the certificate is added, "3 cards total" after
- * (brief §7 W-09; also W-01's all-cards card). Reads the WALLET's own record
- * (`cardIssuedAt`). Prerendered as 2 — the store is empty until mount — so
- * the server HTML and the first client render agree.
+ * (brief §7 W-09; also W-01's all-cards card). Reads the WALLET's own record.
+ * Prerendered as 2 — the store is empty until mount — so the server HTML and
+ * the first client render agree.
+ *
+ * LIVE SINCE FLOW 4 (2026-10-14, decision 5): the two base cards plus every
+ * credential on the phone — 2 -> 3 for either flow alone, 3 -> 4 when Flow 4
+ * runs after Flow 3 (Figma W-09 6412:86663 "4 cards total").
  */
 export function WalletCardCount({ style }: { style?: React.CSSProperties }) {
-  const { walletCardIssuedAt } = useDemoState();
-  const n = walletCardIssuedAt ? 3 : 2;
+  const { walletIssued } = useDemoState();
+  const n = BASE_WALLET_CARDS + walletIssued.length;
   return (
     <span style={style} data-wallet-count={n}>
       {`${n} cards total`}
@@ -305,8 +331,12 @@ export function WalletLinkWithArrow({ href, children }: { href: string; children
  * i.e. /wallet/start/?from=mygovnl). It returns to F3-03, which then shows the
  * GNL toast "Added to your wallet" if the certificate was issued.
  * Read from sessionStorage after mount, so the static HTML never has it.
+ *
+ * Flow 4 (2026-10-14): back to the C1 page of the credential being added —
+ * StudentAidNL's for a notice of assessment, Driver and Vehicle's otherwise.
  */
 export function SameDeviceBackLink() {
+  const { kind } = useWalletCredential();
   const [on, setOn] = useState(false);
   useEffect(() => {
     try {
@@ -318,7 +348,7 @@ export function SameDeviceBackLink() {
   if (!on) return null;
   return (
     <Link
-      href={`${FLOW3_ROUTES.c1}?from=wallet`}
+      href={`${C1_ROUTE[kind]}?from=wallet`}
       className="whitespace-nowrap rounded-[4px] focus-visible:outline-2 focus-visible:outline-[#1e404d]"
       style={{ fontSize: "12px", fontWeight: 600, lineHeight: "18px", color: WALLET_COLOR.brand }}
       data-wallet-mygovnl="true"

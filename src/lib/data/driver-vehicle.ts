@@ -231,6 +231,15 @@ export type VcUpsell = {
    */
   actionHref: string;
   nodeId: string;
+  /**
+   * The panel's inner node ids. ADDED 2026-10-14 for Flow 4, whose
+   * StudentAidNL panel (6412:85602) is this component with its own ids.
+   * Absent = the CHEV card's ids (6257:73253 …), as the panel always had.
+   */
+  nodeIds?: Record<
+    "avatar" | "qr" | "details" | "titleRow" | "title" | "pill" | "pillText" | "body" | "actions" | "action",
+    string
+  >;
 };
 
 /**

@@ -3,6 +3,7 @@ import {
   CID_ROUTES,
   DEFAULT_SERVICE_ID,
   FLOW3_ROUTES,
+  FLOW4_ROUTES,
   cidRoutes,
   serviceRoutes,
 } from "@/lib/data/service-config";
@@ -293,6 +294,36 @@ export const FLOW_B = [
 export const FLOW_3 = [
   R.pageVerified,
   FLOW3_ROUTES.c1,
+  FLOW3_ROUTES.walletHome,
+  FLOW3_ROUTES.scan,
+  FLOW3_ROUTES.connect,
+  FLOW3_ROUTES.offer,
+  FLOW3_ROUTES.review,
+  FLOW3_ROUTES.connecting,
+  FLOW3_ROUTES.code,
+  FLOW3_ROUTES.added,
+  FLOW3_ROUTES.cards,
+] as const;
+
+/*
+ * ====================================================================
+ * FLOW 4 — "Issuance of Notice of Assessment" (StudentAidNL), added
+ * 2026-10-14. Figma section 6422:98300.
+ *
+ * Trusted StudentAidNL page -> Flow 4's C1 page -> the SAME wallet W1..W9.
+ *
+ * Same rules as FLOW_3. The Trusted StudentAidNL page is FLOW_B's last entry,
+ * so it keeps resolving to FLOW_B (ArrowRight there still does nothing). The
+ * only path that resolves to FLOW_4 by itself is its C1 page; the wallet
+ * paths are FLOW_3's too, and DemoNav uses THIS list for them only while the
+ * wallet is working on a notice of assessment (the current offer's kind) —
+ * so ArrowLeft from W1 goes back to the C1 page the presenter came from, and
+ * every Flow 3 arrow press behaves as before.
+ * ====================================================================
+ */
+export const FLOW_4 = [
+  B.pageVerified,
+  FLOW4_ROUTES.c1,
   FLOW3_ROUTES.walletHome,
   FLOW3_ROUTES.scan,
   FLOW3_ROUTES.connect,

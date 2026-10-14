@@ -3,7 +3,8 @@
 This is a clickable demo of MyGovNL. A signed-in user opens the Driver and Vehicle
 service, proves who they are with CertifiO ID, and gets access. They can then add their
 vehicle registration certificate to a digital wallet. A second service, StudentAidNL,
-shows the same journey with a few differences.
+shows the same journey with a few differences, and adds a notice of assessment to the
+same wallet.
 
 There is no real backend and no real data. The user in the demo, Jason Moore, is
 fictional. Everything runs from a small static website.
@@ -79,7 +80,8 @@ certificate inside the container, are in [DEPLOY.md](DEPLOY.md).
 - Built with Next.js 16 (static export), React 19, TypeScript and Tailwind 4.
 - Code lives in `src/`. Screen text and settings live in `src/lib/data/`.
   - The wallet flow's switches, `CODE_MODE`, `WALLET_CONSENT` and
-    `UPSELL_ADDED_STATE_ENABLED`, are in `src/lib/data/flow3.ts`.
+    `UPSELL_ADDED_STATE_ENABLED`, are in `src/lib/data/flow3.ts`. What each
+    credential says is in `src/lib/data/credentials.ts`.
 - The fake credential issuer is `src/lib/mock-issuer.ts`. The phone-path server is
   `server/demo-server.mjs`.
 - Checks (the test scripts are in the full repository, not in the deploy package):

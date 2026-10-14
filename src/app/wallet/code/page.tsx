@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { WalletHeader, WalletScreen, useOfferStatus } from "@/components/wallet/WalletClient";
+import { WalletHeader, WalletScreen, useOfferStatus, useWalletCredential } from "@/components/wallet/WalletClient";
 import { WalletBackspaceGlyph } from "@/components/wallet/WalletGlyphs";
 import {
   IconArrowRight,
@@ -13,7 +13,7 @@ import {
   walletButtonStyle,
 } from "@/components/wallet/WalletUi";
 import { useDemoState } from "@/lib/demo-state";
-import { CODE_MODE, WALLET_COPY } from "@/lib/data/flow3";
+import { WALLET_COPY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { WALLET_COLOR, WALLET_PROGRESS, WALLET_SIZE, WALLET_TIMING, WALLET_TYPE } from "@/lib/data/wallet-tokens";
 
@@ -40,7 +40,14 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_SIZE, WALLET_TIMING, WALLET_TYPE 
  *   CODE_MODE  "sms" (default, as in Figma): a simulated SMS banner slides
  *              down at the top of the phone — "Messages · Your GNL code is
  *              482 915" — and tapping it fills the code. "wallet_pin": no
- *              banner, placeholder text until Tatyana's design exists.
+ *              banner, "Enter your wallet PIN" (Flow 4's 6412:86737).
+ *
+ * FLOW 4 (2026-10-14): the mode is PER CREDENTIAL (decision 4) — the
+ * vehicle certificate keeps "sms" (flow3.ts CODE_MODE, unchanged), the notice
+ * of assessment uses "wallet_pin", Figma 6412:86737: same boxes, keypad and
+ * button, no SMS banner, and any six digits are accepted (there is no real
+ * PIN). Read from the current offer after mount; the prerendered page is the
+ * sms variant, as before.
  * ====================================================================
  *
  * Back -> W-05, NOT W-06: W-06 is a one-shot transition (see its note) and
@@ -51,7 +58,8 @@ export default function WalletCodePage() {
   const { storeWalletCard } = useDemoState();
   const { set } = useOfferStatus();
   const c = WALLET_COPY.code;
-  const text = c[CODE_MODE];
+  const mode = useWalletCredential().codeMode;
+  const text = c[mode];
   const [digits, setDigits] = useState("");
   const [banner, setBanner] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -90,10 +98,10 @@ export default function WalletCodePage() {
 
   /* The SMS banner arrives a moment after the screen (sms mode only). */
   useEffect(() => {
-    if (CODE_MODE !== "sms") return;
+    if (mode !== "sms") return;
     const t = setTimeout(() => setBanner(true), WALLET_TIMING.smsBannerDelayMs);
     return () => clearTimeout(t);
-  }, []);
+  }, [mode]);
 
   const keyStyle: React.CSSProperties = { ...WALLET_TYPE.keypadDigit, color: WALLET_COLOR.text, background: WALLET_COLOR.background };
   const keyClass =
@@ -105,7 +113,7 @@ export default function WalletCodePage() {
       <WalletHeader back={FLOW3_ROUTES.review} progress={WALLET_PROGRESS.code} />
 
       {/* The simulated SMS (brief §7) — positioned against the phone frame. */}
-      {banner && !complete ? (
+      {banner && !complete && mode === "sms" ? (
         <button
           type="button"
           onClick={() => {

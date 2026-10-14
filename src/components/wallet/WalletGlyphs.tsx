@@ -115,6 +115,30 @@ export function WalletTruckGlyph() {
 }
 
 /**
+ * "Tasks_list" — the notice of assessment's icon (Flow 4, ADDED 2026-10-14):
+ * 45 x 45 beside the offer card's title on W-04 (6420:93873, ink) and 32 x 32
+ * in W-09's mint tile (6412:86670, teal, like the truck beside it).
+ *
+ * A DRAWN STAND-IN, like the truck and the shield above: figma.com asset URLs
+ * are refused by this container's egress proxy, so the component's SVG cannot
+ * be fetched. Drawn on Figma's own boxes (insets read from get_design_context:
+ * the board 18 % in from each side, 9 % from the top; the clip 27–73 % wide;
+ * three ticks in the left third and three lines beside them), so a real
+ * export is a drop-in swap. Bootstrap Icons' `clipboard-check` family is the
+ * nearest named equivalent.
+ */
+export function WalletTasksGlyph({ size = 45, color = WALLET_COLOR.text }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 45 45" width={size} height={size} aria-hidden="true" className="block shrink-0" data-wallet-glyph="tasks">
+      <rect x="8.2" y="5.2" width="28.6" height="35.8" rx="2.5" {...line(color, 1.5)} />
+      <rect x="12.4" y="3.9" width="20.2" height="4.8" rx="1.4" {...line(color, 1.5)} />
+      <path d="m13.9 15.6 1.9 1.9 3.3-3.4M13.9 24.6l1.9 1.9 3.3-3.4M13.9 33.6l1.9 1.9 3.3-3.4" {...line(color, 1.4)} />
+      <path d="M22.2 16.2h9M22.2 25.2h9M22.2 34.2h9" {...line(color, 1.4)} />
+    </svg>
+  );
+}
+
+/**
  * W-08's check — 5 px stroke, #2E8E74 (brief §7 W-08), in the 100 px mint
  * circle. DRAWN IN with `gnl-wallet-draw` (stroke-dashoffset), ~0.5 s.
  */

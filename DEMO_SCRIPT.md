@@ -1,6 +1,6 @@
-# Demo script — MyGovNL with CertifiO ID, and the wallet (Flow 3)
+# Demo script — MyGovNL with CertifiO ID, and the wallet (Flows 3 and 4)
 
-**Order:** Flow A (Driver and Vehicle) → **Flow 3 right after Flow A's "Trusted" page** → Flow B (StudentAidNL).
+**Order:** Flow A (Driver and Vehicle) → **Flow 3 right after Flow A's "Trusted" page** → Flow B (StudentAidNL) → **Flow 4 right after Flow B's "Trusted" page**.
 Button labels below are the exact on-screen labels, in **bold**. Every other control shows a small "Not part of this demo" message.
 
 ## Before you start
@@ -10,7 +10,7 @@ Button labels below are the exact on-screen labels, in **bold**. Every other con
 | Start the demo | `npm run build` then `npx serve out -l 4173` (never `-s`). Open `http://localhost:4173/`. |
 | Reset everything | Press **Esc** on any portal page, or open `/reset`. This also clears the wallet: the offer, the added card and the card count. |
 | Step forward / back | **→** / **←** keys (presenter shortcut; the on-screen buttons do the same). |
-| Presenter stage (Flow 3, optional) | Press **Shift+W**. The C1 page (left) and the wallet phone (right) show side by side. It has its own **Reset demo** button. |
+| Presenter stage (optional) | Press **Shift+W**. The C1 page (left) and the wallet phone (right) show side by side. It has its own **Reset demo** button. Pressed on a StudentAidNL page, it shows Flow 4's page. |
 | Browser | Chrome. Allow pop-ups for `localhost` (the wallet opens in a small window). |
 | Persona | **Jason Moore**. Log in as `jason.moore@email.com` with **any password** (any non-empty email and password work). The dashboard says "Welcome Jason Moore!"; the wallet says "Hello, Jason!". |
 | Keys while typing | The **→ / ← / Esc** shortcuts do nothing while the cursor is in a text field. **Esc** there only leaves the field. Click outside the field first. |
@@ -96,4 +96,24 @@ Reset first (**Esc**), or continue from the dashboard.
 16. Provider status: moves on by itself.
 17. Prerequisite: **Continue**.
 18. Confirmation: **Go to Service StudentAidNL**.
-19. **StudentAidNL — "Trusted"**, with **Access the StudentAid Portal**.
+19. **StudentAidNL — "Trusted"**, with **Access the StudentAid Portal**. ← Flow 4 starts here.
+
+---
+
+## Flow 4 — add the notice of assessment to the same wallet
+
+The same wallet app as Flow 3, a different card. Run it after Flow 3 (the wallet then ends with **4 cards**) or on its own (**3 cards**).
+
+| # | Where | Do | Say |
+|---|---|---|---|
+| 1 | StudentAidNL, "Trusted" | Under **Access the StudentAid Portal**, in the grey panel **"Skip retyping your funding details"**, click **Add to wallet**. | "StudentAidNL can give me my verified notice of assessment." |
+| 2 | "Add your notice of assessment to your wallet" | Point at the QR and **"Waiting for scan…"**. **Click the QR code**: the wallet opens. Tap **Scan QR-code**. | "Same wallet, a new card." |
+| 3 | Wallet: "Allow connection?" | It now says **StudentAidNL** under the government's name. **Yes, connect**. The desktop says **"Adding to your wallet…"**. | |
+| 4 | "Notice of assessment offered" | **View offer**. | |
+| 5 | "Is the information correct?" | Scroll through the funding details. **Add to wallet**. | "Every amount is verified — no retyping on the next application." |
+| 6 | "Enter your wallet PIN" | Type **any 6 digits** (no SMS this time — it is the wallet's own PIN). **Continue**. | "My wallet PIN confirms it's me." |
+| 7 | "Added Successfully" | The desktop says **"Added to your wallet"**. **Go to Wallet**. | |
+| 8 | "Your credentials" | **Notice of assessment** on top, open, issued today; the vehicle certificate below it if Flow 3 ran. | "Reuse it for scholarships, bursaries and awards; share only what's needed." |
+
+**Back to the portal:** "← Back to StudentAidNL". **Esc** (or `/reset`) clears both cards.
+On a phone-width screen it works like Flow 3: **Add to Apple Wallet**, the same steps, then **◀ MyGovNL**.

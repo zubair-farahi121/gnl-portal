@@ -150,8 +150,17 @@ export function WalletStatusBar({
  * (about 47 x 57 — the REAL mark from design-reference/flow3/brand), then
  * "Government of Newfoundland & Labrador", Inter 600 16, centred. 16 px
  * between them on W-03 / W-04, 12 on W-05.
+ *
+ * `subline` — ADDED 2026-10-14 (Flow 4): the issuing service under the
+ * issuer's name, 8 px below it (Frame 14681 6420:96727: "StudentAidNL", Inter
+ * 600 14, 70 % ink). Without it the markup is exactly Flow 3's.
  */
-export function IssuerBlock({ gap = 16 }: { gap?: number }) {
+export function IssuerBlock({ gap = 16, subline }: { gap?: number; subline?: string }) {
+  const name = (
+    <p className="w-full text-center" style={{ ...WALLET_TYPE.cardTitle, color: WALLET_COLOR.text }}>
+      {WALLET_ISSUER}
+    </p>
+  );
   return (
     <div className="flex w-full flex-col items-center" style={{ gap }} data-wallet-issuer="true">
       <div
@@ -169,9 +178,16 @@ export function IssuerBlock({ gap = 16 }: { gap?: number }) {
           className="block h-[57px] w-[35px]"
         />
       </div>
-      <p className="w-full text-center" style={{ ...WALLET_TYPE.cardTitle, color: WALLET_COLOR.text }}>
-        {WALLET_ISSUER}
-      </p>
+      {subline ? (
+        <div className="flex w-full flex-col items-start gap-[8px]" data-wallet-issuer-subline="true">
+          {name}
+          <p className="w-full text-center" style={WALLET_TYPE.issuerSubline}>
+            {subline}
+          </p>
+        </div>
+      ) : (
+        name
+      )}
     </div>
   );
 }
@@ -188,14 +204,15 @@ export function WalletHeading({
   align = "center",
 }: {
   children: React.ReactNode;
-  size?: "default" | "xl";
+  /** "h4" (28 px) — Flow 4's W-04 heading, ADDED 2026-10-14. */
+  size?: "default" | "xl" | "h4";
   align?: "center" | "left";
 }) {
   return (
     <h1
       className="w-full [word-break:break-word]"
       style={{
-        ...(size === "xl" ? WALLET_TYPE.headingXl : WALLET_TYPE.heading),
+        ...(size === "xl" ? WALLET_TYPE.headingXl : size === "h4" ? WALLET_TYPE.headingH4 : WALLET_TYPE.heading),
         color: WALLET_COLOR.text,
         textAlign: align,
       }}

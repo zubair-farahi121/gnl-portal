@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { SERVICES, type IdvMethod, type ServiceId } from "@/lib/data/service-config";
-import type { CredentialOffer } from "@/lib/mock-issuer";
+import type { CredentialKind, CredentialOffer } from "@/lib/mock-issuer";
 
 /* ====================================================================
  * THE DEMO STORE — `gnl-demo:v1` in localStorage.
@@ -130,15 +130,49 @@ export type ServiceState = {
  *                             still in flight.
  *   connectArmed              W-06's one-shot auto-advance (Back-safety).
  *
- * ONE SLICE, NOT PER SERVICE: the wallet flow exists for Driver and Vehicle
- * only (the "Skip the paper copy" upsell sits on the 2015 CHEV IMT card).
+ * ONE SLICE, NOT PER SERVICE: it is ONE wallet app on the user's phone. Flow 3
+ * fills it from Driver and Vehicle (the "Skip the paper copy" upsell on the
+ * 2015 CHEV IMT card); since 2026-10-14 Flow 4 fills it from StudentAidNL
+ * ("Skip retyping your funding details") — same wallet, a second card.
+ *
+ *   noaIssuedAt               ADDED 2026-10-14 (Flow 4): `cardIssuedAt`'s
+ *                             twin for the notice of assessment. A separate
+ *                             field rather than a reshaped map, so every store
+ *                             written by a Flow 3 build still reads the same
+ *                             and `cardIssuedAt` keeps meaning exactly what it
+ *                             meant (the vehicle certificate). ISSUED_FIELD
+ *                             below is the one place that pairs kind -> field.
  */
 export type WalletSlice = {
   offers?: Record<string, CredentialOffer>;
   currentOfferId?: string;
   cardIssuedAt?: string;
+  noaIssuedAt?: string;
   connectArmed?: boolean;
 };
+
+/** Which WalletSlice field records "this credential is on the phone". */
+export const ISSUED_FIELD: Record<CredentialKind, "cardIssuedAt" | "noaIssuedAt"> = {
+  "driver-vehicle": "cardIssuedAt",
+  studentaid: "noaIssuedAt",
+};
+
+/** The wallet's base cards (Photo ID, Proof of age) — W-09 before any issuing. */
+export const BASE_WALLET_CARDS = 2;
+
+/**
+ * The credentials on the phone, NEWEST FIRST — W-09's order ("the most
+ * recently issued card is on top and expanded", Flow 4 decision 5). A tie
+ * (same millisecond, only ever a hand-edited store) keeps ISSUED_FIELD order.
+ */
+export function issuedCards(w: WalletSlice | undefined): { kind: CredentialKind; issuedAt: string }[] {
+  const list: { kind: CredentialKind; issuedAt: string }[] = [];
+  for (const kind of Object.keys(ISSUED_FIELD) as CredentialKind[]) {
+    const at = w?.[ISSUED_FIELD[kind]];
+    if (typeof at === "string" && at) list.push({ kind, issuedAt: at });
+  }
+  return list.sort((a, b) => Date.parse(b.issuedAt) - Date.parse(a.issuedAt));
+}
 
 export type DemoStore = {
   /** Bumping this invalidates old stores rather than half-reading them. */
@@ -178,6 +212,8 @@ export type DemoStore = {
 };
 
 const EMPTY_SERVICE: ServiceState = { status: "not_started" };
+/** One shared empty map, so "no offers" is the same object on every render. */
+const NO_OFFERS: Record<string, CredentialOffer> = {};
 export const EMPTY_STORE: DemoStore = { v: 1, services: {} };
 
 /**
@@ -266,12 +302,29 @@ type DemoStateApi = {
    */
   walletOffer: CredentialOffer | null;
   /**
+   * FLOW 4 (2026-10-14) — every offer in the store (one per credential kind,
+   * see `withOffer` in src/lib/mock-issuer.ts). Each C1 page follows the
+   * newest offer of ITS kind. Empty until the store has been read.
+   */
+  walletOffers: Record<string, CredentialOffer>;
+  /**
    * FLOW 3 — when the certificate landed in the wallet (W-08), or null. The
    * WALLET's own record: W-09 shows 3 cards when set, 2 when not (brief §7).
    */
   walletCardIssuedAt: string | null;
-  /** W-08 — the wallet stores the certificate. Idempotent: keeps the first date. */
-  storeWalletCard: () => void;
+  /**
+   * FLOW 4 (2026-10-14) — every credential on the phone, newest first
+   * (`issuedCards`). Empty until the store has been read. W-09 and the
+   * "N cards total" count read this; `walletCardIssuedAt` above is kept for
+   * the vehicle certificate's own readers (the upsell's added state).
+   */
+  walletIssued: { kind: CredentialKind; issuedAt: string }[];
+  /**
+   * W-08 — the wallet stores the credential. Idempotent: keeps the first
+   * date. `kind` defaults to the CURRENT offer's (Flow 3: always the vehicle
+   * certificate, as before); no offer at all -> the vehicle certificate.
+   */
+  storeWalletCard: (kind?: CredentialKind) => void;
   /** W-05 "Accept" — arm W-06's one-shot auto-advance. */
   armWalletConnect: () => void;
   /** W-06 on mount — read AND clear the one-shot. True at most once per arming. */
@@ -406,14 +459,27 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
         return (id && store.wallet?.offers?.[id]) || null;
       })(),
 
+      walletOffers: store.wallet?.offers ?? NO_OFFERS,
+
       walletCardIssuedAt: store.wallet?.cardIssuedAt ?? null,
 
-      storeWalletCard: () =>
-        update((prev) =>
-          prev.wallet?.cardIssuedAt
+      walletIssued: issuedCards(store.wallet),
+
+      storeWalletCard: (kind) =>
+        update((prev) => {
+          /* The kind of the offer the wallet is working on, read from the SAME
+             persisted value this update is about to write. */
+          const id = prev.wallet?.currentOfferId;
+          const cur = id ? prev.wallet?.offers?.[id] : undefined;
+          /* Inline rather than mock-issuer's `offerKind`: that module imports
+             this one, and the store must not import it back. */
+          const k: CredentialKind =
+            kind ?? (cur && Object.prototype.hasOwnProperty.call(ISSUED_FIELD, cur.serviceId) ? cur.serviceId : "driver-vehicle");
+          const field = ISSUED_FIELD[k];
+          return prev.wallet?.[field]
             ? prev
-            : { ...prev, wallet: { ...prev.wallet, cardIssuedAt: new Date().toISOString() } },
-        ),
+            : { ...prev, wallet: { ...prev.wallet, [field]: new Date().toISOString() } };
+        }),
 
       armWalletConnect: () =>
         update((prev) => ({ ...prev, wallet: { ...prev.wallet, connectArmed: true } })),

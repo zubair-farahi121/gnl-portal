@@ -8,7 +8,16 @@ import { WalletStatusBar } from "@/components/wallet/WalletUi";
 import { useDemoState } from "@/lib/demo-state";
 import { SAME_DEVICE_KEY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
-import { createOffer, isWaiting, peekCurrentOffer, selectOffer, updateOffer } from "@/lib/mock-issuer";
+import {
+  DEFAULT_KIND,
+  createOffer,
+  isCredentialKind,
+  isWaiting,
+  peekCurrentOffer,
+  peekOfferOfKind,
+  selectOffer,
+  updateOffer,
+} from "@/lib/mock-issuer";
 import { joinRoom } from "@/lib/remote-sync";
 
 /*
@@ -53,7 +62,21 @@ export default function WalletStartPage() {
          here on every `updateOffer` is mirrored back to the laptop. No-op on
          a static build or without `room` (docs/PHONE_PATH.md). */
       if (room) await joinRoom(room);
-      if (!(id && selectOffer(id)) && !peekCurrentOffer()) await createOffer();
+      /* Flow 4 (2026-10-14): `&kind=` names the credential. A phone with no
+         copy of the offer (a static host such as Vercel) creates or reuses
+         an offer of THAT kind, so scanning the notice-of-assessment QR never
+         opens the vehicle certificate. Without `kind`: exactly as before. */
+      /* No (or an unknown) `kind` = Flow 3's vehicle certificate: its QR
+         never carries one. So a phone that last opened the notice of
+         assessment still opens the CERTIFICATE from a Flow 3 QR. For a store
+         with only vehicle offers this is exactly the old rule (reuse the
+         current offer, else create one). */
+      const raw = params.get("kind");
+      const kind = isCredentialKind(raw) ? raw : DEFAULT_KIND;
+      if (!(id && selectOffer(id))) {
+        const same = peekOfferOfKind(kind);
+        if (!(same && selectOffer(same.id))) await createOffer(kind);
+      }
       const cur = peekCurrentOffer();
       if (cur && isWaiting(cur.status)) void updateOffer(cur.id, { status: "scanned" });
       router.replace(FLOW3_ROUTES.connect);

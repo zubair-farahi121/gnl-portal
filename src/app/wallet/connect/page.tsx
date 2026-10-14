@@ -1,8 +1,11 @@
+"use client";
+
 import {
   WalletEnsureStatus,
   WalletHeader,
   WalletScreen,
   WalletStatusButton,
+  useWalletCredential,
 } from "@/components/wallet/WalletClient";
 import { WalletShieldGlyph, WalletSwapGlyph } from "@/components/wallet/WalletGlyphs";
 import {
@@ -36,9 +39,16 @@ import { WALLET_COLOR, WALLET_PROGRESS, WALLET_SIZE, WALLET_TYPE } from "@/lib/d
  *                switch icon, title (600 16) + description
  *   actions      "Yes, connect" -> `connected` + W-04
  *                "Decline"      -> `declined` + W-01 (desktop: "Waiting for scan")
+ *
+ * FLOW 4 (2026-10-14) — the same screen for a notice of assessment, Figma
+ * 6412:86796: "StudentAidNL" under the issuer's name, and its own supporting
+ * copy. Picked from the current offer (useWalletCredential); a CLIENT page
+ * since, so it can read it. With a vehicle offer, or none, it renders exactly
+ * what it rendered before (the `wallet-connect` baseline).
  */
 export default function WalletConnectPage() {
   const c = WALLET_COPY.connect;
+  const cred = useWalletCredential();
   return (
     <WalletScreen screen="W3" nodeId="6325:60170">
       <WalletEnsureStatus screen="W-03" />
@@ -47,12 +57,12 @@ export default function WalletConnectPage() {
 
       {/* content-scroll 6325:60190 */}
       <div className="flex w-full flex-col items-center gap-[24px] px-[24px] pt-[16px] pb-[24px]">
-        <IssuerBlock />
+        <IssuerBlock subline={cred.issuerSubline} />
 
         {/* title-stack 6325:60910 */}
         <div className="flex w-full flex-col items-center gap-[12px]">
           <WalletHeading>{c.heading}</WalletHeading>
-          <WalletLead>{c.body}</WalletLead>
+          <WalletLead>{cred.connectBody}</WalletLead>
         </div>
 
         {/* trust-indicators-stack 6325:60913 */}

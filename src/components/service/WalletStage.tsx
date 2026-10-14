@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { useDemoState } from "@/lib/demo-state";
+import { C1_CONTENT, C1_ROUTE } from "@/lib/data/credentials";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { WALLET_SIZE } from "@/lib/data/wallet-tokens";
+import { isCredentialKind, offerKind, peekCurrentOffer, type CredentialKind } from "@/lib/mock-issuer";
 
 /*
  * The presenter stage's two frames (see src/app/demo/wallet-stage/page.tsx).
@@ -20,6 +22,14 @@ import { WALLET_SIZE } from "@/lib/data/wallet-tokens";
  *
  * The scale is computed after mount (window size is unknown at build time);
  * the first paint uses scale 0.5 so the static HTML is sane.
+ *
+ * WHICH C1 PAGE — FLOW 4, 2026-10-14. The stage shows the C1 page of the
+ * credential being demoed: `?c=studentaid` (DemoNav's Shift+W adds it when
+ * pressed on a StudentAidNL page — see `stageRoute`), else the current
+ * offer's kind (Shift+W pressed in the wallet mid-Flow-4), else Flow 3's
+ * vehicle certificate, as before. Decided after mount, and the two frames are
+ * only mounted once it is decided: a C1 frame that loaded as Flow 3's and was
+ * then swapped would have minted a vehicle offer on the way.
  */
 const C1 = { w: 1440, h: 1024 };
 const PHONE = { w: WALLET_SIZE.phoneWidth, h: WALLET_SIZE.phoneHeight };
@@ -31,6 +41,12 @@ export function WalletStage() {
   const { resetAll } = useDemoState();
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [nonce, setNonce] = useState(0);
+  const [kind, setKind] = useState<CredentialKind | null>(null);
+
+  useEffect(() => {
+    const c = new URLSearchParams(window.location.search).get("c");
+    setKind(isCredentialKind(c) ? c : offerKind(peekCurrentOffer()));
+  }, []);
 
   useEffect(() => {
     const on = () => setSize({ w: window.innerWidth, h: window.innerHeight });
@@ -52,7 +68,9 @@ export function WalletStage() {
   return (
     <div className="box-border flex min-h-[100dvh] w-full flex-col bg-[#e9ecef]" style={{ padding: PAD }} data-wallet-stage="true">
       <div className="flex items-center justify-between" style={{ height: HEADER }}>
-        <p className="text-[14px] font-bold text-[#5f6368]">Presenter stage — Flow 3 (MyGovNL + wallet)</p>
+        <p className="text-[14px] font-bold text-[#5f6368]">
+          {kind === "studentaid" ? "Presenter stage — Flow 4 (StudentAidNL + wallet)" : "Presenter stage — Flow 3 (MyGovNL + wallet)"}
+        </p>
         <button
           type="button"
           onClick={() => {
@@ -70,27 +88,32 @@ export function WalletStage() {
           className="overflow-hidden rounded-[6px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
           style={{ width: C1.w * sC1, height: C1.h * sC1 }}
         >
-          <iframe
-            key={`c1-${nonce}`}
-            src={FLOW3_ROUTES.c1}
-            title="MyGovNL — Add your vehicle registration certificate to your wallet"
-            className="block origin-top-left border-0"
-            style={{ width: C1.w, height: C1.h, transform: `scale(${sC1})` }}
-            data-stage-frame="c1"
-          />
+          {kind ? (
+            <iframe
+              key={`c1-${nonce}`}
+              src={C1_ROUTE[kind]}
+              title={`MyGovNL — ${C1_CONTENT[kind].copy.heading}`}
+              className="block origin-top-left border-0"
+              style={{ width: C1.w, height: C1.h, transform: `scale(${sC1})` }}
+              data-stage-frame="c1"
+              data-stage-credential={kind}
+            />
+          ) : null}
         </div>
         <div
           className="overflow-hidden border border-solid border-[#e6e8ef] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
           style={{ width: PHONE.w * sPhone + 2, height: PHONE.h * sPhone + 2, borderRadius: WALLET_SIZE.phoneRadius * sPhone }}
         >
-          <iframe
-            key={`w-${nonce}`}
-            src={FLOW3_ROUTES.walletHome}
-            title="Wallet (phone)"
-            className="block origin-top-left border-0"
-            style={{ width: PHONE.w, height: PHONE.h, transform: `scale(${sPhone})` }}
-            data-stage-frame="wallet"
-          />
+          {kind ? (
+            <iframe
+              key={`w-${nonce}`}
+              src={FLOW3_ROUTES.walletHome}
+              title="Wallet (phone)"
+              className="block origin-top-left border-0"
+              style={{ width: PHONE.w, height: PHONE.h, transform: `scale(${sPhone})` }}
+              data-stage-frame="wallet"
+            />
+          ) : null}
         </div>
       </div>
     </div>

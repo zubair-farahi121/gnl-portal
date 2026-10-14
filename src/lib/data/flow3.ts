@@ -189,8 +189,12 @@ export const WALLET_ISSUER = VRC.issuingAuthority;
  *                 and a simulated SMS banner slides down; tapping it fills
  *                 the code.
  *   "wallet_pin"  what Martin saw: the wallet asks for its OWN PIN. No banner.
- *                 Its text is not designed yet — placeholders below, never
- *                 invented copy. Tatyana is checking.
+ *                 Designed since in Flow 4's W-07 (6412:86737) — its copy is
+ *                 below. Flow 4 uses this mode; Flow 3 stays on "sms".
+ *
+ * FLOW 4 (2026-10-14): the mode is now PER CREDENTIAL (`codeMode` in
+ * src/lib/data/credentials.ts). CODE_MODE is still the one switch for Flow
+ * 3's vehicle certificate.
  */
 /**
  * sessionStorage flag set by /wallet/start/?from=mygovnl — this tab is the
@@ -324,9 +328,15 @@ export const WALLET_COPY = {
       bodyAfter: ". This code was not included in the QR code.",
     },
     wallet_pin: {
-      /** NOT DESIGNED — brief §11 item 6: placeholder, never invented copy. */
-      heading: "[Heading from Tatyana's updated design]",
-      bodyBefore: "[Wallet PIN text from Tatyana's updated design]",
+      /**
+       * DESIGNED SINCE — Flow 4's W-07, 6412:86737 (2026-10-14): "Headings"
+       * 6412:86750 and 6412:86751, verbatim (U+0027 apostrophe). These were
+       * placeholders (brief §11 item 6) until that frame existed. Flow 3 still
+       * runs CODE_MODE "sms" above, so nothing Flow 3 shows changes; Flow 4's
+       * notice of assessment uses this mode (src/lib/data/credentials.ts).
+       */
+      heading: "Enter your wallet PIN",
+      bodyBefore: "Enter the PIN you created when you set up your wallet app. This confirms it's you adding the credential.",
       phone: "",
       bodyAfter: "",
     },

@@ -53,6 +53,13 @@ import { FLOW3_ROUTES } from "@/lib/data/service-config";
 export function walletOfferUrl(
   offerId: string | null,
   sync?: { base: string; room: string } | null,
+  /**
+   * Flow 4 (2026-10-14): which credential the offer is for. Added as `&kind=`
+   * only for a NON-default kind, so Flow 3's QR is exactly what it was. A real
+   * phone on a static host has no copy of the offer; `/wallet/start/` uses the
+   * kind to create the right one instead of falling back to Flow 3's.
+   */
+  kind?: string | null,
 ): string {
   /*
    * No PUBLIC_BASE_URL at build time (2026-10-14, Vercel): use the address
@@ -65,7 +72,8 @@ export function walletOfferUrl(
   const base = (sync?.base || process.env.PUBLIC_BASE_URL || fallback).replace(/\/+$/, "");
   const path = FLOW3_ROUTES.start;
   if (!offerId) return `${base}${path}`;
-  const query = `?offer=${encodeURIComponent(offerId)}`;
+  const kindParam = kind && kind !== "driver-vehicle" ? `&kind=${encodeURIComponent(kind)}` : "";
+  const query = `?offer=${encodeURIComponent(offerId)}${kindParam}`;
   return sync ? `${base}${path}${query}&room=${encodeURIComponent(sync.room)}` : `${base}${path}${query}`;
 }
 
