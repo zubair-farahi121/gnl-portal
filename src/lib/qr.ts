@@ -54,7 +54,15 @@ export function walletOfferUrl(
   offerId: string | null,
   sync?: { base: string; room: string } | null,
 ): string {
-  const base = (sync?.base || process.env.PUBLIC_BASE_URL || "http://localhost:4173").replace(/\/+$/, "");
+  /*
+   * No PUBLIC_BASE_URL at build time (2026-10-14, Vercel): use the address
+   * the page was opened from, so a hosted copy works with no settings. Only
+   * once there is an offer — that is client state, never present during
+   * prerender or hydration — so the server HTML and the first client render
+   * still match. On localhost:4173 this is the same address as before.
+   */
+  const fallback = offerId && typeof window !== "undefined" ? window.location.origin : "http://localhost:4173";
+  const base = (sync?.base || process.env.PUBLIC_BASE_URL || fallback).replace(/\/+$/, "");
   const path = FLOW3_ROUTES.start;
   if (!offerId) return `${base}${path}`;
   const query = `?offer=${encodeURIComponent(offerId)}`;
