@@ -117,7 +117,7 @@ export const STUDENTAID_CONTACT = {
  * shows the toast." Same label; only the state changes.
  */
 export const STUDENTAID_PORTAL_ROW = {
-  label: "Access the StudentAid Portal",
+  label: "Access the StudentAidNL Portal",
   lockedLabel: "Action locked",
   nodeId: "6206:26615",
 } as const;

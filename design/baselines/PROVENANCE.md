@@ -132,3 +132,23 @@ as every frame here: a picture of the build, compared by eye with the Figma
 screenshots, not a Figma export. `studentaid-verified` in particular freezes
 the page as BUILT: only its panel follows 6408:84644 — that frame differs from
 the derived PP-23 page outside the panel (see DEMO_AUDIT.md "Flow 4").
+
+## Re-baselined 2026-10-16 — Tatyana's feedback (three frames, by hand)
+
+Only the three frames this change is meant to move were replaced, copied from
+`design/shots/` after a pixel comparison of this branch against unchanged
+`main` rendered in the same environment (every other frame byte-identical):
+
+| Frame | What changed |
+|---|---|
+| `service-verified` | Tatyana's four linked-item pictograms (person, map pin, truck, red truck on a #fdf2f2 box for the expired trailer) and 40px outline buttons beside "Renew" |
+| `studentaid-verified` | "Access the StudentAid**NL** Portal" |
+| `cid-country` | "Canada" preselected in the country field, in body ink |
+
+`npm run baseline` was NOT used: this build environment was replaced on
+2026-10-16 and renders text slightly differently, so 11 untouched frames
+(`cid-terms`, `cid-biometric`, `cid-document`, `cid-capture-intro`,
+`cid-verified`, `service-verified`, `wallet-connect`, `wallet-noa-connect`,
+`wallet-noa-offer`, `wallet-noa-review`, `wallet-noa-cards`) diff at
+0.8–1.5% here on unchanged `main` too. The script would have re-baselined
+them as well, hiding that drift, so it was left alone.

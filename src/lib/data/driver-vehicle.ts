@@ -332,7 +332,7 @@ export const LINKED_ITEMS_TITLE = "Your linked items";
 export const LINKED_ITEMS: readonly LinkedItem[] = [
   {
     kind: "licence",
-    icon: ASSETS.iconUserLarge,
+    icon: ASSETS.iconDriversLicence,
     iconSize: 32,
     title: "Driver's licence",
     lines: [
@@ -346,7 +346,7 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
   },
   {
     kind: "address",
-    icon: ASSETS.iconMapPin,
+    icon: ASSETS.iconAddress,
     iconSize: 32,
     title: "Address",
     lines: [{ text: "15 PRINCESS ANNE PL" }],
@@ -356,7 +356,7 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
   },
   {
     kind: "vehicle",
-    icon: ASSETS.iconTruck,
+    icon: ASSETS.iconTruckRegistered,
     iconSize: 32,
     title: VEHICLE_CHEV.model,
     /* Rebuilt from VEHICLE_CHEV — the same two strings as before, U+2022 and all. */
@@ -390,7 +390,7 @@ export const LINKED_ITEMS: readonly LinkedItem[] = [
   },
   {
     kind: "vehicle",
-    icon: ASSETS.iconCircleX,
+    icon: ASSETS.iconTruckExpired,
     iconSize: 32,
     title: "0 UTILITY TRAILER",
     lines: [{ text: "Plate TDH 578 • VIN HM00000000036027" }],

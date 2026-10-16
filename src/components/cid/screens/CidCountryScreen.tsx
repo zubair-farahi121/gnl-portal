@@ -231,12 +231,14 @@ export function CidCountryScreen({ service }: { service: ServiceConfig }) {
           data-name="select-dropdown"
           data-demo-inert="true"
           aria-disabled="true"
+          aria-label={`${copy.selectLabel}: ${copy.selectedCountry}`}
         >
+          {/* A chosen value, so body ink rather than the placeholder's muted tone. */}
           <p
             className="min-w-px shrink-0 font-normal leading-[normal] whitespace-nowrap max-xxs:whitespace-normal"
-            style={{ fontSize: YOTI_TEXT.body, color: YOTI_COLOR.muted }}
+            style={{ fontSize: YOTI_TEXT.body, color: YOTI_COLOR.ink }}
           >
-            {copy.selectLabel}
+            {copy.selectedCountry}
           </p>
           <div className="relative size-[16px] shrink-0" data-name="chevron-down">
             {/* eslint-disable-next-line @next/next/no-img-element */}

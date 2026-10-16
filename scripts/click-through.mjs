@@ -1098,7 +1098,7 @@ async function runFlowB(width) {
     fails.push(`@${width} G17c: the Trusted page still shows "Action locked"`);
   }
   /* G17d — the unlocked portal row is external to the demo -> toast. */
-  await p.getByRole('button', { name: 'Access the StudentAid Portal' }).click();
+  await p.getByRole('button', { name: 'Access the StudentAidNL Portal' }).click();
   await p.waitForTimeout(400);
   at('G17d unlocked portal row must not navigate', '/services/studentaid');
   await sees('G17e unlocked portal row shows the toast', 'Not part of this demo');

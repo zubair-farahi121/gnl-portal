@@ -45,8 +45,12 @@ const BTN_PRIMARY =
  * 16px Bold #243746 on a #243746 stroke with px-[20px] py-[10px]. These are
  * 14px on a #d4d8da stroke with px-[16px] py-[6px].
  */
+/*
+ * min-h-[40px] ADDED 2026-10-16 (Tatyana): the outline buttons now match the
+ * 40px primary beside them ("Renew"), so a row of buttons is one height.
+ */
 const BTN_OUTLINE =
-  "gnl-touch box-border inline-flex shrink-0 items-center justify-center rounded-[6px] bg-white px-[16px] py-[6px] text-[14px] font-bold leading-[normal] text-[#5f6368] shadow-[inset_0_0_0_1px_#d4d8da]";
+  "gnl-touch box-border inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-[6px] bg-white px-[16px] py-[6px] text-[14px] font-bold leading-[normal] text-[#5f6368] shadow-[inset_0_0_0_1px_#d4d8da]";
 
 /*
  * NONE of these buttons has a destination: the design draws no Renew, demerit
@@ -97,7 +101,11 @@ function ActionButton({ action }: { action: LinkedItemAction }) {
 
 function IconBox({ item }: { item: LinkedItem }) {
   return (
-    <div className="flex size-[64px] shrink-0 items-center justify-center rounded-[6px] bg-[#e9ecef]">
+    /* An expired item's box takes the expired pill's tint (#fdf2f2), as in
+       Tatyana's 2026-10-16 mock-up; every other box stays #e9ecef. */
+    <div
+      className={`flex size-[64px] shrink-0 items-center justify-center rounded-[6px] ${item.warning ? "bg-[#fdf2f2]" : "bg-[#e9ecef]"}`}
+    >
       <div
         className={`relative shrink-0 ${item.iconSize === 58 ? "size-[58px]" : "size-[32px]"}`}
       >

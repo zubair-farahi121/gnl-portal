@@ -478,6 +478,11 @@ const CID_COUNTRY = {
    */
   selectLabel: "Select the country of issuance",
   /**
+   * ADDED 2026-10-16 (Tatyana): the field cannot be opened in the demo, so it
+   * shows a value already chosen instead of the placeholder above.
+   */
+  selectedCountry: "Canada",
+  /**
    * `PrivacyInfoCard` 6056:15803 — Yoti's own disclosure block, rendered by the
    * provider in production. `linkLabel` has no destination in the design and is
    * inert in the demo, like the Terms of Use link on /cid/terms/.

@@ -186,6 +186,16 @@ export const ASSETS = {
   iconTruck: "/assets/icon-truck.svg",
   /** `circle-x` in the trailer linked-item card, 32 x 32. Figma 6076:24399. */
   iconCircleX: "/assets/icon-circle-x.svg",
+  /*
+   * REAL PICTOGRAMS — Tatyana, 2026-10-16 (SharePoint "Icons and logos"),
+   * for the linked-item cards on the Trusted Driver and Vehicle page. They
+   * replace the placeholder user / map-pin / truck / circle-x leaves above.
+   * Saved verbatim, 32 x 32, outline, #004B87 (expired truck #CE463A).
+   */
+  iconDriversLicence: "/assets/user-drivers-licence.svg",
+  iconAddress: "/assets/address.svg",
+  iconTruckRegistered: "/assets/truck-registered.svg",
+  iconTruckExpired: "/assets/truck-expired.svg",
   /** `external-link` beside "Book an appointment", 14 x 14. Figma 6076:24352. */
   iconExternalLink: "/assets/icon-external-link.svg",
   /** `Ellipse` red dot in the expired-registration badge, 6 x 6, filled #d32f2f. Figma 6098:34982. */
