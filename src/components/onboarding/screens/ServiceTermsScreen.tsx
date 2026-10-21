@@ -148,9 +148,12 @@ export function ServiceTermsScreen({ service }: { service: ServiceConfig }) {
               </h1>
               <div className="flex w-full shrink-0 flex-col items-start gap-[4px]">
                 {/* §11.3 "section title 28/42 Bold". */}
-                <p className="w-full text-[28px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word] max-xs:text-[24px]">
-                  {terms.documentName}
-                </p>
+                {/* Tatyana 2026-10-20: hidden for StudentAidNL (`showName: false`). */}
+                {terms.showDocumentName ? (
+                  <p className="w-full text-[28px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word] max-xs:text-[24px]">
+                    {terms.documentName}
+                  </p>
+                ) : null}
                 <p className="w-full text-[16px] font-normal leading-[24px] text-[#5f6368]">
                   {terms.lastModifiedLabel}
                 </p>
@@ -196,6 +199,12 @@ export function ServiceTermsScreen({ service }: { service: ServiceConfig }) {
               role="group"
               aria-label={`${terms.title} — ${terms.documentName}`}
             >
+              {/* Tatyana 2026-10-20: StudentAidNL only. Flow A gets no extra node. */}
+              {terms.consentHeading ? (
+                <h2 className="mb-[8px] text-[20px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]">
+                  {terms.consentHeading}
+                </h2>
+              ) : null}
               <p className="text-[16px] font-normal leading-[24px] text-[#5f6368] [word-break:break-word]">
                 {terms.consentBody}
                 {/*

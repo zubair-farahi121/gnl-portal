@@ -196,8 +196,9 @@ function TitleRow({ title, trusted }: { title: string; trusted: boolean }) {
   return (
     /* title-badge-row 6206:25430 */
     <div className={TITLE_ROW} data-node-id="6206:25430">
+      {/* `mr-auto`: Tatyana 2026-10-20 — pill and bell sit at the right edge. */}
       <p
-        className="shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
+        className="mr-auto shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
         data-node-id="6206:25431"
       >
         {title}
@@ -272,7 +273,7 @@ function PortalRow({ row, trusted }: { row: ServicePageContent["portalRow"]; tru
         <span
           className={`${label} text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]`}
         >
-          {row.label}
+          {row.trustedLabel}
         </span>
         <span className="relative size-[20px] shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}

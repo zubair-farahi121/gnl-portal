@@ -90,7 +90,11 @@ const MAIN =
 const CONTENT_LEFT =
   "flex w-[860px] shrink-0 flex-col items-start gap-[24px] max-[1439px]:min-w-px max-[1439px]:shrink max-[1024px]:w-full";
 
-/** title-badge-row — wraps below the design width so the bell can fall to row 2. */
+/**
+ * title-badge-row — wraps below the design width so the bell can fall to row 2.
+ * The title carries `mr-auto` (Tatyana 2026-10-20), so the pill and the bell
+ * sit at the right edge of the row in both states.
+ */
 const TITLE_ROW =
   "flex w-full shrink-0 items-center gap-[16px] max-[1439px]:flex-wrap";
 
@@ -139,7 +143,7 @@ function ContentLeft() {
       {/* title-badge-row 6031:6250 */}
       <div className={TITLE_ROW} data-node-id="6031:6250">
         <p
-          className="shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
+          className="mr-auto shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
           data-node-id="6031:6251"
         >
           {SERVICE_HEADER.title}
@@ -514,7 +518,7 @@ function VerifiedContentLeft() {
       {/* title-badge-row 6257:72320 */}
       <div className={TITLE_ROW} data-node-id="6257:72320">
         <p
-          className="shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
+          className="mr-auto shrink-0 whitespace-nowrap text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]"
           data-node-id="6257:72321"
         >
           {SERVICE_HEADER.title}

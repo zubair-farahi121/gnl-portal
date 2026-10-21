@@ -118,6 +118,8 @@ export const STUDENTAID_CONTACT = {
  */
 export const STUDENTAID_PORTAL_ROW = {
   label: "Access the StudentAidNL Portal",
+  /** Trusted state only (after onboarding). Tatyana's feedback, 2026-10-20. */
+  trustedLabel: "Go to StudentAidNL",
   lockedLabel: "Action locked",
   nodeId: "6206:26615",
 } as const;

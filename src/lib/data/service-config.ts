@@ -113,6 +113,20 @@ export type ServiceTerms = {
     email: string;
     afterEmail: string;
   };
+  /**
+   * TATYANA'S FEEDBACK, 2026-10-20 (StudentAidNL only). Three per-service
+   * fields so Flow A's Terms screen stays exactly as it is:
+   *
+   *   showName       false hides the document name under "Terms and
+   *                  Conditions". `name` is still used for the scroll box's
+   *                  accessible name.
+   *   consentHeading a heading above the consent paragraph, inside the
+   *                  scroll box. Omitted = no heading (Flow A).
+   *   checkboxLabel  the text beside the consent checkbox.
+   */
+  showName: boolean;
+  consentHeading?: string;
+  checkboxLabel: string;
 };
 
 export type ServiceConfig = {
@@ -502,6 +516,8 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
         email: "digitalgovernment@gov.nl.ca",
         afterEmail: "",
       },
+      showName: true,
+      checkboxLabel: "I have read and accept terms and condition",
     },
   },
 
@@ -531,15 +547,17 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
      * bullets, because the design gives them THREE different spellings; see
      * `METHOD_OPTIONS` in src/lib/data/onboarding.ts.
      */
+    /* Tatyana's feedback, 2026-10-20: this wording replaces the live-portal
+       copy above, on both the Required and the Confirmed state. */
     requirement:
-      "Must have a valid driver license, health card, or have neither because out of province",
+      "Must have a valid driver licence, health card, or verify you have neither",
     /*
      * PP-21 Confirm some details: CONFIRMED — Figma 6217:80865, verbatim:
      * TYPOGRAPHIC U+2019 in "driver’s" AND A TRAILING FULL STOP, which §9 PP-21
      * also writes. It was the PP-07 string without the stop until 2026-09-28.
      */
     requirementConfirmed:
-      "Must have a valid driver’s license, health card, or have neither because out of province.",
+      "Must have a valid driver licence, health card, or verify you have neither.",
     // PP-07 draws three cards: MCP, MRD, GNL IDV — GNL IDV selected.
     methods: ["mcp", "mrd", "gnl_idv"],
     defaultMethod: "gnl_idv",
@@ -574,6 +592,12 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
         email: "digitalgovernment@gov.nl.ca",
         afterEmail: ".",
       },
+      /* Tatyana's feedback, 2026-10-20: no "StudentAidNL" under the heading,
+         a "Consent for Identity Verification" heading in the box, and the
+         checkbox wording below. */
+      showName: false,
+      consentHeading: "Consent for Identity Verification",
+      checkboxLabel: "I have read and accept the above Terms and Conditions",
     },
   },
 };

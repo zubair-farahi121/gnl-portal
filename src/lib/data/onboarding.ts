@@ -433,7 +433,10 @@ export function getOnboardingCopy(service: ServiceConfig) {
       consentAfterEmail: service.terms.consent.afterEmail,
       scopesTitle: "By Accepting This Policy You're Allowing To:",
       scopes: TERMS_SCOPES[service.id],
-      checkboxLabel: "I have read and accept terms and condition",
+      checkboxLabel: service.terms.checkboxLabel,
+      /** Tatyana 2026-10-20: StudentAidNL hides `documentName` and adds a heading in the box. */
+      showDocumentName: service.terms.showName,
+      consentHeading: service.terms.consentHeading ?? "",
       /** §7.4, verbatim. Shown under the checkbox, in red, on an unticked Consent. */
       validationMessage: "To continue, you must agree to the terms and conditions.",
       consentLabel: "I Consent",

@@ -1001,12 +1001,12 @@ async function runFlowB(width) {
   await step(
     'G6  Terms -> PP-06 confirm details (ticked)',
     async (pg) => {
-      await pg.getByLabel('I have read and accept terms and condition').check();
+      await pg.getByLabel('I have read and accept the above Terms and Conditions').check();
       await pg.getByRole('button', { name: 'I Consent', exact: true }).first().click();
     },
     '/services/studentaid/confirm-details',
   );
-  await sees('G6b PP-06 requirement', 'Must have a valid driver license, health card');
+  await sees('G6b PP-06 requirement', 'Must have a valid driver licence, health card, or verify you have neither');
   await sees('G6c PP-06 status', 'Required');
 
   await step('G7  PP-06 -> PP-07 method step', click('Continue'), '/services/studentaid/onboard');
@@ -1078,7 +1078,7 @@ async function runFlowB(width) {
   await p.waitForTimeout(4200);
   at('G14b processing auto-advances to FLOW B\'s Confirmed screen', '/services/studentaid/prerequisite');
   await sees('G14c completion toast', 'Identity verification complete');
-  await sees('G14d PP-21 requirement', 'or have neither because out of province.');
+  await sees('G14d PP-21 requirement', 'or verify you have neither.');
   await sees('G14e PP-21 status', 'Confirmed');
 
   await step('G15 PP-21 -> PP-22 success', click('Continue'), '/services/studentaid/confirmation');
@@ -1098,7 +1098,7 @@ async function runFlowB(width) {
     fails.push(`@${width} G17c: the Trusted page still shows "Action locked"`);
   }
   /* G17d — the unlocked portal row is external to the demo -> toast. */
-  await p.getByRole('button', { name: 'Access the StudentAidNL Portal' }).click();
+  await p.getByRole('button', { name: 'Go to StudentAidNL' }).click();
   await p.waitForTimeout(400);
   at('G17d unlocked portal row must not navigate', '/services/studentaid');
   await sees('G17e unlocked portal row shows the toast', 'Not part of this demo');

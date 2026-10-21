@@ -152,3 +152,21 @@ Only the three frames this change is meant to move were replaced, copied from
 `wallet-noa-offer`, `wallet-noa-review`, `wallet-noa-cards`) diff at
 0.8–1.5% here on unchanged `main` too. The script would have re-baselined
 them as well, hiding that drift, so it was left alone.
+
+## Re-baselined 2026-10-20 — Tatyana's second round (three frames, by hand)
+
+Same method as 2026-10-16: this branch and unchanged `main` (555fe63) were
+rendered in the same environment and compared pixel by pixel. Only these three
+frames differed, and only these three were replaced:
+
+| Frame | What changed |
+|---|---|
+| `service` | "Confirmation required" pill and bell moved to the right edge of the title row |
+| `service-verified` | "Trusted" pill and bell moved to the right edge of the title row |
+| `studentaid-verified` | The same, plus the portal row reads "Go to StudentAidNL" |
+
+`service` also carries this environment's 0.53% text drift (measured on
+`main`: `service` 0.534%, the other two 0.000%). The other StudentAidNL
+changes (Terms checkbox and heading, "Consent for Identity Verification",
+Confirm Some Details wording) are on screens with no baseline; the
+click-through gate checks their text instead.
