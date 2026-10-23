@@ -89,6 +89,8 @@ export const DATA_PRIVACY_CARD = {
   scopesTitle: "This service receives the following data from your profile:",
   termsLabel: "Terms of Use",
   termsHref: "https://www.gov.nl.ca/disclaimer/",
+  /** Trusted state only, both service pages. Tatyana's nice-to-have, 2026-10-23. */
+  removeConsentLabel: "Remove consent",
 } as const;
 
 /** shared-data-list — Figma 6098:34115. Both name rows reuse the same `user` glyph. */

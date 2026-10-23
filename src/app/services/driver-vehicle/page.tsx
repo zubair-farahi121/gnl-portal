@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { LinkedItemCard } from "@/components/service/LinkedItemCard";
 import { ASSETS } from "@/lib/assets";
 import { isTrusted, useDemoState } from "@/lib/demo-state";
+import { RemoveConsentButton } from "@/components/service/RemoveConsentButton";
 import {
   ACTIONS_SECTION,
   BREADCRUMB,
@@ -231,7 +232,8 @@ function ContentLeft() {
  * side by side — its cards are sized around that width and full of
  * `whitespace-nowrap` labels — and goes full width once they stack at 1024.
  */
-function SidebarRight() {
+/** `trusted` adds "Remove consent" under Terms of Use (2026-10-23). */
+function SidebarRight({ trusted = false }: { trusted?: boolean }) {
   return (
     <div
       className="flex w-[380px] shrink-0 flex-col items-start gap-[20px] max-[1024px]:w-full"
@@ -316,6 +318,8 @@ function SidebarRight() {
         >
           {DATA_PRIVACY_CARD.termsLabel}
         </a>
+
+        {trusted ? <RemoveConsentButton /> : null}
       </div>
 
       {/* contact-card 6031:6294 */}
@@ -627,8 +631,9 @@ function VerifiedPage() {
       {/* main-container 6257:72316 */}
       <main className={`${MAIN} h-[1583px]`} data-node-id="6257:72316">
         <VerifiedContentLeft />
-        {/* sidebar-right 6257:72427 — byte-identical to the unverified frame. */}
-        <SidebarRight />
+        {/* sidebar-right 6257:72427 — the unverified frame's, plus "Remove
+            consent" (Tatyana's nice-to-have, 2026-10-23). */}
+        <SidebarRight trusted />
       </main>
 
       <SiteFooter variant="desktop" />

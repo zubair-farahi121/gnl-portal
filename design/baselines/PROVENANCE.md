@@ -170,3 +170,35 @@ frames differed, and only these three were replaced:
 changes (Terms checkbox and heading, "Consent for Identity Verification",
 Confirm Some Details wording) are on screens with no baseline; the
 click-through gate checks their text instead.
+
+## Re-baselined 2026-10-23 — "acceptable form of photo ID" (three frames, by hand)
+
+Bob's wording change (via Martin), checked against Figma 6206:27601 and
+6031:6304 (read-only). This branch and unchanged `main` (fa877d7) were
+rendered in the same environment; only these three frames differed, and only
+these three were replaced:
+
+| Frame | What changed |
+|---|---|
+| `onboard` | Both Driver and Vehicle method cards: "… or acceptable form of photo ID" |
+| `prereq-required` | Confirm Some Details (Required): the same sentence |
+| `prereq-confirm` | Confirm some details (Confirmed): the same sentence |
+
+They also carry this environment's ~0.1% text drift (measured on `main`). The
+StudentAidNL screens with the new wording have no baseline; the click-through
+gate checks their text.
+
+## Re-baselined 2026-10-23 — "Remove consent" (two frames, by hand)
+
+Tatyana's nice-to-have, measured on Figma 6408:84644 (read-only): a rule and a
+grey "Remove consent" button under "Terms of Use" in Data & Privacy, Trusted
+state only, on both service pages. Compared with `main` (fa877d7) in the same
+environment, only these two frames changed for it (plus the three wording
+frames above):
+
+| Frame | What changed |
+|---|---|
+| `service-verified` | "Remove consent" under Terms of Use (page height unchanged) |
+| `studentaid-verified` | The same; the page is 71px taller (1450 -> 1521) because the sidebar is the taller column |
+
+Both frames measured 0.000% drift on `main` in this environment.

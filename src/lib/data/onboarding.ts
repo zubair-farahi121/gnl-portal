@@ -118,7 +118,13 @@ const VERIFY_INTRO = "This verification service is able to verify:";
  *   MRD      6217:34290  "Must have a valid driver's license"           U+0027
  *   GNL IDV  6217:30630  "…valid driver's license, health card, or …"  U+0027
  *
- * ONE DELIBERATE DEVIATION: the GNL IDV text node in Figma has a DOUBLE SPACE,
+ * UPDATED 2026-10-23 (Bob's request; Figma 6206:27601 / 6031:6304 re-read,
+ * read-only): all three Flow B cards now carry ONE string, "Must have a valid
+ * driver's license, health card, or acceptable form of photo ID", and Flow A's
+ * two cards get "… or acceptable form of photo ID" through `requirement`. The
+ * per-card table above is history.
+ *
+ * ONE DELIBERATE DEVIATION (history, the text no longer exists): the GNL IDV text node in Figma has a DOUBLE SPACE,
  * "or  have neither", rendered with `whitespace-pre-wrap`. §9 PP-07 — the copy
  * this build was told to use verbatim — writes it with one. One space is used:
  * a double space in the one card the presenter points at reads as a typo, and
@@ -148,21 +154,21 @@ const METHOD_OPTIONS: Record<
       title: "Medical Care Plan (MCP)",
       titleStyle: "muted",
       bullets: [
-        "Must have a valid driver’s license, health card, or have neither because out of province",
+        "Must have a valid driver's license, health card, or acceptable form of photo ID",
       ],
     },
     mrd: {
       nodeId: "6217:34280",
       title: "Motor Registration Division (MRD)",
       titleStyle: "muted",
-      bullets: ["Must have a valid driver's license"],
+      bullets: ["Must have a valid driver's license, health card, or acceptable form of photo ID"],
     },
     gnl_idv: {
       nodeId: "6217:30620",
       title: "GNL Identity Verification Service",
       titleStyle: "link",
       bullets: [
-        "Must have a valid driver's license, health card, or have neither because out of province",
+        "Must have a valid driver's license, health card, or acceptable form of photo ID",
       ],
     },
   },

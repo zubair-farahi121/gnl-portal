@@ -573,6 +573,8 @@ async function run(width) {
     }
   }
   await sees('D3 Trusted badge', 'Trusted');
+  /* D3r — Trusted Driver and Vehicle shows ONE inert "Remove consent" (2026-10-23). */
+  if ((await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) !== 1) fails.push(`@${width} D3r: expected one "Remove consent" button on Trusted Driver and Vehicle`);
 
   /*
    * D3b — FINISHING FLOW A DOES NOT MAKE FLOW B TRUSTED. Added 2026-09-28.
@@ -981,6 +983,7 @@ async function runFlowB(width) {
   );
   if ((await verifiedAttr()) !== '0') fails.push(`@${width} G2b: PP-03 should open unverified`);
   await sees('G2c PP-03 badge', 'Confirmation required');
+  if (await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) fails.push(`@${width} G2d: "Remove consent" shows on the UNVERIFIED StudentAidNL page`);
   await sees('G2d PP-03 subtitle is §10.1\'s', 'View and manage your StudentAidNL services');
   await sees('G2e PP-03 locked portal row', 'Action locked');
   await sees('G2f PP-03 contact block', 'P.O. Box 8700');
@@ -1006,7 +1009,7 @@ async function runFlowB(width) {
     },
     '/services/studentaid/confirm-details',
   );
-  await sees('G6b PP-06 requirement', 'Must have a valid driver licence, health card, or verify you have neither');
+  await sees('G6b PP-06 requirement', "Must have a valid driver's license, health card, or acceptable form of photo ID");
   await sees('G6c PP-06 status', 'Required');
 
   await step('G7  PP-06 -> PP-07 method step', click('Continue'), '/services/studentaid/onboard');
@@ -1078,7 +1081,7 @@ async function runFlowB(width) {
   await p.waitForTimeout(4200);
   at('G14b processing auto-advances to FLOW B\'s Confirmed screen', '/services/studentaid/prerequisite');
   await sees('G14c completion toast', 'Identity verification complete');
-  await sees('G14d PP-21 requirement', 'or verify you have neither.');
+  await sees('G14d PP-21 requirement', 'or acceptable form of photo ID.');
   await sees('G14e PP-21 status', 'Confirmed');
 
   await step('G15 PP-21 -> PP-22 success', click('Continue'), '/services/studentaid/confirmation');
@@ -1102,6 +1105,14 @@ async function runFlowB(width) {
   await p.waitForTimeout(400);
   at('G17d unlocked portal row must not navigate', '/services/studentaid');
   await sees('G17e unlocked portal row shows the toast', 'Not part of this demo');
+  /* G17f — "Remove consent" (2026-10-23): Trusted only, inert -> toast, stays Trusted. */
+  await p.waitForTimeout(2600);
+  if ((await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) !== 1) fails.push(`@${width} G17f: expected one "Remove consent" button on Trusted StudentAidNL`);
+  await p.getByRole('button', { name: 'Remove consent', exact: true }).click();
+  await p.waitForTimeout(400);
+  at('G17g Remove consent must not navigate', '/services/studentaid');
+  await sees('G17h Remove consent shows the toast', 'Not part of this demo');
+  if ((await verifiedAttr()) !== '1') fails.push(`@${width} G17i: Remove consent changed the Trusted state`);
 
   /* G-ISO — and Driver and Vehicle is NOT Trusted. Both the page and the store. */
   await p.goto(BASE + '/services/driver-vehicle/', { waitUntil: 'networkidle' });
@@ -1109,6 +1120,7 @@ async function runFlowB(width) {
   if ((await verifiedAttr()) === '1') {
     fails.push(`@${width} G-ISO: completing Flow B made Driver and Vehicle Trusted`);
   }
+  if (await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) fails.push(`@${width} G-ISOr: "Remove consent" shows on the UNVERIFIED Driver and Vehicle page`);
   {
     const dv = await p.evaluate(() => {
       try {

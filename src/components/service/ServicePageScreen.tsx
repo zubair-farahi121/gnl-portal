@@ -29,6 +29,7 @@ import {
   type ServiceConfig,
   type ServiceId,
 } from "@/lib/data/service-config";
+import { RemoveConsentButton } from "@/components/service/RemoveConsentButton";
 
 /* =========================================================================
  * THE STUDENTAIDNL SERVICE PAGE — PP-03 (Figma 6206:25424, 1440 x 1469.215)
@@ -382,7 +383,8 @@ function ContentLeft({
         StudentAidNL design than this page (PP-23, derived 2026-09-28 before
         any Trusted frame existed) and differs from it outside the panel —
         subtitle copy, badge position, a chevron instead of the external-link
-        glyph, a "Remove consent" button in Data & Privacy. Those are NOT
+        glyph (and a "Remove consent" button, ADDED 2026-10-23 — see
+        RemoveConsentButton). The rest are NOT
         redesigned here; they are listed in DEMO_AUDIT.md "Flow 4" for a
         decision. 860 wide at 1440 here; 860 wide in the frame too.
       */}
@@ -391,7 +393,8 @@ function ContentLeft({
   );
 }
 
-function SidebarRight({ content }: { content: ServicePageContent }) {
+/** `trusted` adds "Remove consent" under Terms of Use (2026-10-23). */
+function SidebarRight({ content, trusted }: { content: ServicePageContent; trusted: boolean }) {
   const { contact } = content;
   return (
     <div
@@ -470,6 +473,8 @@ function SidebarRight({ content }: { content: ServicePageContent }) {
         >
           {DATA_PRIVACY_CARD.termsLabel}
         </a>
+
+        {trusted ? <RemoveConsentButton /> : null}
       </div>
 
       {/* contact-card 6206:25474 — 20 + 24 + 12 + 298 + 20 = 374. */}
@@ -551,7 +556,7 @@ function Page({ service, trusted }: { service: ServiceConfig; trusted: boolean }
       {/* main-container 6206:25426 */}
       <main className={MAIN} data-node-id="6206:25426">
         <ContentLeft service={service} content={content} trusted={trusted} />
-        <SidebarRight content={content} />
+        <SidebarRight content={content} trusted={trusted} />
       </main>
       <SiteFooter variant="desktop" />
     </div>

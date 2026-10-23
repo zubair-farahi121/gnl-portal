@@ -479,9 +479,9 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
     title: "Driver and Vehicle",
     subtitle: "View and manage your driver and vehicle services",
     // U+0027, as the prerequisite-check frame draws it.
-    requirement: "Must have a valid driver's license",
+    requirement: "Must have a valid driver's license or acceptable form of photo ID",
     // U+2019, as the prerequisite-confirmed frame draws it. See the type.
-    requirementConfirmed: "Must have a valid driver’s license",
+    requirementConfirmed: "Must have a valid driver’s license or acceptable form of photo ID",
     methods: ["mrd", "gnl_idv"],
     defaultMethod: "gnl_idv",
     otherVerificationStep: false,
@@ -547,17 +547,19 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
      * bullets, because the design gives them THREE different spellings; see
      * `METHOD_OPTIONS` in src/lib/data/onboarding.ts.
      */
-    /* Tatyana's feedback, 2026-10-20: this wording replaces the live-portal
-       copy above, on both the Required and the Confirmed state. */
+    /* 2026-10-23, Bob's request (via Martin) and Figma 6206:27601: "…or
+       acceptable form of photo ID" replaces both the live-portal copy above
+       and Tatyana's 2026-10-20 "verify you have neither", on both the
+       Required and the Confirmed state. */
     requirement:
-      "Must have a valid driver licence, health card, or verify you have neither",
+      "Must have a valid driver's license, health card, or acceptable form of photo ID",
     /*
      * PP-21 Confirm some details: CONFIRMED — Figma 6217:80865, verbatim:
      * TYPOGRAPHIC U+2019 in "driver’s" AND A TRAILING FULL STOP, which §9 PP-21
      * also writes. It was the PP-07 string without the stop until 2026-09-28.
      */
     requirementConfirmed:
-      "Must have a valid driver licence, health card, or verify you have neither.",
+      "Must have a valid driver’s license, health card, or acceptable form of photo ID.",
     // PP-07 draws three cards: MCP, MRD, GNL IDV — GNL IDV selected.
     methods: ["mcp", "mrd", "gnl_idv"],
     defaultMethod: "gnl_idv",
