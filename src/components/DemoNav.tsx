@@ -4,8 +4,19 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { FLOW, FLOW_3, FLOW_4, FLOW_B } from "@/lib/flow";
 import { stageRoute } from "@/lib/data/credentials";
-import { FLOW3_ROUTES } from "@/lib/data/service-config";
-import { useDemoState } from "@/lib/demo-state";
+import { DEFAULT_SERVICE_ID, FLOW3_ROUTES, type ServiceId } from "@/lib/data/service-config";
+import {
+  IDV_STAGE_ROUTE,
+  STAGE_MSG,
+  askStage,
+  idvStageUrl,
+  isWalletStagePath,
+  isServiceIdValue,
+  phoneHomeUrl,
+  serviceFromPath,
+  stageRole,
+} from "@/lib/stage-sync";
+import { isTrusted, useDemoState } from "@/lib/demo-state";
 import { offerKind } from "@/lib/mock-issuer";
 
 /** Wallet paths whose own close ✕ answers Escape (see below). */
@@ -37,6 +48,9 @@ function isTypingTarget(t: EventTarget | null): t is HTMLElement {
  *                            screens with a close ✕: that ✕ — Flow 3)
  *   Shift+W                — the Flow 3 presenter stage (/demo/wallet-stage/);
  *                            from a StudentAidNL page, Flow 4's (?c=studentaid)
+ *                            — from an onboarding or CertifiO ID page, the IDV
+ *                            presenter stage (/demo/idv-stage/, 2026-10-23);
+ *                            inside that stage, Shift+W leaves it
  *
  * NONE of these fire while focus is in a text field (input, textarea, select
  * or contenteditable) — ADDED 2026-09-30 with the login page's real inputs.
@@ -51,7 +65,7 @@ export function DemoNav() {
    * `gnl-demo:v1`, the other being the `/reset` route. The header's Log Out
    * deliberately does NOT — see §7.1 and BtnSignOut.
    */
-  const { resetAll, walletOffer } = useDemoState();
+  const { resetAll, walletOffer, service: serviceState } = useDemoState();
   /* Flow 4: which credential the wallet is working on (see the FLOW_4 note). */
   const walletKind = offerKind(walletOffer);
 
@@ -96,11 +110,22 @@ export function DemoNav() {
               ? FLOW_3
               : FLOW;
       const i = at(list);
+      /*
+       * IDV PRESENTER STAGE (2026-10-23, src/lib/stage-sync.ts). In the
+       * stage's PHONE frame the arrows only move between the phone's own
+       * CertifiO ID screens — never back to the computer's hand-off page or on
+       * to the computer's processing step.
+       */
+      const role = stageRole();
+      const go = (to: string) => {
+        if (role === "phone" && !(to.startsWith("/cid/") && !to.includes("continue-on-mobile"))) return;
+        router.push(to);
+      };
       if (e.key === "ArrowRight" && i >= 0 && i < list.length - 1) {
-        router.push(list[i + 1]);
+        go(list[i + 1]);
       }
       if (e.key === "ArrowLeft" && i > 0) {
-        router.push(list[i - 1]);
+        go(list[i - 1]);
       }
       /*
        * Shift+W — the Flow 3 PRESENTER STAGE (FLOW3_BRIEF.md §3, P1), added
@@ -110,6 +135,27 @@ export function DemoNav() {
        */
       if (e.key === "W" && e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
         // Typing is already ruled out by the guard at the top.
+        /* IDV presenter stage (2026-10-23): inside it, Shift+W leaves it… */
+        if (role) {
+          askStage(STAGE_MSG.exit);
+          return;
+        }
+        if (pathname === IDV_STAGE_ROUTE) {
+          window.dispatchEvent(new Event(STAGE_MSG.exit));
+          return;
+        }
+        /* …and from anywhere else in the journey — login, dashboard, the
+           service page before onboarding, the wizard, CertifiO ID — opens it
+           on this very page. Wallet pages and a Trusted service page keep
+           opening the wallet stage (see isWalletStagePath). */
+        const trusted = (id: ServiceId) =>
+          new URLSearchParams(window.location.search).get("verified") === "1" || isTrusted(serviceState(id));
+        if (!isWalletStagePath(pathname, trusted)) {
+          router.push(
+            idvStageUrl(serviceFromPath(pathname) ?? DEFAULT_SERVICE_ID, `${pathname}${window.location.search}`),
+          );
+          return;
+        }
         // Flow 4 (2026-10-14): from a StudentAidNL page, the stage shows
         // Flow 4's C1 page. From a wallet or demo page, the bare path, which
         // follows the current offer (see WalletStage). From anywhere else,
@@ -130,6 +176,23 @@ export function DemoNav() {
        * offer goes back to `created` and the wallet to W-01. On every other
        * page, including W-01 and W-09, Escape is still the presenter's reset.
        */
+      /* Presenter stages (2026-10-23): Esc on the stage page resets the
+         whole stage — both frames — instead of leaving it for the login
+         page; in an IDV stage frame it asks the stage to do the same. */
+      if (e.key === "Escape" && (pathname === IDV_STAGE_ROUTE || pathname === FLOW3_ROUTES.stage)) {
+        window.dispatchEvent(new Event(STAGE_MSG.reset));
+        return;
+      }
+      if (e.key === "Escape" && role) {
+        askStage(STAGE_MSG.reset);
+        if (role === "phone") {
+          /* Belt and braces, should the stage page not answer. */
+          const q = new URLSearchParams(window.location.search).get("service");
+          resetAll();
+          router.push(phoneHomeUrl(serviceFromPath(pathname) ?? (isServiceIdValue(q) ? q : DEFAULT_SERVICE_ID)));
+        }
+        return;
+      }
       if (e.key === "Escape" && WALLET_ESC_CLOSES.has(pathname)) return;
       if (e.key === "Escape") {
         resetAll();
@@ -151,7 +214,7 @@ export function DemoNav() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pathname, router, resetAll, walletKind]);
+  }, [pathname, router, resetAll, walletKind, serviceState]);
 
   return null;
 }

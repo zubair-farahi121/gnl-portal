@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PHONE_PATH_COPY } from "@/lib/data/phone-path";
 import type { ServiceId } from "@/lib/data/service-config";
 import { completeHandoff } from "@/lib/remote-sync";
+import { completeStageHandoff, stageRole } from "@/lib/stage-sync";
 
 /*
  * THE PHONE PATH, phone side of CID verified — ADDED 2026-09-30 (docs/PHONE_PATH.md).
@@ -25,6 +26,11 @@ export function HandoffDoneNotice({ serviceId }: { serviceId: ServiceId }) {
 
   useEffect(() => {
     let dead = false;
+    /* Presenter stage (2026-10-23): the same notice for the same-tab hand-off. */
+    if (stageRole() === "phone") {
+      setDone(completeStageHandoff(serviceId));
+      return;
+    }
     void completeHandoff(serviceId).then((ok) => {
       if (ok && !dead) setDone(true);
     });

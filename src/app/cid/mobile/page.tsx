@@ -9,6 +9,7 @@ import { getCidCopy } from "@/lib/data/cid";
 import { PHONE_PATH_COPY } from "@/lib/data/phone-path";
 import { DEFAULT_SERVICE_ID, SERVICES, cidRoutes, getService, type ServiceId } from "@/lib/data/service-config";
 import { isServiceId, startHandoff } from "@/lib/remote-sync";
+import { phoneHomeUrl, stageRole, startStageHandoff } from "@/lib/stage-sync";
 
 /*
  * /cid/mobile/ — THE PHONE's side of the IDV hand-off. ADDED 2026-09-30 (the
@@ -52,6 +53,14 @@ export default function CidMobilePage() {
       setDone(id);
       return;
     }
+    /* Presenter stage (2026-10-23): join the same-tab hand-off FIRST; with
+       nothing to join, go back to the phone's home screen without touching
+       the store the portal frame shares. See src/lib/stage-sync.ts. */
+    const stage = stageRole() === "phone";
+    if (stage && !startStageHandoff(id)) {
+      router.replace(phoneHomeUrl(id));
+      return;
+    }
     const current = service(id);
     patchService(id, {
       ...(current.status === "not_started" ? { status: "in_progress" as const } : {}),
@@ -59,7 +68,8 @@ export default function CidMobilePage() {
       method: "gnl_idv",
       ...(SERVICES[id].otherVerificationStep ? { otherVerificationConfirmed: true } : {}),
     });
-    void startHandoff(params.get("room"), id).finally(() => router.replace(cidRoutes(id).terms));
+    const joined: Promise<unknown> = stage ? Promise.resolve(true) : startHandoff(params.get("room"), id);
+    void joined.finally(() => router.replace(cidRoutes(id).terms));
     // Run once per visit; `service` / `patchService` change identity on every store write.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, router]);

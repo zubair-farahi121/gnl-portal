@@ -57,8 +57,18 @@ certificate inside the container, are in [DEPLOY.md](DEPLOY.md).
 
 - **Esc** resets everything. You can also open `/reset`.
 - **→** and **←** jump to the next or previous screen when you need to skip ahead.
-- **Shift+W** shows the web page and the wallet phone side by side in one window.
-  Use it if pop-ups are blocked.
+- **Shift+W** opens the presenter view: the website and a phone side by side in one
+  window.
+  - Anywhere in the sign-up journey (login, dashboard, the service page, onboarding,
+    identity verification) it shows the CertifiO ID phone. At
+    "Continue on a smartphone", click **Scan QR code** on the phone (or click the QR
+    on the website). The phone runs the verification, and the website moves on by
+    itself when it is done. It works on the shared link too, no real phone needed.
+  - Press **Shift+W** again to leave. **Esc** resets both sides.
+  - If you reload, or a second presenter opens the same link in the same browser, it
+    continues where it was.
+  - On a wallet page, or a service page after onboarding, it shows the wallet phone.
+    Use it if pop-ups are blocked.
 - Each person's progress is saved in their own browser, so people testing at the same
   time don't affect each other.
 - **Optional: a real phone.** Start with `npm run serve:phone` instead of
@@ -73,6 +83,7 @@ certificate inside the container, are in [DEPLOY.md](DEPLOY.md).
 | Port 4173 is busy | Stop the other server. Or, with Docker, run `DEMO_PORT=8080 docker compose up -d`. |
 | Old content after a change | Run `npm run build` again. With Docker, run `docker compose up --build -d`. |
 | The wallet doesn't open when you click the QR | Allow pop-ups for the site, or press **Shift+W**. |
+| Shift+W does nothing | Click once on the page first, so the browser sends it the key. |
 | The camera doesn't start | Close other apps using it (Teams, Zoom). On a server, check that it uses HTTPS. |
 
 ## For developers
@@ -83,7 +94,8 @@ certificate inside the container, are in [DEPLOY.md](DEPLOY.md).
     `UPSELL_ADDED_STATE_ENABLED`, are in `src/lib/data/flow3.ts`. What each
     credential says is in `src/lib/data/credentials.ts`.
 - The fake credential issuer is `src/lib/mock-issuer.ts`. The phone-path server is
-  `server/demo-server.mjs`.
+  `server/demo-server.mjs`. The presenter views are in `src/components/stage/`; the
+  identity-verification one talks to its phone through `src/lib/stage-sync.ts`.
 - Checks (the test scripts are in the full repository, not in the deploy package):
   - `npm run shots && npm run diff`: pixel comparison with the designs.
   - `npm run clicks`: every click path.

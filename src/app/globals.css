@@ -726,3 +726,59 @@ body {
     overflow-y: visible;
   }
 }
+
+/* ===================================================================== *
+ * PRESENTER STAGE — /demo/idv-stage/ and /demo/wallet-stage/ (2026-10-23).
+ * src/components/stage/. A dark stage behind the two devices; small,
+ * calm motion for "something is happening" (the link, the pulsing step),
+ * all of it off under `prefers-reduced-motion`.
+ * ===================================================================== */
+.gnl-stage {
+  background:
+    radial-gradient(1100px 700px at 16% 8%, rgba(70, 130, 195, 0.32), transparent 60%),
+    radial-gradient(900px 640px at 88% 96%, rgba(40, 108, 171, 0.24), transparent 62%),
+    linear-gradient(160deg, #0f1c2c 0%, #13243a 52%, #0a1420 100%);
+}
+@keyframes gnl-stage-pulse {
+  0% { box-shadow: 0 0 0 0 var(--gnl-pulse, rgba(90, 169, 255, 0.3)); }
+  70% { box-shadow: 0 0 0 14px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.gnl-stage-pulse { animation: gnl-stage-pulse 1.8s ease-out infinite; }
+@keyframes gnl-stage-flow { to { stroke-dashoffset: -24; } }
+.gnl-stage-flow { animation: gnl-stage-flow 0.9s linear infinite; }
+@keyframes gnl-stage-scanline {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(232px); }
+}
+.gnl-stage-scanline { animation: gnl-stage-scanline 2.6s ease-in-out infinite; }
+@keyframes gnl-stage-focus {
+  0% { filter: blur(4px); transform: scale(0.94) rotate(-3deg); }
+  55%, 100% { filter: blur(0); transform: scale(1) rotate(-3deg); }
+}
+.gnl-stage-focus { animation: gnl-stage-focus 1.6s ease-out both; }
+@keyframes gnl-stage-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.gnl-stage-pop { animation: gnl-stage-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes gnl-stage-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.gnl-stage-rise { animation: gnl-stage-rise 0.5s ease-out both; }
+@keyframes gnl-stage-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1); }
+}
+.gnl-stage-breathe { animation: gnl-stage-breathe 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .gnl-stage-pulse,
+  .gnl-stage-flow,
+  .gnl-stage-scanline,
+  .gnl-stage-focus,
+  .gnl-stage-pop,
+  .gnl-stage-rise,
+  .gnl-stage-breathe { animation: none !important; }
+}

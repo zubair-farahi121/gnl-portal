@@ -2,26 +2,50 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  BrowserFrame,
+  DeviceLabel,
+  DeviceSlot,
+  ICON,
+  PHONE_OUTER,
+  PhoneFrame,
+  PresenterStage,
+  StageConnector,
+  fitStage,
+  useViewport,
+  type StageTone,
+} from "@/components/stage/StageChrome";
 import { useDemoState } from "@/lib/demo-state";
-import { C1_CONTENT, C1_ROUTE } from "@/lib/data/credentials";
+import { C1_ROUTE } from "@/lib/data/credentials";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { WALLET_SIZE } from "@/lib/data/wallet-tokens";
-import { isCredentialKind, offerKind, peekCurrentOffer, type CredentialKind } from "@/lib/mock-issuer";
+import { STAGE_MSG } from "@/lib/stage-sync";
+import {
+  isCredentialKind,
+  offerKind,
+  peekCurrentOffer,
+  type CredentialKind,
+  type CredentialOffer,
+} from "@/lib/mock-issuer";
 
 /*
  * The presenter stage's two frames (see src/app/demo/wallet-stage/page.tsx).
  *
- *   left   the C1 page (F3-02) rendered at its design size, 1440 x 1024, and
- *          SCALED to fit what is left of the screen
- *   right  the wallet at the brief's phone size, 393 x 852 (at 393 wide the
- *          wallet is full screen, so the stage draws the phone's outline:
- *          radius 48, 1 px #E6E8EF), scaled down only if the screen is short
+ *   left   the C1 page (F3-02) rendered at its design size, 1440 x 1024, in a
+ *          browser window, SCALED to fit what is left of the screen
+ *   right  the wallet at the brief's phone size, 393 x 852, in a phone,
+ *          scaled down only if the screen is short
+ *
+ * RESTYLED 2026-10-23 with the IDV presenter stage
+ * (src/components/stage/StageChrome.tsx): the same dark stage, presenter
+ * header, device frames and live link between the devices, so the two
+ * stages look like one product. The header's steps and the link follow the
+ * current offer. The frames, their URLs and every `data-stage-*` hook are
+ * unchanged. It also no longer wraps the phone under the browser at
+ * 1440 x 900 (the old sizing came out exactly one gap too wide there).
  *
  * "Reset demo" clears the shared store (brief §9) and reloads both frames:
  * the C1 frame makes a new offer, the wallet goes back to W-01.
- *
- * The scale is computed after mount (window size is unknown at build time);
- * the first paint uses scale 0.5 so the static HTML is sane.
  *
  * WHICH C1 PAGE — FLOW 4, 2026-10-14. The stage shows the C1 page of the
  * credential being demoed: `?c=studentaid` (DemoNav's Shift+W adds it when
@@ -32,90 +56,120 @@ import { isCredentialKind, offerKind, peekCurrentOffer, type CredentialKind } fr
  * then swapped would have minted a vehicle offer on the way.
  */
 const C1 = { w: 1440, h: 1024 };
-const PHONE = { w: WALLET_SIZE.phoneWidth, h: WALLET_SIZE.phoneHeight };
-const GAP = 40;
-const PAD = 32;
-const HEADER = 44;
+const BAR = 52;
+
+const STEPS = [
+  { label: "Scan QR code" },
+  { label: "Connect wallet" },
+  { label: "Review & accept" },
+  { label: "Confirm code" },
+  { label: "Added" },
+] as const;
+
+const TITLES: Record<CredentialKind, string> = {
+  "driver-vehicle": "Driver and Vehicle — vehicle registration certificate",
+  studentaid: "StudentAidNL — notice of assessment",
+};
+
+function stateOf(offer: CredentialOffer | null): { active: number; tone: StageTone; icon: string; label: string } {
+  switch (offer?.status) {
+    case "scanned":
+      return { active: 1, tone: "active", icon: ICON.phone, label: "Wallet connecting" };
+    case "connected":
+    case "viewed":
+      return { active: 2, tone: "active", icon: ICON.wallet, label: "Reviewing the offer" };
+    case "accepted":
+      return { active: 3, tone: "active", icon: ICON.lock, label: "Confirming the code" };
+    case "code_verified":
+      return { active: 4, tone: "active", icon: ICON.wallet, label: "Adding to wallet" };
+    case "issued":
+      return { active: 4, tone: "done", icon: ICON.check, label: "Added to wallet" };
+    default:
+      return { active: 0, tone: "waiting", icon: ICON.qr, label: "Waiting for scan" };
+  }
+}
 
 export function WalletStage() {
-  const { resetAll } = useDemoState();
-  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const { resetAll, walletOffer } = useDemoState();
+  const view = useViewport();
   const [nonce, setNonce] = useState(0);
   const [kind, setKind] = useState<CredentialKind | null>(null);
+  const [host, setHost] = useState("");
 
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("c");
     setKind(isCredentialKind(c) ? c : offerKind(peekCurrentOffer()));
+    setHost(window.location.host);
   }, []);
 
+  /* Esc on the stage page (DemoNav) = Reset demo. */
   useEffect(() => {
-    const on = () => setSize({ w: window.innerWidth, h: window.innerHeight });
-    on();
-    window.addEventListener("resize", on);
-    return () => window.removeEventListener("resize", on);
-  }, []);
+    const onReset = () => {
+      resetAll();
+      setNonce((n) => n + 1);
+    };
+    window.addEventListener(STAGE_MSG.reset, onReset);
+    return () => window.removeEventListener(STAGE_MSG.reset, onReset);
+  }, [resetAll]);
 
-  /* Side by side on a presenter screen; on a narrow one (never the stage's
-     purpose, but it must not scroll sideways) the two stack and each scales
-     to the full width. */
-  const vw = size ? size.w - PAD * 2 : 1000;
-  const availH = size ? size.h - PAD * 2 - HEADER : 800;
-  const sPhone = Math.min(1, availH / PHONE.h, (vw - 2) / PHONE.w);
-  const sideBySide = vw - GAP - PHONE.w * sPhone >= 480;
-  const availW = sideBySide ? vw - GAP - PHONE.w * sPhone : vw;
-  const sC1 = Math.min(availW / C1.w, sideBySide ? availH / C1.h : 1);
+  const { side, sDesk, sPhone } = fitStage(view, { w: C1.w, h: C1.h + BAR });
+  const offer = kind && walletOffer && offerKind(walletOffer) === kind ? walletOffer : null;
+  const st = stateOf(offer);
+  const deviceH = Math.max((C1.h + BAR) * sDesk, PHONE_OUTER.h * sPhone);
 
   return (
-    <div className="box-border flex min-h-[100dvh] w-full flex-col bg-[#e9ecef]" style={{ padding: PAD }} data-wallet-stage="true">
-      <div className="flex items-center justify-between" style={{ height: HEADER }}>
-        <p className="text-[14px] font-bold text-[#5f6368]">
-          {kind === "studentaid" ? "Presenter stage — Flow 4 (StudentAidNL + wallet)" : "Presenter stage — Flow 3 (MyGovNL + wallet)"}
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            resetAll();
-            setNonce((n) => n + 1);
-          }}
-          className="cursor-pointer rounded-[6px] bg-[#243746] px-[16px] py-[6px] text-[14px] font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004b87]"
-          data-stage-reset="true"
+    <PresenterStage
+      eyebrow="Presenter view · Digital wallet"
+      title={kind ? TITLES[kind] : "Digital wallet"}
+      steps={STEPS}
+      active={st.active}
+      tone={st.tone}
+      onReset={() => {
+        resetAll();
+        setNonce((n) => n + 1);
+      }}
+      data-wallet-stage="true"
+    >
+      <div className={`flex flex-1 items-center justify-center ${side ? "flex-row" : "flex-col gap-[40px]"}`}>
+        <DeviceSlot
+          height={side ? deviceH : undefined}
+          label={<DeviceLabel icon={ICON.monitor} title="Computer" subtitle="MyGovNL portal" />}
         >
-          Reset demo
-        </button>
+          <BrowserFrame w={C1.w} h={C1.h} scale={sDesk} url={{ host, path: kind ? C1_ROUTE[kind] : "" }}>
+            {kind ? (
+              <iframe
+                key={`c1-${nonce}`}
+                src={C1_ROUTE[kind]}
+                title="MyGovNL — add to your wallet (computer)"
+                className="block border-0"
+                style={{ width: C1.w, height: C1.h }}
+                data-stage-frame="c1"
+                data-stage-credential={kind}
+              />
+            ) : null}
+          </BrowserFrame>
+        </DeviceSlot>
+
+        {side ? <StageConnector tone={st.tone} icon={st.icon} label={st.label} height={deviceH} /> : null}
+
+        <DeviceSlot
+          height={side ? deviceH : undefined}
+          label={<DeviceLabel icon={ICON.phone} title="Phone" subtitle="Digital wallet" />}
+        >
+          <PhoneFrame scale={sPhone} statusBar={false}>
+            {kind ? (
+              <iframe
+                key={`w-${nonce}`}
+                src={FLOW3_ROUTES.walletHome}
+                title="Wallet (phone)"
+                className="block border-0"
+                style={{ width: WALLET_SIZE.phoneWidth, height: WALLET_SIZE.phoneHeight }}
+                data-stage-frame="wallet"
+              />
+            ) : null}
+          </PhoneFrame>
+        </DeviceSlot>
       </div>
-      <div className="flex flex-1 flex-wrap items-center justify-center" style={{ gap: GAP }}>
-        <div
-          className="overflow-hidden rounded-[6px] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
-          style={{ width: C1.w * sC1, height: C1.h * sC1 }}
-        >
-          {kind ? (
-            <iframe
-              key={`c1-${nonce}`}
-              src={C1_ROUTE[kind]}
-              title={`MyGovNL — ${C1_CONTENT[kind].copy.heading}`}
-              className="block origin-top-left border-0"
-              style={{ width: C1.w, height: C1.h, transform: `scale(${sC1})` }}
-              data-stage-frame="c1"
-              data-stage-credential={kind}
-            />
-          ) : null}
-        </div>
-        <div
-          className="overflow-hidden border border-solid border-[#e6e8ef] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
-          style={{ width: PHONE.w * sPhone + 2, height: PHONE.h * sPhone + 2, borderRadius: WALLET_SIZE.phoneRadius * sPhone }}
-        >
-          {kind ? (
-            <iframe
-              key={`w-${nonce}`}
-              src={FLOW3_ROUTES.walletHome}
-              title="Wallet (phone)"
-              className="block origin-top-left border-0"
-              style={{ width: PHONE.w, height: PHONE.h, transform: `scale(${sPhone})` }}
-              data-stage-frame="wallet"
-            />
-          ) : null}
-        </div>
-      </div>
-    </div>
+    </PresenterStage>
   );
 }

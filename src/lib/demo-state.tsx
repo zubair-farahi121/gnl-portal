@@ -10,6 +10,7 @@ import {
 } from "react";
 import { SERVICES, type IdvMethod, type ServiceId } from "@/lib/data/service-config";
 import type { CredentialKind, CredentialOffer } from "@/lib/mock-issuer";
+import { STAGE_KEY } from "@/lib/stage-sync";
 
 /* ====================================================================
  * THE DEMO STORE — `gnl-demo:v1` in localStorage.
@@ -503,6 +504,8 @@ export function DemoStateProvider({ children }: { children: React.ReactNode }) {
           room = localStorage.getItem(ROOM_KEY);
           localStorage.removeItem(STORE_KEY);
           localStorage.removeItem(ROOM_KEY);
+          /* The IDV presenter stage's hand-off (src/lib/stage-sync.ts), 2026-10-23. */
+          localStorage.removeItem(STAGE_KEY);
         } catch {
           /* ignore */
         }

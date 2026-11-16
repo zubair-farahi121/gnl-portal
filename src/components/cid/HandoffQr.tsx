@@ -10,6 +10,14 @@ import { PHONE_PATH_COPY } from "@/lib/data/phone-path";
 import { APP_ROUTES, type ServiceId } from "@/lib/data/service-config";
 import { qrMatrix } from "@/lib/qr";
 import { openHandoff, readIdv, watchRoom } from "@/lib/remote-sync";
+import {
+  consumeStage,
+  openStageHandoff,
+  requestStageScan,
+  stageQrUrl,
+  stageRole,
+  watchStage,
+} from "@/lib/stage-sync";
 
 /*
  * `image 13` (6156:60706) on CID_Redirect to mobile — the hand-off QR, and,
@@ -34,6 +42,11 @@ import { openHandoff, readIdv, watchRoom } from "@/lib/remote-sync";
  * presenter carries on here. "Continue on my computer" is untouched.
  *
  * NOT A CONTROL, as before: the QR is for a phone camera, not for a click.
+ *
+ * PRESENTER STAGE (2026-10-23, src/lib/stage-sync.ts): inside the stage's
+ * desktop frame the same box draws a real QR at once — no server needed —
+ * and it IS a control there: clicking it makes the stage's phone "scan" it.
+ * The status line and the advance on `complete` are the phone path's.
  */
 const BOX = 216.981201171875;
 
@@ -42,8 +55,27 @@ export function HandoffQr({ serviceId }: { serviceId: ServiceId }) {
   const { markVerified } = useDemoState();
   const [handoff, setHandoff] = useState<{ url: string; run: string } | null>(null);
   const [started, setStarted] = useState(false);
+  const [stage, setStage] = useState(false);
 
   useEffect(() => {
+    /* The presenter stage's desktop frame: a same-tab hand-off. */
+    if (stageRole() === "desktop") {
+      const rec = openStageHandoff(serviceId);
+      setStage(true);
+      setHandoff({ url: stageQrUrl(serviceId), run: rec.run });
+      let moved = false;
+      return watchStage((cur) => {
+        if (moved || !cur || cur.run !== rec.run || cur.service !== serviceId) return;
+        setStarted(cur.status !== "waiting");
+        if (cur.status === "complete" && !cur.consumed) {
+          moved = true;
+          consumeStage(rec.run);
+          /* Same two lines as CidVerifiedScreen's onContinue. */
+          markVerified(serviceId);
+          router.push(APP_ROUTES.processing);
+        }
+      });
+    }
     let dead = false;
     let stop: (() => void) | undefined;
     void (async () => {
@@ -86,14 +118,7 @@ export function HandoffQr({ serviceId }: { serviceId: ServiceId }) {
   const quiet = 4;
   const box = qr.size + quiet * 2;
   const status = started ? PHONE_PATH_COPY.handoffStarted : PHONE_PATH_COPY.handoffWaiting;
-  return (
-    <>
-      <div
-        className="relative flex h-[216.981201171875px] w-[220.4013671875px] shrink-0 items-center justify-center"
-        data-node-id="6156:60706"
-        data-qr-url={handoff.url}
-        data-handoff-state={started ? "started" : "waiting"}
-      >
+  const code = (
         <svg
           viewBox={`${-quiet} ${-quiet} ${box} ${box}`}
           width={BOX}
@@ -107,6 +132,30 @@ export function HandoffQr({ serviceId }: { serviceId: ServiceId }) {
           <rect x={-quiet} y={-quiet} width={box} height={box} fill="#ffffff" />
           <path d={qr.path} fill="#212326" />
         </svg>
+  );
+  return (
+    <>
+      <div
+        className="relative flex h-[216.981201171875px] w-[220.4013671875px] shrink-0 items-center justify-center"
+        data-node-id="6156:60706"
+        data-qr-url={handoff.url}
+        data-handoff-state={started ? "started" : "waiting"}
+      >
+        {stage ? (
+          /* Presenter stage only: click = the stage's phone scans it. */
+          <button
+            type="button"
+            onClick={() => requestStageScan(handoff.run)}
+            disabled={started}
+            className="block cursor-pointer rounded-[8px] transition-shadow hover:shadow-[0_0_0_4px_rgba(0,75,135,0.18)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004b87] disabled:cursor-default disabled:hover:shadow-none"
+            title="Scan with the phone"
+            data-stage-qr="true"
+          >
+            {code}
+          </button>
+        ) : (
+          code
+        )}
       </div>
       <p
         className="w-full shrink-0 text-center text-[16px] font-light leading-[1.5] text-[#5f6368] [word-break:break-word]"

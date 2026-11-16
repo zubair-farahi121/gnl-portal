@@ -1647,6 +1647,127 @@ async function runFlow3Stage(width) {
   await ctx.close();
 }
 
+/*
+ * IDV PRESENTER STAGE (2026-10-23, src/lib/stage-sync.ts). Shift+W on an
+ * onboarding page opens /demo/idv-stage/: the portal frame and a phone
+ * frame, joined by a same-tab hand-off (no server). Drives one full run per
+ * service: hand-off, click-to-scan, phone resumes after a reload, phone
+ * finishes CertifiO ID and the portal moves on by itself, Esc resets both,
+ * Shift+W leaves. Outside the stage the hand-off QR is unchanged.
+ */
+async function runIdvStage(width, svc) {
+  const ctx = await b.newContext({ viewport: { width, height: 900 } });
+  const p = await ctx.newPage();
+  const errs = [];
+  watchConsole(p, errs);
+  const tag = `@${width} ${svc}`;
+  const cid = svc === 'studentaid' ? '/cid/studentaid/' : '/cid/';
+  const onboard = `/services/${svc}/onboard/`;
+  const frame = (n) => p.frame({ name: n });
+  const at = (n) => { const f = frame(n); if (!f) return null; const u = new URL(f.url()); return u.pathname + u.search; };
+  const state = () => p.locator('[data-idv-stage]').getAttribute('data-stage-state');
+  const phoneHome = () => p.frameLocator('[data-stage-frame="phone"]').locator('main[data-phone-home]').getAttribute('data-phone-home').catch(() => null);
+  const desk = p.frameLocator('[data-stage-frame="desktop"]');
+  const until = async (fn, ms = 6000) => { for (let i = 0; i < ms / 200; i++) { if (await fn()) return true; await p.waitForTimeout(200); } return false; };
+  const phoneKey = async (key) => { await frame('gnl-stage-phone').evaluate(() => window.focus()); await p.keyboard.press(key); await p.waitForTimeout(500); };
+
+  /* I-0 — outside the stage, the hand-off QR is not a control. */
+  await p.goto(BASE + cid + 'continue-on-mobile/', { waitUntil: 'networkidle' });
+  if (await p.locator('[data-stage-qr]').count()) fails.push(`${tag} I-0: the hand-off QR is clickable OUTSIDE the stage`);
+
+  /* I-1L — Shift+W on the login page and on the service page BEFORE
+     onboarding open the IDV stage on that page too (2026-10-23 try-out:
+     the login page used to open the wallet stage). */
+  for (const page of ['/', `/services/${svc}/`]) {
+    await p.goto(BASE + '/reset/', { waitUntil: 'networkidle' }).catch(() => {});
+    await p.goto(BASE + page, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(300);
+    await p.keyboard.press('Shift+W');
+    await p.waitForURL('**/demo/**', { timeout: 5000 }).catch(() => {});
+    const u = new URL(p.url());
+    if (u.pathname !== '/demo/idv-stage/' || u.searchParams.get('from') !== page) fails.push(`${tag} I-1L: Shift+W on ${page} went to ${u.pathname}${u.search}`);
+    if (!(await until(async () => at('gnl-stage-desktop') === page))) fails.push(`${tag} I-1L: the portal frame opened at ${at('gnl-stage-desktop')}, not ${page}`);
+  }
+
+  /* I-1 — Shift+W on an onboarding page opens the IDV stage on that page. */
+  await p.goto(BASE + '/reset/', { waitUntil: 'networkidle' }).catch(() => {});
+  await p.goto(BASE + onboard, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(300);
+  await p.keyboard.press('Shift+W');
+  await p.waitForURL('**/demo/idv-stage/**', { timeout: 5000 }).catch(() => {});
+  const u1 = new URL(p.url());
+  if (u1.pathname !== '/demo/idv-stage/' || u1.searchParams.get('service') !== svc || u1.searchParams.get('from') !== onboard) fails.push(`${tag} I-1: Shift+W went to ${u1.pathname}${u1.search}`);
+  await until(async () => at('gnl-stage-desktop') === onboard);
+  if (at('gnl-stage-desktop') !== onboard) fails.push(`${tag} I-2: the portal frame opened at ${at('gnl-stage-desktop')}`);
+  if (!(await until(async () => (await phoneHome()) === 'idle'))) fails.push(`${tag} I-2b: the phone is not on its home screen (${await phoneHome()})`);
+  if ((await state()) !== 'idle') fails.push(`${tag} I-2c: stage state ${await state()} before the hand-off`);
+
+  /* I-3 — the portal reaches "Continue on a smartphone": the phone shows its camera. */
+  await desk.getByText('Continue', { exact: true }).last().click();
+  if (svc === 'studentaid') {
+    await until(async () => (at('gnl-stage-desktop') || '').includes('other-verification'));
+    await desk.getByText('Continue', { exact: true }).last().click();
+  }
+  await until(async () => (at('gnl-stage-desktop') || '').endsWith('continue-on-mobile/'));
+  if (!(at('gnl-stage-desktop') || '').endsWith(cid + 'continue-on-mobile/')) fails.push(`${tag} I-3: the portal frame is at ${at('gnl-stage-desktop')}, not the hand-off`);
+  if (!(await until(async () => (await state()) === 'waiting'))) fails.push(`${tag} I-3b: stage state ${await state()} at the hand-off`);
+  if (!(await until(async () => (await phoneHome()) === 'scan'))) fails.push(`${tag} I-3c: the phone did not open its scanner (${await phoneHome()})`);
+
+  /* I-4 — clicking the QR on the portal makes the phone scan it. */
+  await desk.locator('[data-stage-qr]').click();
+  if (!(await until(async () => at('gnl-stage-phone') === cid + 'terms/'))) fails.push(`${tag} I-4: after the scan the phone is at ${at('gnl-stage-phone')}`);
+  if ((await state()) !== 'started') fails.push(`${tag} I-4b: stage state ${await state()} after the scan`);
+  if (!(await until(async () => (await desk.locator('[data-handoff-state]').getAttribute('data-handoff-state')) === 'started'))) fails.push(`${tag} I-4c: the portal does not say "Continue on your phone…"`);
+
+  /* I-5 — RESUME: two screens on, reload the stage; both devices come back where they were. */
+  await phoneKey('ArrowRight');
+  await phoneKey('ArrowRight');
+  const mid = at('gnl-stage-phone');
+  await p.reload({ waitUntil: 'networkidle' });
+  await until(async () => at('gnl-stage-phone') === mid && (at('gnl-stage-desktop') || '').endsWith('continue-on-mobile/'));
+  if (at('gnl-stage-phone') !== mid) fails.push(`${tag} I-5: after a reload the phone is at ${at('gnl-stage-phone')}, not ${mid}`);
+  if (!(at('gnl-stage-desktop') || '').endsWith('continue-on-mobile/')) fails.push(`${tag} I-5b: after a reload the portal is at ${at('gnl-stage-desktop')}`);
+
+  /* I-6 — the phone finishes; the portal moves on by itself. */
+  for (let i = 0; i < 16 && !(at('gnl-stage-phone') || '').endsWith('/verified/'); i++) await phoneKey('ArrowRight');
+  if (!(at('gnl-stage-phone') || '').endsWith(cid + 'verified/')) fails.push(`${tag} I-6: the phone never reached CertifiO ID verified (${at('gnl-stage-phone')})`);
+  if (!(await until(async () => (await state()) === 'complete'))) fails.push(`${tag} I-6b: stage state ${await state()} at verified`);
+  if (!(await until(async () => at('gnl-stage-desktop') === `/services/${svc}/prerequisite/`, 9000))) fails.push(`${tag} I-6c: the portal did not move on by itself (${at('gnl-stage-desktop')})`);
+  await phoneKey('ArrowRight');
+  if (!(at('gnl-stage-phone') || '').endsWith('/verified/')) fails.push(`${tag} I-6d: ArrowRight on the phone's verified screen went to ${at('gnl-stage-phone')}`);
+  await frame('gnl-stage-phone').getByRole('button', { name: /^Continue/ }).first().click();
+  if (!(await until(async () => (at('gnl-stage-phone') || '').startsWith('/cid/mobile/?done=1')))) fails.push(`${tag} I-6e: the phone's Continue went to ${at('gnl-stage-phone')}`);
+
+  /* I-6f — back on "Continue on a smartphone" after a finished run: a NEW
+     hand-off (never an instant jump past the scan), and the phone leaves
+     "You can return to your computer" for its scanner. */
+  await frame('gnl-stage-desktop').evaluate((u) => { window.location.href = u; }, cid + 'continue-on-mobile/');
+  if (!(await until(async () => (await state()) === 'waiting'))) fails.push(`${tag} I-6f: a second hand-off after a finished run left the stage at "${await state()}"`);
+  if (!(await until(async () => (await phoneHome()) === 'scan'))) fails.push(`${tag} I-6g: after a finished run the phone did not return to its scanner (${at('gnl-stage-phone')})`);
+  await p.waitForTimeout(1500);
+  if (!(at('gnl-stage-desktop') || '').endsWith('continue-on-mobile/')) fails.push(`${tag} I-6h: the portal jumped past the new hand-off to ${at('gnl-stage-desktop')}`);
+
+  /* I-7 — Esc on the stage resets BOTH devices and stays on the stage. */
+  await p.locator('[data-idv-stage] header').click({ position: { x: 2, y: 2 } });
+  await p.keyboard.press('Escape');
+  if (!(await until(async () => (await state()) === 'idle' && (await phoneHome()) === 'idle' && at('gnl-stage-desktop') === `/services/${svc}/`))) fails.push(`${tag} I-7: after Esc: state ${await state()}, phone ${await phoneHome()}, portal ${at('gnl-stage-desktop')}`);
+  if (new URL(p.url()).pathname !== '/demo/idv-stage/') fails.push(`${tag} I-7b: Esc left the stage for ${new URL(p.url()).pathname}`);
+
+  /* I-8 — Shift+W inside the portal frame leaves the stage for that page.
+     The frame was just reloaded by the reset: let it finish hydrating. */
+  await frame('gnl-stage-desktop').waitForLoadState('networkidle').catch(() => {});
+  await p.waitForTimeout(800);
+  await frame('gnl-stage-desktop').evaluate(() => window.focus());
+  await p.keyboard.press('Shift+W');
+  await p.waitForURL((u) => !u.pathname.startsWith('/demo/'), { timeout: 5000 }).catch(() => {});
+  if (new URL(p.url()).pathname !== `/services/${svc}/`) fails.push(`${tag} I-8: Shift+W in the stage went to ${new URL(p.url()).pathname}`);
+
+  const real = flow3Real(errs).filter((t) => !/getUserMedia|NotAllowedError|NotFoundError|Requested device not found|camera/i.test(t));
+  if (real.length) fails.push(`${tag} IDV stage console: ${real.join(' ;; ')}`);
+  console.log(`  ${tag} IDV stage: Shift+W -> portal + phone, hand-off, click-to-scan, resume after reload, phone verified -> portal moves on, Esc resets both, Shift+W leaves`);
+  await ctx.close();
+}
+
 async function runFlow3Hydration(width) {
   const hctx = await b.newContext({ viewport: { width, height: 900 } });
   const now = new Date().toISOString();
@@ -2072,11 +2193,12 @@ for (const w of [1440, 768]) await runFlow4Desktop(w);
 await runFlow34Both(1440);
 await runFlow4Mobile(393);
 await runFlow4Stage(1440);
+for (const svc of ['driver-vehicle', 'studentaid']) await runIdvStage(1440, svc);
 await b.close();
 
 console.log(
   fails.length
     ? 'CLICK FAILURES:\n' + fails.join('\n')
-    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted), Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) and Flow 4 (notice of assessment at 1440 / 768 and 393; Flow 3 then Flow 4, 2 -> 3 -> 4 cards and one Esc; the stage) intact at 1440 / 768 / 390',
+    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted), Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) and Flow 4 (notice of assessment at 1440 / 768 and 393; Flow 3 then Flow 4, 2 -> 3 -> 4 cards and one Esc; the stage) and the IDV presenter stage (both services) intact at 1440 / 768 / 390',
 );
 if (fails.length) process.exit(1);

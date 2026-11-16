@@ -10,6 +10,7 @@ import { getCidCopy } from "@/lib/data/cid";
 import { APP_ROUTES, type ServiceConfig } from "@/lib/data/service-config";
 import { MOBILE_ROUTE } from "@/lib/data/phone-path";
 import { isHandoffTab } from "@/lib/remote-sync";
+import { isStageHandoffTab } from "@/lib/stage-sync";
 
 /*
  * CID_ID_success — Figma 6217:66058, 393 x 1014.810546875.
@@ -114,7 +115,7 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
     /* Phone path (docs/PHONE_PATH.md): a PHONE that came through the laptop's
        hand-off QR has already handed the result back — the laptop moved on by
        itself — so the phone ends on "You can return to your computer". */
-    if (isHandoffTab(service.id)) {
+    if (isHandoffTab(service.id) || isStageHandoffTab(service.id)) {
       router.replace(`${MOBILE_ROUTE}?done=1&service=${service.id}`);
       return;
     }

@@ -186,6 +186,11 @@ const ROUTES = [
   ['wallet-cards', '/wallet/cards/'],
   // The P1 presenter stage (hidden; Shift+W). Two iframes, scaled to fit.
   ['wallet-stage', '/demo/wallet-stage/'],
+  // The IDV presenter stage (hidden; Shift+W from an onboarding page), and
+  // its phone home screen on its own. Added 2026-10-23.
+  ['idv-stage', '/demo/idv-stage/?service=driver-vehicle'],
+  ['idv-stage-b', '/demo/idv-stage/?service=studentaid&from=/cid/studentaid/continue-on-mobile/'],
+  ['idv-phone', '/demo/idv-phone/?service=driver-vehicle'],
   // ====================================================================
   // FLOW 4 — "Issuance of Notice of Assessment" (StudentAidNL), added
   // 2026-10-14. Its C1 page (and its phone layout below 768), the stage
