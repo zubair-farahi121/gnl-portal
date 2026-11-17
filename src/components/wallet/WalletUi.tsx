@@ -163,21 +163,18 @@ export function IssuerBlock({ gap = 16, subline }: { gap?: number; subline?: str
   );
   return (
     <div className="flex w-full flex-col items-center" style={{ gap }} data-wallet-issuer="true">
-      <div
-        className="flex size-[80px] items-center justify-center overflow-hidden rounded-full"
-        style={{ background: WALLET_COLOR.mint }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- static export, unoptimized images */}
-        {/* gnl-crest-flowers.svg cropped to its drawn box (x 106–155 of a
-            155 x 100 canvas) — public/assets/flow3/gnl-crest-flowers-badge.svg. */}
-        <img
-          src="/assets/flow3/gnl-crest-flowers-badge.svg"
-          alt=""
-          width={35}
-          height={57}
-          className="block h-[57px] w-[35px]"
-        />
-      </div>
+      {/* GNWT release-2 (2026-11-17): the "Polar bear" frame (82.6 x 80) of
+          GNWT 1:25112 / 1:23430 / 1:24181 — the bear mark of GNWT's own logo,
+          cropped from navbar-brand--logo.svg (public/assets/gnwt/gnwt-polar-bear.svg).
+          It replaces the GNL crest on the mint circle. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- static export, unoptimized images */}
+      <img
+        src="/assets/gnwt/gnwt-polar-bear.svg"
+        alt=""
+        width={83}
+        height={80}
+        className="block h-[80px] w-[82.63px]"
+      />
       {subline ? (
         <div className="flex w-full flex-col items-start gap-[8px]" data-wallet-issuer-subline="true">
           {name}

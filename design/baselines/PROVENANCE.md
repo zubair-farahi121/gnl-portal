@@ -216,3 +216,7 @@ against `npx serve out -l 4173` and all 33 `design/shots/*.png` were copied over
 agent run that captured and copied the pictures did not open Figma (it was out
 of scope for that run); the side-by-side review against the Figma frames is
 recorded here as stated by the requester.
+
+## Re-baselined 2026-11-17 — GNWT wallet flows 3 and 4 (release-2)
+
+Re-baselined 2026-11-17 — GNWT wallet flows 3 and 4 (release-2): the wallet-* frames are pictures of the GNWT build, reviewed side by side against the GNWT Figma prototype frames (flow 3 section 45:91986 and the flow 4 section) on 2026-11-17.

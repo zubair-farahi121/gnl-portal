@@ -1427,6 +1427,24 @@ function watchConsole(pg, list) {
   pg.on('pageerror', (e) => list.push(`pageerror: ${e.message}`));
 }
 
+/*
+ * GNWT release-2 (2026-11-17): the wallet's issuer block on W-03 / W-04 / W-05
+ * — the GNWT polar-bear mark, "Government of Northwest Territories", and the
+ * issuing service under it (Flow 3 "Driver and Vehicle Services", Flow 4
+ * "Student Financial Assistance").
+ */
+const GNWT_ISSUER = 'Government of Northwest Territories';
+async function checkIssuerBlock(w, label, subline) {
+  const blk = w.locator('[data-wallet-issuer]').first();
+  const src = (await blk.locator('img').first().getAttribute('src').catch(() => null)) ?? '';
+  if (!src.includes('gnwt-polar-bear')) fails.push(`${label}: the issuer mark is "${src}", expected the GNWT polar bear`);
+  const txt = ((await blk.textContent().catch(() => '')) ?? '');
+  if (!txt.includes(GNWT_ISSUER)) fails.push(`${label}: the issuer block does not read "${GNWT_ISSUER}" ("${txt.trim()}")`);
+  if (/Newfoundland|Labrador/.test(txt)) fails.push(`${label}: the issuer block still names Newfoundland and Labrador`);
+  const sub = ((await blk.locator('[data-wallet-issuer-subline] p').last().textContent().catch(() => '')) ?? '').trim();
+  if (sub !== subline) fails.push(`${label}: the issuer sub-line reads "${sub}", expected "${subline}"`);
+}
+
 async function runFlow3Desktop(width) {
   const ctx = await b.newContext({ viewport: { width, height: 900 } });
   const c1 = await ctx.newPage();
@@ -1470,7 +1488,8 @@ async function runFlow3Desktop(width) {
   await c1.waitForFunction((old) => { const v = document.querySelector('[data-wallet-qr]')?.getAttribute('data-offer-id'); return v && v !== old; }, id1, { timeout: 5000 })
     .catch(() => fails.push(`@${width} W-C1j: "Get a new code" did not make a new offer`));
   expectAt('W-C1k Get a new code stays put', '/services/driver-vehicle/wallet/', c1);
-  await c1.getByRole('link', { name: '← Back to Driver and Vehicle', exact: true }).click();
+  if (!(await c1.getByText('Issued by the Government of Northwest Territories', { exact: true }).first().isVisible().catch(() => false))) fails.push(`@${width} W-C1m: C1 does not read "Issued by the Government of Northwest Territories"`);
+  await c1.getByRole('link', { name: '← Back to Driver and Vehicle Services', exact: true }).click();
   await c1.waitForURL((u) => u.pathname === '/services/driver-vehicle/');
   expectAt('W-C1l breadcrumb -> Trusted page', '/services/driver-vehicle/', c1);
   await c1.goBack();
@@ -1523,6 +1542,8 @@ async function runFlow3Desktop(width) {
   await w.waitForURL('**/wallet/connect/', { timeout: 6000 }).catch(() => {});
   expectAt('W-SCAN W-02 auto-detects -> W-03', '/wallet/connect/', w);
   await waitStatus('W-SYNC1 after the scan', 'adding');
+  await checkIssuerBlock(w, `@${width} W-03i`, 'Driver and Vehicle Services');
+  if (!(await w.getByText('Driver and Vehicle Services, GNWT wants to offer you a new digital Vehicle Registration Certificate for your wallet.', { exact: true }).isVisible().catch(() => false))) fails.push(`@${width} W-03b: W-03 body differs`);
 
   /* W-DECL */
   await w.getByRole('button', { name: 'Decline', exact: true }).click();
@@ -1538,6 +1559,7 @@ async function runFlow3Desktop(width) {
   /* W-CLOSE — the ✕, then Esc. */
   await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
   await w.waitForURL('**/wallet/offer/');
+  await checkIssuerBlock(w, `@${width} W-04i`, 'Driver and Vehicle Services');
   await w.getByRole('button', { name: 'Close', exact: true }).click();
   await w.waitForURL('**/wallet/');
   expectAt('W-CLOSE1 ✕ on W-04 -> W-01', '/wallet/', w);
@@ -1592,8 +1614,27 @@ async function runFlow3Desktop(width) {
   await w.getByRole('button', { name: 'View offer', exact: true }).click();
   await w.waitForURL('**/wallet/review/');
   const rows = (await w.locator('[data-wallet-rows]').textContent()) ?? '';
-  for (const v of ['JKM 026', '2G1125535F9268441', 'Chevrolet', '2015 CHEV IMT', 'January 14, 2015', 'January 14, 2036', 'Jason Moore', 'Canada', 'Government of Newfoundland & Labrador']) {
+  for (const v of ['JKM 026', '2G1125535F9268441', 'Chevrolet', '2015 CHEV IMT', 'January 14, 2015', 'January 14, 2036', 'Jason Moore', 'Canada', 'Government of Northwest Territories']) {
     if (!rows.includes(v)) fails.push(`@${width} W-05 rows: missing "${v}"`);
+  }
+  if (/Newfoundland|Labrador/.test(rows)) fails.push(`@${width} W-05 rows: still name Newfoundland and Labrador`);
+  /* GNWT 1:24181: the first row is the issuer; "Issuing Authority" is the government. */
+  const row = async (i) => w.locator('[data-wallet-rows] > div').nth(i).evaluate((el) => [el.querySelector('dt')?.textContent?.trim(), el.querySelector('dd')?.textContent?.trim()]).catch(() => []);
+  const [l0, v0] = await row(0);
+  if (l0 !== 'Issuer' || v0 !== 'Driver and Vehicle Services, Government of Northwest Territories') fails.push(`@${width} W-05r: first row is "${l0}" = "${v0}"`);
+  const auth = await w.locator('[data-wallet-rows] > div', { has: w.locator('dt', { hasText: /^Issuing Authority$/ }) }).locator('dd').textContent().catch(() => null);
+  if (auth?.trim() !== 'Government of Northwest Territories') fails.push(`@${width} W-05s: "Issuing Authority" reads "${auth}"`);
+  await checkIssuerBlock(w, `@${width} W-05i`, 'Driver and Vehicle Services');
+  {
+    const card = w.locator('[data-node-id="6345:12131"]');
+    const alt = await card.locator('img').first().getAttribute('alt').catch(() => null);
+    const ct = ((await card.textContent().catch(() => '')) ?? '');
+    if (alt !== 'Government of Northwest Territories' || !ct.includes('Driver and Vehicle Services') || !ct.includes('Vehicle Registration Certificate')) {
+      fails.push(`@${width} W-05c: the dark card reads logo "${alt}", text "${ct.trim()}"`);
+    }
+  }
+  for (const btn of ['Add to wallet', 'Cancel']) {
+    if (!(await w.getByRole('button', { name: btn, exact: true }).count())) fails.push(`@${width} W-05b: no "${btn}" button`);
   }
   if (((await w.locator('[data-wallet-consent]').textContent()) ?? '').trim() !== 'It will be securely stored in your wallet. You control when its information is shared.') {
     fails.push(`@${width} W-05 consent text differs`);
@@ -1605,7 +1646,9 @@ async function runFlow3Desktop(width) {
   await w.waitForURL('**/wallet/connecting/');
   await w.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
   expectAt('W-06 auto-advance -> W-07', '/wallet/code/', w);
-  await w.getByText('Enter your verification code').first().waitFor();
+  /* GNWT release-2: Flow 3's W-07 is the wallet-PIN screen (GNWT 1:25053). */
+  await w.getByText('Enter your wallet PIN').first().waitFor({ timeout: 4000 }).catch(() => fails.push(`@${width} W-07p: W-07 is not the wallet-PIN screen`));
+  if (await w.getByText('Enter your verification code').count()) fails.push(`@${width} W-07q: W-07 still shows the SMS heading`);
   await w.waitForTimeout(450);
   /* W-06 Back-safety: ArrowLeft from W-07 lands on W-06 unarmed and stays. */
   await w.keyboard.press('ArrowLeft');
@@ -1614,7 +1657,7 @@ async function runFlow3Desktop(width) {
   expectAt('W-BACK3 W-06 reached backwards does NOT bounce forward', '/wallet/connecting/', w);
   await w.keyboard.press('ArrowRight');
   await w.waitForURL('**/wallet/code/');
-  await w.getByText('Enter your verification code').first().waitFor();
+  await w.getByText('Enter your wallet PIN').first().waitFor();
   await w.waitForTimeout(300);
 
   /* W-07 */
@@ -1626,11 +1669,12 @@ async function runFlow3Desktop(width) {
   await w.getByRole('button', { name: 'Delete last digit', exact: true }).click();
   if ((await code.getAttribute('data-digits')) !== '482') fails.push(`@${width} W-07c: keypad entry reads "${await code.getAttribute('data-digits')}", expected "482"`);
   if (await cont.isEnabled()) fails.push(`@${width} W-07d: Continue is enabled with 3 digits`);
-  const sms = w.locator('[data-wallet-sms]');
-  await sms.waitFor({ timeout: 3000 }).catch(() => fails.push(`@${width} W-07e: the SMS banner did not appear`));
-  if (!((await sms.textContent().catch(() => '')) ?? '').includes('Your GNL code is 482 915')) fails.push(`@${width} W-07f: SMS banner text differs`);
-  await sms.click();
-  if ((await code.getAttribute('data-digits')) !== '482915') fails.push(`@${width} W-07g: tapping the SMS did not fill the code`);
+  if (!(await w.getByText('Enter the PIN you created when you set up your wallet app. This confirms it\'s you adding the credential.', { exact: true }).isVisible().catch(() => false))) fails.push(`@${width} W-07e: W-07 body differs`);
+  /* No SMS in wallet-PIN mode: the banner (which used to slide in) never appears. */
+  await w.waitForTimeout(1500);
+  if (await w.locator('[data-wallet-sms]').count()) fails.push(`@${width} W-07f: an SMS banner appeared on the wallet-PIN screen`);
+  for (const d of ['0', '7', '1']) await w.getByRole('button', { name: d, exact: true }).click();
+  if ((await code.getAttribute('data-digits')) !== '482071') fails.push(`@${width} W-07g: keypad entry reads "${await code.getAttribute('data-digits')}", expected "482071" (any six digits)`);
   if (!(await cont.isEnabled())) fails.push(`@${width} W-07h: Continue is still disabled with 6 digits`);
   expectAt('W-07i six digits do not auto-continue', '/wallet/code/', w);
   await cont.click();
@@ -1651,7 +1695,7 @@ async function runFlow3Desktop(width) {
   if ((await cards.count()) !== 3) fails.push(`@${width} W-CARDS5: W-09 shows ${await cards.count()} cards after issuing, expected 3`);
   if ((await cards.first().getAttribute('data-wallet-card')) !== 'vehicle-registration-certificate') fails.push(`@${width} W-CARDS6: the new card is not on top`);
   const vrc = (await cards.first().textContent()) ?? '';
-  for (const v of ['Vehicle Registration Certificate', today(), 'Jason Moore', 'JKM 026', 'January 14, 2036']) {
+  for (const v of ['Vehicle Registration Certificate', 'Driver and Vehicle Services, GNWT', today(), 'Jason Moore', 'JKM 026', 'January 14, 2036']) {
     if (!vrc.includes(v)) fails.push(`@${width} W-CARDS7: the new card is missing "${v}"`);
   }
   if ((await count()) !== '3 cards total') fails.push(`@${width} W-CARDS8: W-09 reads "${await count()}" after issuing`);
@@ -1720,7 +1764,8 @@ async function runFlow3Mobile(width) {
   await p.getByRole('button', { name: 'Add to wallet', exact: true }).click();
   await p.waitForURL('**/wallet/code/', { timeout: 6000 }).catch(() => {});
   expectAt('M-6 W-05 Add to wallet -> W-06 -> W-07', '/wallet/code/');
-  await p.getByText('Enter your verification code').first().waitFor();
+  await p.getByText('Enter your wallet PIN').first().waitFor();
+  if (await p.locator('[data-wallet-sms]').count()) fails.push(`@${width} M-6b: an SMS banner on Flow 3's wallet-PIN screen`);
   await p.waitForTimeout(300);
   await p.keyboard.type('123456');
   if ((await p.locator('[data-wallet-code]').getAttribute('data-digits')) !== '123456') fails.push(`@${width} M-7: the physical keyboard did not fill the code`);
@@ -1733,19 +1778,20 @@ async function runFlow3Mobile(width) {
   if ((await cards.count()) !== 3) fails.push(`@${width} M-CARDS2: W-09 shows ${await cards.count()} cards after issuing`);
   await p.waitForTimeout(1200);
   if ((await statusInStore()) !== 'issued') fails.push(`@${width} M-9: the offer is "${await statusInStore()}", expected "issued"`);
-  /* P1 (brief §8): the same-device "◀ MyGovNL" back to F3-03, which toasts. */
+  /* P1 (brief §8): the same-device "◀ eServices" back to F3-03, which toasts. */
   const back = p.locator('[data-wallet-mygovnl]');
   if (!(await back.isVisible().catch(() => false))) {
-    fails.push(`@${width} M-10: no "◀ MyGovNL" link in the same-device wallet`);
+    fails.push(`@${width} M-10: no "◀ eServices" link in the same-device wallet`);
   } else {
+    if ((await back.textContent())?.trim() !== '◀ eServices') fails.push(`@${width} M-10b: the back link reads "${(await back.textContent())?.trim()}", expected "◀ eServices"`);
     await back.click();
     await p.waitForURL((u) => u.pathname === '/services/driver-vehicle/wallet/', { timeout: 5000 }).catch(() => {});
-    expectAt('M-11 ◀ MyGovNL -> F3-03', '/services/driver-vehicle/wallet/');
+    expectAt('M-11 ◀ eServices -> F3-03', '/services/driver-vehicle/wallet/');
     await p.waitForTimeout(700);
     if (!(await p.locator('.gnl-toast', { hasText: 'Added to your wallet' }).first().isVisible().catch(() => false))) fails.push(`@${width} M-12: F3-03 shows no "Added to your wallet" toast on return`);
     if (new URL(p.url()).search) fails.push(`@${width} M-13: ?from=wallet was not dropped from the URL`);
   }
-  console.log(`  @${width} mobile story: F3-01m -> F3-03 -> Add to Apple Wallet -> W-03 … W-09 (2 cards -> 3) -> ◀ MyGovNL`);
+  console.log(`  @${width} mobile story: F3-01m -> F3-03 -> Add to Apple Wallet -> W-03 … W-09 (2 cards -> 3) -> ◀ eServices`);
 
   const real = flow3Real(errs);
   if (real.length) fails.push(`@${width} Flow 3 mobile console: ${real.join(' ;; ')}`);
@@ -2001,20 +2047,26 @@ async function walkNoaWallet(w, width, tag, { onAdding, keypad = true } = {}) {
   }
   expectAt('N-W03 -> W-03', '/wallet/connect/');
   await w.waitForTimeout(400);
-  const sub = w.locator('[data-wallet-issuer-subline]');
-  if (!((await sub.textContent().catch(() => '')) ?? '').includes('StudentAidNL')) fails.push(`@${width} ${tag} N-W03a: no "StudentAidNL" under the issuer on W-03`);
-  if (!(await w.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.', { exact: true }).isVisible())) fails.push(`@${width} ${tag} N-W03b: W-03 body differs`);
+  await checkIssuerBlock(w, `@${width} ${tag} N-W03a`, 'Student Financial Assistance');
+  if (!(await w.getByText('Student Financial Assistance, GNWT wants to offer you a new digital notice of assessment for your wallet.', { exact: true }).isVisible())) fails.push(`@${width} ${tag} N-W03b: W-03 body differs`);
   if (onAdding) await onAdding();
   await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
   await w.waitForURL('**/wallet/offer/');
   if (!(await w.getByRole('heading', { name: 'Notice of assessment offered', exact: true }).isVisible())) fails.push(`@${width} ${tag} N-W04: W-04 heading differs`);
   const h4 = await w.getByRole('heading', { name: 'Notice of assessment offered' }).evaluate((el) => getComputedStyle(el).fontSize).catch(() => '');
   if (h4 !== '28px') fails.push(`@${width} ${tag} N-W04b: W-04 heading is ${h4}, expected 28px (H4)`);
+  await checkIssuerBlock(w, `@${width} ${tag} N-W04i`, 'Student Financial Assistance');
   await w.getByRole('button', { name: 'View offer', exact: true }).click();
   await w.waitForURL('**/wallet/review/');
   const rows = (await w.locator('[data-wallet-rows]').textContent()) ?? '';
-  for (const v of ['StudentAidNL, Government of Newfoundland and Labrador', 'Jason Moore', 'SA-2026-048217', 'Memorial University', 'Full-time', '$17,420', 'SFAA-2026-0004471', 'Not revoked, current version']) {
+  for (const v of ['Student Financial Assistance, Government of Northwest Territories', 'Provincial funding, NWT Student Grant', 'Provincial funding, NWT Student Loan', 'Jason Moore', 'SA-2026-048217', 'Memorial University', 'Full-time', '$17,420', 'SFAA-2026-0004471', 'Not revoked, current version']) {
     if (!rows.includes(v)) fails.push(`@${width} ${tag} N-W05a: W-05 rows missing "${v}"`);
+  }
+  if (/Newfoundland|Labrador|StudentAidNL|NL Student/.test(rows)) fails.push(`@${width} ${tag} N-W05f: W-05 rows still carry GNL names`);
+  await checkIssuerBlock(w, `@${width} ${tag} N-W05i`, 'Student Financial Assistance');
+  {
+    const ct = ((await w.locator('[data-node-id="6345:12131"]').textContent().catch(() => '')) ?? '');
+    if (!ct.includes('Student Financial Assistance') || !ct.includes('Notice of assessment')) fails.push(`@${width} ${tag} N-W05g: the dark card reads "${ct.trim()}"`);
   }
   if (rows.includes('Momoa')) fails.push(`@${width} ${tag} N-W05b: W-05 shows Figma's "Jason Momoa" instead of the persona`);
   const nrows = await w.locator('[data-wallet-rows] > div').count();
@@ -2049,7 +2101,7 @@ async function walkNoaWallet(w, width, tag, { onAdding, keypad = true } = {}) {
   const top = w.locator('[data-wallet-cards] > *').first();
   if ((await top.getAttribute('data-wallet-card')) !== 'notice-of-assessment') fails.push(`@${width} ${tag} N-W09a: the notice of assessment is not on top`);
   const t = (await top.textContent()) ?? '';
-  for (const v of ['Notice of assessment', 'StudentAidNL, MyGovNL', noaToday(), 'Jason Moore', 'Memorial University', '2026-2027', 'Full time']) {
+  for (const v of ['Notice of assessment', 'Student Financial Assistance, GNWT', noaToday(), 'Jason Moore', 'Memorial University', '2026-2027', 'Full time']) {
     if (!t.includes(v)) fails.push(`@${width} ${tag} N-W09b: the new card is missing "${v}"`);
   }
 }
@@ -2122,7 +2174,7 @@ async function runFlow4Desktop(width) {
   const st = await storeOf(c1);
   const o = st.wallet?.offers?.[id];
   if (!o || o.serviceId !== 'studentaid' || o.credentialType !== 'NoticeOfAssessment' || st.wallet.currentOfferId !== id) fails.push(`@${width} N-C1f: the offer is not the current notice-of-assessment offer (${JSON.stringify(o)})`);
-  await c1.getByRole('link', { name: '← Back to StudentAidNL', exact: true }).click();
+  await c1.getByRole('link', { name: '← Back to Student Financial Assistance', exact: true }).click();
   await c1.waitForURL((u) => u.pathname === '/services/studentaid/');
   expectAt('N-C1g breadcrumb -> Trusted StudentAidNL', '/services/studentaid/', c1);
   await c1.goBack();
@@ -2182,7 +2234,10 @@ async function runFlow34Both(width) {
   if ((await count(w)) !== '2 cards total') fails.push(`@${width} N-BOTH1: W-01 reads "${await count(w)}" at the start`);
   await w.locator('[data-wallet-scan-card]').click();
   await w.waitForURL('**/wallet/connect/', { timeout: 6000 });
-  if (await w.locator('[data-wallet-issuer-subline]').count()) fails.push(`@${width} N-BOTH2: Flow 3's W-03 shows Flow 4's issuer sub-line`);
+  {
+    const sub = ((await w.locator('[data-wallet-issuer-subline]').textContent().catch(() => '')) ?? '');
+    if (!sub.includes('Driver and Vehicle Services') || sub.includes('Student Financial Assistance')) fails.push(`@${width} N-BOTH2: Flow 3's W-03 issuer sub-line reads "${sub.trim()}" (expected Driver and Vehicle Services, not Flow 4's)`);
+  }
   await w.getByRole('button', { name: 'Yes, connect', exact: true }).click();
   await w.waitForURL('**/wallet/offer/');
   if (!(await w.getByRole('heading', { name: 'Certificate offered', exact: true }).isVisible())) fails.push(`@${width} N-BOTH3: Flow 3's W-04 heading changed`);
@@ -2190,8 +2245,10 @@ async function runFlow34Both(width) {
   await w.waitForURL('**/wallet/review/');
   await w.getByRole('button', { name: 'Add to wallet', exact: true }).click();
   await w.waitForURL('**/wallet/code/', { timeout: 6000 });
-  await w.getByText('Enter your verification code').first().waitFor();
-  await w.locator('[data-wallet-sms]').waitFor({ timeout: 3000 }).catch(() => fails.push(`@${width} N-BOTH4: Flow 3's SMS banner is gone`));
+  await w.getByText('Enter your wallet PIN').first().waitFor({ timeout: 4000 }).catch(() => fails.push(`@${width} N-BOTH4a: Flow 3's W-07 is not the wallet-PIN screen`));
+  /* GNWT release-2: BOTH flows use the wallet PIN now — no SMS banner in either. */
+  await w.waitForTimeout(1500);
+  if (await w.locator('[data-wallet-sms]').count()) fails.push(`@${width} N-BOTH4: an SMS banner appeared on Flow 3's wallet-PIN screen`);
   await w.keyboard.type('123456');
   await w.keyboard.press('Enter');
   await w.waitForURL('**/wallet/added/', { timeout: 4000 });
@@ -2268,16 +2325,17 @@ async function runFlow4Mobile(width) {
   if ((await p.locator('[data-wallet-cards] > *').count()) !== 3) fails.push(`@${width} NM-5: W-09 shows ${await p.locator('[data-wallet-cards] > *').count()} cards`);
   const back = p.locator('[data-wallet-mygovnl]');
   if (!(await back.isVisible().catch(() => false))) {
-    fails.push(`@${width} NM-6: no "◀ MyGovNL" link in the same-device wallet`);
+    fails.push(`@${width} NM-6: no "◀ eServices" link in the same-device wallet`);
   } else {
+    if ((await back.textContent())?.trim() !== '◀ eServices') fails.push(`@${width} NM-6b: the back link reads "${(await back.textContent())?.trim()}"`);
     await p.waitForTimeout(1200);
     await back.click();
     await p.waitForURL((u) => u.pathname === '/services/studentaid/wallet/', { timeout: 5000 }).catch(() => {});
-    expectAt('NM-7 ◀ MyGovNL -> Flow 4 C1', '/services/studentaid/wallet/');
+    expectAt('NM-7 ◀ eServices -> Flow 4 C1', '/services/studentaid/wallet/');
     await p.waitForTimeout(700);
     if (!(await p.locator('.gnl-toast', { hasText: 'Added to your wallet' }).first().isVisible().catch(() => false))) fails.push(`@${width} NM-8: no "Added to your wallet" toast on return`);
   }
-  console.log(`  @${width} Flow 4 mobile: Trusted StudentAidNL -> phone C1 -> Add to Apple Wallet -> W-03 … W-09 -> ◀ MyGovNL`);
+  console.log(`  @${width} Flow 4 mobile: Trusted StudentAidNL -> phone C1 -> Add to Apple Wallet -> W-03 … W-09 -> ◀ eServices`);
   const real = flow3Real(errs);
   if (real.length) fails.push(`@${width} Flow 4 mobile console: ${real.join(' ;; ')}`);
   await ctx.close();
@@ -2308,7 +2366,7 @@ async function runFlow4Stage(width) {
   /* The C1 frame turns "Adding" when the offer is marked scanned, a moment
      BEFORE the wallet frame's router lands on W-03 — so wait for it (up to
      3 s) instead of reading it at that instant (flaked once, 2026-10-14). */
-  const w03 = await wf.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.')
+  const w03 = await wf.getByText('Student Financial Assistance, GNWT wants to offer you a new digital notice of assessment for your wallet.')
     .waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
   if (!w03) fails.push(`@${width} N-STAGE5: the stage's wallet does not show Flow 4's W-03`);
   console.log(`  @${width} Flow 4 stage: Shift+W on StudentAidNL -> Flow 4 C1 frame, wallet frame -> "Adding"`);

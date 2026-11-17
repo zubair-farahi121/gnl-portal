@@ -76,10 +76,18 @@ import type { CredentialKind } from "@/lib/mock-issuer";
  * The card strokes are inset box-shadows, as on every GNL card in this repo —
  * Figma strokes inside the frame.
  * ====================================================================
+ *
+ * GNWT RELEASE-2 (2026-11-17) — re-styled to the GNWT C1 frames (flow 3
+ * 44:91457 / 44:91594 / 44:91723, flow 4 45:99865 / 45:100059 / 45:100973,
+ * 1920 wide; read-only). Same layout as above; what changed: the content sits
+ * in the GNWT 1336 container (.gnwt-container) instead of the 80 px GNL
+ * gutter; ink #333333; links #005D8F; the benefits panel is #EEF2FB with
+ * GNWT-blue line icons and no grey icon boxes. No GNWT phone frame exists —
+ * below 768 the page keeps F3-03's layout in GNWT colours.
  */
 
 const MAIN =
-  "gnl-gutter [--gnl-gutter:80px] box-border flex w-full items-start gap-[40px] pt-[48px] pb-[80px] max-[1024px]:flex-col max-[1024px]:gap-[32px] max-md:hidden";
+  "gnwt-container box-border flex w-full items-start gap-[40px] pt-[48px] pb-[80px] max-[1024px]:flex-col max-[1024px]:gap-[32px] max-md:hidden";
 
 const CONTENT_LEFT =
   "flex w-[827px] shrink-0 flex-col items-start gap-[24px] max-[1439px]:min-w-px max-[1439px]:shrink max-[1024px]:w-full";
@@ -88,7 +96,7 @@ const CONTENT_RIGHT =
   "flex w-[413px] shrink-0 flex-col items-start pt-[150px] max-[1024px]:w-full max-[1024px]:pt-0";
 
 const LINK =
-  "text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]";
+  "text-[14px] font-bold leading-[normal] text-[#005d8f] no-underline hover:text-[#001f30] hover:underline";
 
 function Breadcrumb({ c, nodeId }: { c: C1Content; nodeId?: string }) {
   return (
@@ -104,21 +112,20 @@ function Benefits({ c, phone }: { c: C1Content; phone?: boolean }) {
   return (
     <div
       className={`box-border flex w-full flex-col items-start gap-[16px] rounded-[6px] ${
-        phone ? "bg-white p-[20px] shadow-[inset_0_0_0_1px_#d4d8da]" : "bg-[#e9ecef] p-[24px]"
+        phone ? "bg-white p-[20px] shadow-[inset_0_0_0_1px_#d4d8da]" : "bg-[#eef2fb] p-[24px]"
       }`}
       data-node-id={phone ? c.phoneNodes?.benefits : c.nodes.benefits}
     >
-      {/* Lato ExtraBold (800) in Figma — no 800 in the vendored Lato; 700. */}
-      <h2 className="w-full text-[24px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]">
+      <h2 className="w-full text-[24px] font-bold leading-[1.5] text-[#333333] [word-break:break-word]">
         {c.copy.benefitsTitle}
       </h2>
       <ul className="flex w-full flex-col items-start gap-[24px]">
         {c.copy.benefits.map((b) => (
-          <li key={b.nodeId} className={`flex w-full items-center ${phone ? "gap-[24px]" : "gap-[8px]"}`}>
-            <div className="flex size-[64px] shrink-0 items-center justify-center rounded-[6px] bg-[#e9ecef] p-[12px]">
+          <li key={b.nodeId} className={`flex w-full items-center ${phone ? "gap-[24px]" : "gap-[16px]"}`}>
+            <div className="flex size-[48px] shrink-0 items-center justify-center">
               <BenefitGlyph icon={b.icon} />
             </div>
-            <p className="min-w-px flex-[1_0_0] text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]">
+            <p className="min-w-px flex-[1_0_0] text-[14px] font-normal leading-[1.5] text-[#333333] [word-break:break-word]">
               {b.text}
             </p>
           </li>
@@ -139,12 +146,12 @@ function DesktopPage({ c }: { c: C1Content }) {
         {/* Frame 16 6220:86451 */}
         <div className="flex w-full shrink-0 flex-col items-start gap-[16px]" data-node-id={n.titleBlock}>
           <h1
-            className="text-[32px] font-bold leading-[1.5] whitespace-nowrap text-[color:var(--gnl-heading,#212326)] max-[1439px]:whitespace-normal [word-break:break-word]"
+            className="text-[32px] font-bold leading-[1.5] whitespace-nowrap text-[#333333] max-[1439px]:whitespace-normal [word-break:break-word]"
             data-node-id={n.heading}
           >
             {c.copy.heading}
           </h1>
-          <p className="w-full text-[16px] font-normal leading-[1.5] text-[color:var(--gnl-text,#5f6368)] [word-break:break-word]" data-node-id={n.subtitle}>
+          <p className="w-full text-[16px] font-normal leading-[1.5] text-[#333333] [word-break:break-word]" data-node-id={n.subtitle}>
             {c.copy.subtitle}
           </p>
         </div>
@@ -219,10 +226,10 @@ function PhonePage({ c }: { c: C1Content }) {
 
       {/* title-subtitle-block 6220:86493 */}
       <div className="flex w-full flex-col items-start gap-[12px]" data-node-id={n?.titleBlock}>
-        <h1 className="w-full text-[28px] font-bold leading-[1.3] text-[#212326] [word-break:break-word]" data-node-id={n?.heading}>
+        <h1 className="w-full text-[28px] font-bold leading-[1.3] text-[#333333] [word-break:break-word]" data-node-id={n?.heading}>
           {c.copy.heading}
         </h1>
-        <p className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]" data-node-id={n?.subtitle}>
+        <p className="w-full text-[16px] font-normal leading-[1.5] text-[#333333] [word-break:break-word]" data-node-id={n?.subtitle}>
           {c.copy.subtitle}
         </p>
       </div>
@@ -247,7 +254,7 @@ function PhonePage({ c }: { c: C1Content }) {
           <button
             type="button"
             data-demo-inert="true"
-            className="cursor-pointer text-left text-[16px] font-normal leading-[1.5] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font]"
+            className="cursor-pointer text-left text-[16px] font-normal leading-[1.5] text-[#005d8f] underline decoration-solid decoration-from-font [text-underline-position:from-font]"
           >
             {c.copy.noWalletHelp}
           </button>
