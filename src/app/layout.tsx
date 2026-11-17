@@ -16,11 +16,21 @@ import { DemoToast } from "@/components/ui/DemoToast";
  * labels the stepper labels "Lato:Medium", which the real webfont cannot
  * provide. Mapped to 400 here; logged in design/token-exceptions.md.
  */
+/*
+ * GNWT (release-2): the portal's typeface is Noto Sans (GNWT design system),
+ * self-hosted like the others. It is published under the SAME CSS variable
+ * the GNL build used for Lato, `--font-lato`, so every rule and component
+ * that reads that variable switches typeface without being edited. The
+ * variable's name is history; its value is Noto Sans.
+ */
 const lato = localFont({
   src: [
-    { path: "./fonts/lato-latin-300-normal.woff2", weight: "300", style: "normal" },
-    { path: "./fonts/lato-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/lato-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/noto-sans-latin-300-normal.woff2", weight: "300", style: "normal" },
+    { path: "./fonts/noto-sans-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/noto-sans-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/noto-sans-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/noto-sans-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/noto-sans-latin-400-italic.woff2", weight: "400", style: "italic" },
   ],
   variable: "--font-lato",
   display: "block",
@@ -64,7 +74,7 @@ const montserrat = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "MyGovNL — Demo",
+  title: "NWT eServices Portal — Demo",
   description:
     "Interactive demo of CertifiO ID verification in the C1 service onboarding flow.",
   robots: { index: false, follow: false },

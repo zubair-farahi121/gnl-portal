@@ -77,6 +77,17 @@
  * Trusted (D3b). `runFlowBCid`'s F1b now FOLLOWS the decline link instead of
  * reading its href, because the page it points at exists.
  *
+ * RE-POINTED 2026-11-16 TO THE GNWT RE-BRAND (release-2). The product is now
+ * the "NWT eServices Portal": "Sign-in" (not "Log in"), a user menu
+ * ("Jason Moore" -> "Sign out") instead of "Log Out", one shared service page
+ * (badge, consent card with "Click to Proceed", locked / unlocked action card,
+ * "Remove Consent"), ONE verification method per service, and NO PP-08
+ * "Other verification" step in flow 2 (the old URL only forwards to the
+ * hand-off). The GNL-only checks (linked items, bell, portal row, MCP / MRD
+ * cards, "I Do Not Consent") went with the features; every behavioural check
+ * that still applies — routing, state, reload persistence, isolation, the
+ * hand-off, the presenter stages, flows 3 / 4 — is kept.
+ *
  * Needs the static build served first (WITHOUT `serve -s`, which rewrites
  * every route to index.html and would make every assertion below pass while
  * testing only the login page):  npm run build && npm run serve
@@ -102,8 +113,33 @@ const DEMO_PASSWORD = 'demo1234';
 const logIn = async (pg) => {
   await pg.getByLabel('Email Address', { exact: true }).fill(DEMO_EMAIL);
   await pg.getByLabel('Password', { exact: true }).fill(DEMO_PASSWORD);
-  await pg.getByRole('button', { name: 'Log in', exact: true }).click();
+  await pg.getByRole('button', { name: 'Sign-in', exact: true }).click();
 };
+
+/*
+ * SIGN OUT (GNWT header). There is no "Log Out" button any more: the user
+ * button "Jason Moore" opens a one-item menu whose "Sign out" goes to `/`
+ * WITHOUT clearing the demo (only Esc and /reset clear it).
+ */
+/*
+ * Below 1024px the GNWT header is the phone layout, which draws NO user
+ * button (TopNav.tsx, "as drawn") — so there the window is widened for the
+ * click and put back afterwards. The behaviour under test (Sign out reaches
+ * `/` and keeps the store) is the same at every width.
+ */
+const signOut = async (pg) => {
+  const vp = pg.viewportSize();
+  const narrow = vp && vp.width < 1024;
+  if (narrow) await pg.setViewportSize({ width: 1440, height: vp.height });
+  await pg.getByRole('button', { name: 'Jason Moore', exact: true }).first().click();
+  await pg.getByRole('menuitem', { name: 'Sign out', exact: true }).first().click();
+  await pg.waitForURL((u) => u.pathname === '/', { timeout: 5000 }).catch(() => {});
+  if (narrow) await pg.setViewportSize(vp);
+};
+
+/** The service page's status badge, read off `data-status-badge`. */
+const badgeOf = (pg) =>
+  pg.evaluate(() => document.querySelector('[data-status-badge]')?.getAttribute('data-status-badge') ?? null);
 
 async function run(width) {
   const ctx = await b.newContext({ viewport: { width, height: 900 } });
@@ -164,10 +200,11 @@ async function run(width) {
   /* ===================== FORWARD — every on-screen control ================ */
   await p.goto(BASE + '/', { waitUntil: 'networkidle' });
   /*
-   * 0a — EMPTY SUBMIT. "Log in" with both fields empty must show the inline
+   * 0a — EMPTY SUBMIT. "Sign-in" with both fields empty must show the inline
    * error AND stay on `/`. Then with the email only: same.
    */
-  await p.getByRole('button', { name: 'Log in', exact: true }).click();
+  if (await p.getByRole('button', { name: 'Log in', exact: true }).count()) fails.push(`@${width} 0a login: the GNL "Log in" button is still there`);
+  await p.getByRole('button', { name: 'Sign-in', exact: true }).click();
   await p.waitForTimeout(400);
   if (new URL(p.url()).pathname !== '/') fails.push(`@${width} 0a login: empty submit left the login page`);
   await sees('0a login: empty-submit error', 'Enter your email address and password.');
@@ -209,16 +246,33 @@ async function run(width) {
   await step('1  Log in (typed credentials)', logIn, '/dashboard');
   await step(
     '2  Driver and Vehicle card',
-    (pg) => pg.getByRole('link', { name: /Driver and Vehicle/ }).first().click(),
+    (pg) => pg.getByRole('link', { name: /Driver and Vehicle Services/ }).first().click(),
     '/services/driver-vehicle',
   );
   /*
-   * RE-POINTED 2026-09-23. "Onboard" now opens NL-04 Summary, not the method
-   * step — brief §5 and §8.1 NL-03 ("'Onboard' -> NL-04"). It went straight to
-   * the method step only because NL-04..NL-06 did not exist.
+   * 2b..2g — THE UNVERIFIED GNWT SERVICE PAGE (Figma 24:48887). Badge
+   * "Confirmation required", the consent card with "Click to Proceed", the
+   * LOCKED action card, and none of the Trusted-only controls.
    */
-  await step('3  Onboard -> summary', click('Onboard'), '/services/driver-vehicle/summary');
-  await step('3a Summary -> terms', click('Continue'), '/services/driver-vehicle/terms');
+  {
+    if ((await badgeOf(p)) !== 'unverified') fails.push(`@${width} 2b service page: badge is ${await badgeOf(p)}, expected "unverified"`);
+    await sees('2b badge text', 'Confirmation required');
+    await sees('2c title', 'Driver and Vehicle Services');
+    if ((await p.locator('[data-consent-card]').count()) !== 1) fails.push(`@${width} 2c: the unverified page has no consent card`);
+    if ((await p.locator('[data-action-card="locked"]').count()) !== 1) fails.push(`@${width} 2d: the unverified page's action card is not locked`);
+    await sees('2d locked action', 'Action locked');
+    if (await p.getByRole('button', { name: 'Remove Consent', exact: true }).count()) fails.push(`@${width} 2e: "Remove Consent" shows on the UNVERIFIED page`);
+    if (await p.getByRole('link', { name: 'Add to wallet', exact: true }).count()) fails.push(`@${width} 2f: "Add to wallet" shows on the UNVERIFIED page`);
+    if (await p.getByRole('button', { name: 'Onboard', exact: true }).count() + await p.getByRole('link', { name: 'Onboard', exact: true }).count()) fails.push(`@${width} 2g: the GNL "Onboard" control is still on the page`);
+  }
+  /*
+   * RE-POINTED 2026-11-16 (GNWT). The consent card's "Click to Proceed" is
+   * the entry to the wizard — the GNL "Onboard" button's job — and opens the
+   * Summary step.
+   */
+  await step('3  Click to Proceed -> summary', click('Click to Proceed'), '/services/driver-vehicle/summary');
+  /* GNWT Flow 1 Summary (24:48794) labels its primary "I Consent", as drawn. */
+  await step('3a Summary -> terms', click('I Consent'), '/services/driver-vehicle/terms');
 
   /*
    * 3b — THE CHECKBOX RULE, NEGATIVE CASE (§7.4). Click "I Consent" with the
@@ -234,7 +288,7 @@ async function run(width) {
   await step(
     '3c Terms -> confirm details (ticked)',
     async (pg) => {
-      await pg.getByLabel('I have read and accept terms and condition').check();
+      await pg.getByLabel('I have read and accept the terms and condition').check();
       await pg.getByRole('button', { name: 'I Consent', exact: true }).first().click();
     },
     '/services/driver-vehicle/confirm-details',
@@ -253,11 +307,11 @@ async function run(width) {
    * link is centred in a shrink-to-fit box that reflows.
    */
   /*
-   * 3e — NATIVE RADIOS (2026-09-30, feedback-ui). NL-07's options are real
-   * <input type="radio">s in one named group, each inside a <label> card.
-   * GNL IDV is the checked one; MRD is inert. A click on the MRD card, and an
-   * arrow key from the GNL IDV radio onto it, must show the toast, stay on the
-   * page and NOT leave MRD checked.
+   * 3e — NATIVE RADIOS. The method step's option is a real
+   * <input type="radio"> inside a <label> card. GNWT (release-2) draws ONE
+   * option, "GNWT Identity Verification Service", checked. The GNL MRD card
+   * and its inert-toast checks went with the card; an arrow key on the only
+   * radio must still not navigate or uncheck it.
    */
   {
     const radios = () =>
@@ -273,27 +327,20 @@ async function run(width) {
       const rs = await radios();
       const names = new Set(rs.map((r) => r.name));
       const on = rs.filter((r) => r.checked).map((r) => r.title);
-      if (rs.length !== 2 || names.size !== 1 || rs.some((r) => !r.inLabel)) {
-        fails.push(`@${width} ${label}: NL-07 radios ${JSON.stringify(rs)} — expected 2 native radios, one name, each in a <label>`);
+      if (rs.length !== 1 || names.size !== 1 || rs.some((r) => !r.inLabel)) {
+        fails.push(`@${width} ${label}: method radios ${JSON.stringify(rs)} — expected 1 native radio in a <label>`);
       }
-      if (on.length !== 1 || on[0] !== 'GNL Identity Verification Service') {
-        fails.push(`@${width} ${label}: NL-07 checked radio(s) ${JSON.stringify(on)}, expected GNL IDV only`);
+      if (on.length !== 1 || on[0] !== 'GNWT Identity Verification Service') {
+        fails.push(`@${width} ${label}: method checked radio(s) ${JSON.stringify(on)}, expected GNWT IDV only`);
       }
     };
     await checkState('3e');
-    // `force`: the inert radio is aria-disabled on purpose, and Playwright
-    // counts a label of an aria-disabled control as "not enabled". The click
-    // is still a real mouse click at the card's centre.
-    await p.getByText('Motor Registration Division (MRD)', { exact: true }).click({ force: true });
-    await p.waitForTimeout(400);
-    at('3f NL-07 MRD card must not navigate', '/services/driver-vehicle/onboard');
-    await sees('3f NL-07 MRD card shows the toast', 'Not part of this demo');
-    await checkState('3f after an MRD click');
-    await p.getByRole('radio', { name: 'GNL Identity Verification Service' }).focus();
+    if (await p.getByText('Motor Registration Division (MRD)', { exact: true }).count()) fails.push(`@${width} 3e: the GNL MRD card is still on the method step`);
+    await p.getByRole('radio', { name: 'GNWT Identity Verification Service' }).focus();
     await p.keyboard.press('ArrowUp');
     await p.waitForTimeout(400);
-    at('3g NL-07 ArrowUp onto MRD must not navigate', '/services/driver-vehicle/onboard');
-    await checkState('3g after ArrowUp onto MRD');
+    at('3g method step: ArrowUp on the only radio must not navigate', '/services/driver-vehicle/onboard');
+    await checkState('3g after ArrowUp');
   }
   await step('4  Onboard -> mobile hand-off', click('Continue'), '/cid/continue-on-mobile');
   await step(
@@ -359,7 +406,7 @@ async function run(width) {
   at('14b Upload advances to CID verified on its own', '/cid/verified');
   await step(
     '15 CID verified -> provider status',
-    click('Continue to Driver and Vehicle service'),
+    click('Continue to Driver and Vehicle Services'),
     '/auth/loading',
   );
   /*
@@ -374,7 +421,7 @@ async function run(width) {
   await step('17 Prerequisite -> confirmation', click('Continue'), '/services/driver-vehicle/confirmation');
   await step(
     '18 Confirmation -> verified service',
-    click('Go to Service Driver’s License Renewal'),
+    click('Go to Service Driver and Vehicle Services'),
     '/services/driver-vehicle',
   );
   {
@@ -395,7 +442,7 @@ async function run(width) {
    * first. ArrowLeft from the end state therefore goes to /dashboard/. That
    * is a known DemoNav limitation, recorded here rather than worked around.)
    */
-  await step('B1 Verified service -> dashboard (breadcrumb)', click('← Back to Services'), '/dashboard');
+  await step('B1 Verified service -> dashboard (breadcrumb)', click('Back to Services'), '/dashboard');
 
   await p.goto(BASE + '/services/driver-vehicle/confirmation/', { waitUntil: 'networkidle' });
   await step('B2 Confirmation -> prerequisite (Back)', click('Back'), '/services/driver-vehicle/prerequisite');
@@ -476,18 +523,18 @@ async function run(width) {
 
   /* ===================== Remaining controls ============================== */
   await p.goto(BASE + '/services/driver-vehicle/onboard/', { waitUntil: 'networkidle' });
-  /* C0 — the GNL IDV card itself still leads on (it was a <Link>; it is now a
-     <label> around a native radio). Mouse, then Enter on the focused radio. */
+  /* C0 — the GNWT IDV card itself leads on (a <label> around a native
+     radio). Mouse, then Enter on the focused radio. */
   await step(
-    'C0 NL-07 GNL IDV card -> hand-off',
-    (pg) => pg.getByText('GNL Identity Verification Service', { exact: true }).click(),
+    'C0 method step GNWT IDV card -> hand-off',
+    (pg) => pg.getByText('GNWT Identity Verification Service', { exact: true }).click(),
     '/cid/continue-on-mobile',
   );
   await p.goto(BASE + '/services/driver-vehicle/onboard/', { waitUntil: 'networkidle' });
   await step(
-    'C0b NL-07 Enter on the GNL IDV radio -> hand-off',
+    'C0b method step Enter on the GNWT IDV radio -> hand-off',
     async (pg) => {
-      await pg.getByRole('radio', { name: 'GNL Identity Verification Service' }).focus();
+      await pg.getByRole('radio', { name: 'GNWT Identity Verification Service' }).focus();
       await pg.keyboard.press('Enter');
     },
     '/cid/continue-on-mobile',
@@ -498,15 +545,51 @@ async function run(width) {
   await step('C2 Prerequisite Cancel', click('Cancel'), '/services/driver-vehicle');
   await p.goto(BASE + '/cid/verified/', { waitUntil: 'networkidle' });
   await step('C3 CID verified Log out', click('Log out'), '/');
+  /*
+   * C4 — THE GNWT HEADER. No "Log Out" any more: the user button opens a
+   * one-item menu (closed until clicked), and its "Sign out" reaches `/`.
+   */
   await p.goto(BASE + '/dashboard/', { waitUntil: 'networkidle' });
-  await step('C4 Log Out', click('Log Out'), '/');
-  await p.goto(BASE + '/dashboard/', { waitUntil: 'networkidle' });
-  await step('C5 Nav Services', click('Services'), '/dashboard');
+  if (await p.getByRole('button', { name: 'Log Out', exact: true }).count() + await p.getByRole('link', { name: 'Log Out', exact: true }).count()) {
+    fails.push(`@${width} C4: the GNL "Log Out" control is still in the header`);
+  }
+  if (width < 1024) {
+    if (await p.getByRole('button', { name: 'Jason Moore', exact: true }).count()) fails.push(`@${width} C4: the phone header shows a user button (it draws none)`);
+  } else {
+    const user = p.getByRole('button', { name: 'Jason Moore', exact: true });
+    if (!(await user.count())) {
+      fails.push(`@${width} C4: no "Jason Moore" user button in the signed-in header`);
+    } else {
+      if ((await user.first().getAttribute('aria-expanded')) !== 'false') fails.push(`@${width} C4a: the user menu is not closed on load`);
+      if (await p.getByRole('menuitem', { name: 'Sign out', exact: true }).count()) fails.push(`@${width} C4a: "Sign out" is visible before the menu is opened`);
+      await user.first().click();
+      if ((await user.first().getAttribute('aria-expanded')) !== 'true') fails.push(`@${width} C4b: the user button did not open its menu`);
+      await p.mouse.click(5, 600);
+      await p.waitForTimeout(200);
+      if (await p.getByRole('menuitem', { name: 'Sign out', exact: true }).count()) fails.push(`@${width} C4c: a click elsewhere did not close the user menu`);
+      if (new URL(p.url()).pathname !== '/dashboard/') fails.push(`@${width} C4c: closing the user menu navigated`);
+    }
+  }
+  await step('C4 Sign out (user menu)', signOut, '/');
+  /* C5 — the GNWT logo is the way home: the dashboard when signed in. */
+  await p.goto(BASE + '/services/driver-vehicle/terms/', { waitUntil: 'networkidle' });
+  await step('C5 Header logo -> dashboard', click('Government of Northwest Territories — home'), '/dashboard');
+  /* C5b — "Français", the search box and "Menu" are out of scope: toast, no navigation. */
+  for (const txt of [width < 1024 ? 'FR' : 'Français', 'Menu']) {
+    await p.goto(BASE + '/dashboard/', { waitUntil: 'networkidle' });
+    await p.locator('header [data-demo-inert="true"]:visible', { hasText: txt }).first().click();
+    await p.waitForTimeout(400);
+    at(`C5b header "${txt}" must not navigate`, '/dashboard');
+    await sees(`C5b header "${txt}" shows the toast`, 'Not part of this demo');
+  }
   await p.goto(BASE + '/services/driver-vehicle/terms/', { waitUntil: 'networkidle' });
   await step('C6 Terms Cancel', click('Cancel'), '/services/driver-vehicle');
+  /* C7 — GNWT Terms has no "I Do Not Consent" (Cancel / Back / I Consent only). */
   await p.goto(BASE + '/services/driver-vehicle/terms/', { waitUntil: 'networkidle' });
-  // §7.4: "'I Do Not Consent' -> service page." A decline, not a step back.
-  await step('C7 Terms I Do Not Consent', click('I Do Not Consent'), '/services/driver-vehicle');
+  if (await p.getByRole('button', { name: 'I Do Not Consent', exact: true }).count() + await p.getByRole('link', { name: 'I Do Not Consent', exact: true }).count()) {
+    fails.push(`@${width} C7: Terms still shows the GNL "I Do Not Consent"`);
+  }
+  await step('C7 Terms Back -> summary', click('Back'), '/services/driver-vehicle/summary');
   await p.goto(BASE + '/services/driver-vehicle/confirm-details/', { waitUntil: 'networkidle' });
   await step('C8 Confirm details Cancel', click('Cancel'), '/services/driver-vehicle');
   /*
@@ -527,7 +610,7 @@ async function run(width) {
    * `processingMinMs` (3000). The wait below is deliberately longer.
    */
   await p.goto(BASE + '/cid/verified/', { waitUntil: 'networkidle' });
-  await step('D1a CID verified -> provider status', click('Continue to Driver and Vehicle service'), '/auth/loading');
+  await step('D1a CID verified -> provider status', click('Continue to Driver and Vehicle Services'), '/auth/loading');
   await p.waitForTimeout(4200);
   at('D1b Provider status auto-advances to the Confirmed screen', '/services/driver-vehicle/prerequisite');
   // §8.3 / §10.6: the advance carries a toast, raised before the navigation so
@@ -573,8 +656,36 @@ async function run(width) {
     }
   }
   await sees('D3 Trusted badge', 'Trusted');
-  /* D3r — Trusted Driver and Vehicle shows ONE inert "Remove consent" (2026-10-23). */
-  if ((await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) !== 1) fails.push(`@${width} D3r: expected one "Remove consent" button on Trusted Driver and Vehicle`);
+  if ((await badgeOf(p)) !== 'trusted') fails.push(`@${width} D3 badge is ${await badgeOf(p)} after reload, expected "trusted"`);
+  /*
+   * D3t — THE TRUSTED GNWT PAGE (Figma 44:83880): no consent card, the action
+   * card UNLOCKED with the wallet panel, whose "Add to wallet" is a real link
+   * to Flow 3's C1 page; the action row itself is out of scope (toast).
+   */
+  if (await p.locator('[data-consent-card]').count()) fails.push(`@${width} D3t: the Trusted page still shows the consent card`);
+  if ((await p.locator('[data-action-card="unlocked"]').count()) !== 1) fails.push(`@${width} D3t: the Trusted page's action card is not unlocked`);
+  if (await p.getByText('Action locked', { exact: true }).count()) fails.push(`@${width} D3t: the Trusted page still says "Action locked"`);
+  {
+    const add = p.getByRole('link', { name: 'Add to wallet', exact: true });
+    if ((await add.count()) !== 1) fails.push(`@${width} D3w: ${await add.count()} "Add to wallet" links on Trusted Driver and Vehicle, expected 1`);
+    else if ((await add.getAttribute('href')) !== '/services/driver-vehicle/wallet/') fails.push(`@${width} D3w: "Add to wallet" points at ${await add.getAttribute('href')}`);
+  }
+  await p.locator('[data-action-card="unlocked"] button[data-demo-inert="true"]').first().click();
+  await p.waitForTimeout(400);
+  at('D3a the unlocked action row must not navigate', '/services/driver-vehicle');
+  await sees('D3a the unlocked action row shows the toast', 'Not part of this demo');
+  /* D3r — Trusted Driver and Vehicle shows ONE inert "Remove Consent": toast, stays Trusted. */
+  await p.waitForTimeout(2600);
+  if ((await p.getByRole('button', { name: 'Remove Consent', exact: true }).count()) !== 1) {
+    fails.push(`@${width} D3r: expected one "Remove Consent" button on Trusted Driver and Vehicle`);
+  } else {
+    await p.getByRole('button', { name: 'Remove Consent', exact: true }).click();
+    await p.waitForTimeout(400);
+    at('D3r Remove Consent must not navigate', '/services/driver-vehicle');
+    await sees('D3r Remove Consent shows the toast', 'Not part of this demo');
+    const t = await p.evaluate(() => document.querySelector('.gnl-desktop-shell')?.getAttribute('data-verified'));
+    if (t !== '1') fails.push(`@${width} D3r: Remove Consent changed the Trusted state (data-verified="${t}")`);
+  }
 
   /*
    * D3b — FINISHING FLOW A DOES NOT MAKE FLOW B TRUSTED. Added 2026-09-28.
@@ -599,7 +710,7 @@ async function run(width) {
    * opposite of what §7.1 says. Only /reset and the presenter's Escape clear
    * the store now, so logging out and back in must leave the service Trusted.
    */
-  await step('D4a Log Out', click('Log Out'), '/');
+  await step('D4a Sign out', signOut, '/');
   await p.goto(BASE + '/services/driver-vehicle/', { waitUntil: 'networkidle' });
   await p.waitForTimeout(400);
   {
@@ -609,6 +720,31 @@ async function run(width) {
     if (trusted !== '1') {
       fails.push(`@${width} D4 after Log Out: progress was cleared (data-verified="${trusted}") — §7.1 says Log Out KEEPS it`);
     }
+  }
+
+  /*
+   * D4e — ESC IS "RESET DEMO" (§7.5): on the Trusted page (focus not in a
+   * field) it clears the store; the page must drop back to the unverified
+   * state with the consent card. Then the journey's end state is restored
+   * through the Ready-to-Use screen so D5 below still tests /reset.
+   */
+  await p.locator('h1').first().click();
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(800);
+  await p.goto(BASE + '/services/driver-vehicle/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  {
+    const t = await p.evaluate(() => document.querySelector('.gnl-desktop-shell')?.getAttribute('data-verified'));
+    if (t === '1') fails.push(`@${width} D4e after Esc: the service page is still Trusted — Esc did not reset the demo`);
+    if (!(await p.locator('[data-consent-card]').count())) fails.push(`@${width} D4e after Esc: no consent card on the reset service page`);
+  }
+  await p.goto(BASE + '/services/driver-vehicle/prerequisite/', { waitUntil: 'networkidle' });
+  await step('D4f Confirmed -> Ready to Use (again)', click('Continue'), '/services/driver-vehicle/confirmation');
+  await p.goto(BASE + '/services/driver-vehicle/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(400);
+  {
+    const t = await p.evaluate(() => document.querySelector('.gnl-desktop-shell')?.getAttribute('data-verified'));
+    if (t !== '1') fails.push(`@${width} D4f: opening Ready to Use did not make the service Trusted again (data-verified="${t}")`);
   }
 
   /*
@@ -786,8 +922,8 @@ async function runFlowBCid(width) {
     const html = await ctx.request
       .get(BASE + '/cid/studentaid/terms/')
       .then((r) => r.text());
-    if (!html.includes('StudentAidNL')) {
-      fails.push(`@${width} F0: "StudentAidNL" is not in the prerendered HTML of /cid/studentaid/terms/`);
+    if (!html.includes('Student Financial Assistance')) {
+      fails.push(`@${width} F0: "Student Financial Assistance" is not in the prerendered HTML of /cid/studentaid/terms/`);
     }
     if (html.includes('Driver and Vehicle')) {
       fails.push(`@${width} F0: Flow A's title leaked into /cid/studentaid/terms/`);
@@ -812,7 +948,8 @@ async function runFlowBCid(width) {
    * the 404. Then back to Flow B's Terms of use to carry on the chain.
    */
   await step('F1b B terms -> B method step (I do not agree)', click('I do not agree'), '/services/studentaid/onboard');
-  await sees('F1b B method step is StudentAidNL\'s', 'Medical Care Plan (MCP)');
+  // Flow 2's method card spells its requirement with a typographic ’ (Flow 1's is straight).
+  await sees('F1b B method step is Student Financial Assistance\'s', 'Must have a valid driver’s license, health card or other');
   await p.goto(BASE + '/cid/studentaid/terms/', { waitUntil: 'networkidle' });
 
   await step('F2 B terms -> consent', click('I agree'), '/cid/studentaid/biometric');
@@ -882,12 +1019,12 @@ async function runFlowBCid(width) {
     fails.push(`@${width} F9b: B upload did not advance to step 5 on its own (at ${new URL(p.url()).pathname})`);
   }
   await sees('FA B step-5 copy is §10.1’s', 'Apply for student financial assistance');
-  await sees('FA B step-5 names the service', 'securely access StudentAidNL services');
+  await sees('FA B step-5 names the service', 'securely access Student Financial Assistance services');
 
   /* The primary CTA names the service, and it still reaches the processing screen. */
   await step(
     'FB B verified -> processing',
-    click('Continue to StudentAidNL service'),
+    click('Continue to Student Financial Assistance'),
     '/auth/loading',
   );
 
@@ -977,24 +1114,30 @@ async function runFlowB(width) {
   await step('G1  Log in (typed credentials)', logIn, '/dashboard');
   /* PP-02: the whole card is the link, like Driver and Vehicle's. */
   await step(
-    'G2  StudentAidNL card -> PP-03',
-    (pg) => pg.getByRole('link', { name: /StudentAidNL/ }).first().click(),
+    'G2  Student Financial Assistance card -> PP-03',
+    (pg) => pg.getByRole('link', { name: /Student Financial Assistance/ }).first().click(),
     '/services/studentaid',
   );
   if ((await verifiedAttr()) !== '0') fails.push(`@${width} G2b: PP-03 should open unverified`);
   await sees('G2c PP-03 badge', 'Confirmation required');
-  if (await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) fails.push(`@${width} G2d: "Remove consent" shows on the UNVERIFIED StudentAidNL page`);
-  await sees('G2d PP-03 subtitle is §10.1\'s', 'View and manage your StudentAidNL services');
-  await sees('G2e PP-03 locked portal row', 'Action locked');
-  await sees('G2f PP-03 contact block', 'P.O. Box 8700');
+  if ((await badgeOf(p)) !== 'unverified') fails.push(`@${width} G2c: badge is ${await badgeOf(p)}, expected "unverified"`);
+  if (await p.getByRole('button', { name: 'Remove Consent', exact: true }).count()) fails.push(`@${width} G2d: "Remove Consent" shows on the UNVERIFIED Student Financial Assistance page`);
+  if ((await p.locator('h1').first().textContent())?.trim() !== 'Student Financial Assistance') fails.push(`@${width} G2d: PP-03 title is "${await p.locator('h1').first().textContent()}"`);
+  await sees('G2d PP-03 intro', 'Apply for full-time student financial assistance');
+  if ((await p.locator('[data-consent-card]').count()) !== 1) fails.push(`@${width} G2e: PP-03 has no consent card`);
+  if ((await p.locator('[data-action-card="locked"]').count()) !== 1) fails.push(`@${width} G2e: PP-03's action card is not locked`);
+  await sees('G2e PP-03 locked action', 'Action locked');
+  await sees('G2f PP-03 contact block', 'nwtsfa@gov.nt.ca');
+  if (await p.getByRole('link', { name: 'Add to wallet', exact: true }).count()) fails.push(`@${width} G2g: "Add to wallet" shows on the UNVERIFIED Student Financial Assistance page`);
 
-  await step('G3  Onboard -> PP-04 summary', click('Onboard'), '/services/studentaid/summary');
-  await sees('G3b PP-04 heading', 'Welcome to StudentAidNL');
+  await step('G3  Click to Proceed -> PP-04 summary', click('Click to Proceed'), '/services/studentaid/summary');
+  await sees('G3b PP-04 heading', 'Welcome to Student Financial Assistance');
+  /* GNWT Flow 2 Summary (40:76892) labels its primary "Continue", as drawn. */
   await step('G4  Summary -> PP-05 terms', click('Continue'), '/services/studentaid/terms');
-  await sees('G4b PP-05 version', 'Version 7');
-  await sees('G4c PP-05 date', 'Last modified: 2026-08-26');
-  await sees('G4d PP-05 consent is Flow B\'s paragraph', 'I hereby consent to the Government of Newfoundland and Labrador');
-  await sees('G4e PP-05 has the seven scopes', 'View when your phone number has been verified');
+  await sees('G4b PP-05 version', 'Version 4');
+  await sees('G4c PP-05 date', 'Last modified: 2026-03-09');
+  await sees('G4d PP-05 is Flow B\'s paragraph', 'Student Financial Assistance Act');
+  if (await p.getByText('Motor Vehicles Act', { exact: false }).count()) fails.push(`@${width} G4e: Flow 1's terms paragraph leaked into PP-05`);
 
   /* The §7.4 checkbox rule, negative then positive — as 3b / 3c in `run`. */
   await p.getByRole('button', { name: 'I Consent', exact: true }).first().click();
@@ -1004,20 +1147,19 @@ async function runFlowB(width) {
   await step(
     'G6  Terms -> PP-06 confirm details (ticked)',
     async (pg) => {
-      await pg.getByLabel('I have read and accept the above Terms and Conditions').check();
+      await pg.getByLabel('I have read and accept the terms and condition').check();
       await pg.getByRole('button', { name: 'I Consent', exact: true }).first().click();
     },
     '/services/studentaid/confirm-details',
   );
-  await sees('G6b PP-06 requirement', "Must have a valid driver's license, health card, or acceptable form of photo ID");
+  await sees('G6b PP-06 requirement', 'Must have a valid driver’s license, health card or other');
   await sees('G6c PP-06 status', 'Required');
 
   await step('G7  PP-06 -> PP-07 method step', click('Continue'), '/services/studentaid/onboard');
   /*
-   * G7b — THREE cards from `config.methods`, in order, GNL IDV the only
-   * selected one. Read off each card's native radio (2026-09-30: it was a
-   * radio image, and the leading card was an <a>; it is now a <label> with
-   * `data-href`).
+   * G7b — ONE card from `config.methods` (GNWT, 42:77032), GNWT IDV, selected
+   * and navigable. Read off the card's native radio and `data-href`. The GNL
+   * MCP / MRD cards and their inert-toast checks went with the cards.
    */
   {
     const cards = await p.evaluate(() =>
@@ -1028,42 +1170,26 @@ async function runFlowB(width) {
       })),
     );
     const titles = cards.map((c) => c.title);
-    const want = ['Medical Care Plan (MCP)', 'Motor Registration Division (MRD)', 'GNL Identity Verification Service'];
+    const want = ['GNWT Identity Verification Service'];
     if (JSON.stringify(titles) !== JSON.stringify(want)) {
       fails.push(`@${width} G7b: PP-07 cards are ${JSON.stringify(titles)}, expected ${JSON.stringify(want)}`);
     }
     const sel = cards.filter((c) => c.selected).map((c) => c.title);
-    if (sel.length !== 1 || sel[0] !== 'GNL Identity Verification Service') {
-      fails.push(`@${width} G7c: PP-07 selected card(s) ${JSON.stringify(sel)}, expected GNL IDV only`);
+    if (sel.length !== 1 || sel[0] !== 'GNWT Identity Verification Service') {
+      fails.push(`@${width} G7c: PP-07 selected card(s) ${JSON.stringify(sel)}, expected GNWT IDV only`);
     }
     const links = cards.filter((c) => c.link).map((c) => c.title);
-    if (links.length !== 1 || links[0] !== 'GNL Identity Verification Service') {
-      fails.push(`@${width} G7d: PP-07 navigable card(s) ${JSON.stringify(links)}, expected GNL IDV only`);
+    if (links.length !== 1 || links[0] !== 'GNWT Identity Verification Service') {
+      fails.push(`@${width} G7d: PP-07 navigable card(s) ${JSON.stringify(links)}, expected GNWT IDV only`);
     }
   }
-  /* G7e — MCP is not in the demo: it must show the toast and stay put. */
-  // `force`: see 3f — the inert radio's label reads as "not enabled".
-  await p.locator('[data-node-id="6217:30594"]').click({ force: true });
-  await p.waitForTimeout(400);
-  at('G7e PP-07 MCP card must not navigate', '/services/studentaid/onboard');
-  await sees('G7f PP-07 MCP card shows the toast', 'Not part of this demo');
-  {
-    const on = await p.evaluate(() =>
-      [...document.querySelectorAll('[data-node-id="6217:30593"] input[type="radio"]:checked')].map(
-        (r) => r.closest('label')?.querySelector('p')?.textContent?.trim(),
-      ),
-    );
-    if (on.length !== 1 || on[0] !== 'GNL Identity Verification Service') {
-      fails.push(`@${width} G7g: after an MCP click the checked radio(s) are ${JSON.stringify(on)}, expected GNL IDV only`);
-    }
-  }
+  if (await p.getByText('Medical Care Plan (MCP)', { exact: true }).count()) fails.push(`@${width} G7e: the GNL MCP card is still on PP-07`);
 
-  await step('G8  PP-07 -> PP-08 other verification', click('Continue'), '/services/studentaid/other-verification');
-  await sees('G8b PP-08 option', 'This option is for users who do not have a valid MCP number or MRD-issued ID.');
-  if (await p.getByRole('link', { name: 'Cancel', exact: true }).count()) {
-    fails.push(`@${width} G8c: PP-08 draws a Cancel — Figma hides it (6217:35241)`);
-  }
-  await step('G9  PP-08 -> PP-09 hand-off', click('Continue'), '/cid/studentaid/continue-on-mobile');
+  /*
+   * G8 — RE-POINTED 2026-11-16 (GNWT): there is NO PP-08 "Other verification"
+   * step; PP-07's Continue goes straight to Flow B's hand-off.
+   */
+  await step('G8  PP-07 -> PP-09 hand-off (no PP-08)', click('Continue'), '/cid/studentaid/continue-on-mobile');
   await step('G10 hand-off -> terms', click('Continue on my computer'), '/cid/studentaid/terms');
   await step('G11 terms -> consent', click('I agree'), '/cid/studentaid/biometric');
   await step('G11b consent -> liveness', click('I agree'), '/cid/studentaid/liveness');
@@ -1075,17 +1201,17 @@ async function runFlowB(width) {
   await step('G12 capture front -> upload (no back capture)', click('Continue'), '/cid/studentaid/upload');
   await p.waitForTimeout(2800);
   at('G12b upload advances to step 5', '/cid/studentaid/verified');
-  await step('G13 step 5 -> processing', click('Continue to StudentAidNL service'), '/auth/loading');
+  await step('G13 step 5 -> processing', click('Continue to Student Financial Assistance'), '/auth/loading');
 
   /* G14 — THE TRAP. The shared screen must advance, and to FLOW B's PP-21. */
   await p.waitForTimeout(4200);
   at('G14b processing auto-advances to FLOW B\'s Confirmed screen', '/services/studentaid/prerequisite');
   await sees('G14c completion toast', 'Identity verification complete');
-  await sees('G14d PP-21 requirement', 'or acceptable form of photo ID.');
+  await sees('G14d PP-21 requirement', 'Must have a valid driver’s license, health card or other');
   await sees('G14e PP-21 status', 'Confirmed');
 
   await step('G15 PP-21 -> PP-22 success', click('Continue'), '/services/studentaid/confirmation');
-  await step('G16 PP-22 -> PP-23 Trusted', click('Go to Service StudentAidNL'), '/services/studentaid');
+  await step('G16 PP-22 -> PP-23 Trusted', click('Go to Service Student Financial Assistance'), '/services/studentaid');
   {
     const q = new URL(p.url()).search;
     if (q !== '?verified=1') fails.push(`@${width} G16b: expected ?verified=1 got "${q}"`);
@@ -1095,23 +1221,30 @@ async function runFlowB(width) {
   await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(400);
-  if ((await verifiedAttr()) !== '1') fails.push(`@${width} G17: StudentAidNL is not Trusted after a reload`);
+  if ((await verifiedAttr()) !== '1') fails.push(`@${width} G17: Student Financial Assistance is not Trusted after a reload`);
   await sees('G17b Trusted badge', 'Trusted');
+  if ((await badgeOf(p)) !== 'trusted') fails.push(`@${width} G17b: badge is ${await badgeOf(p)}, expected "trusted"`);
   if (await p.getByText('Action locked', { exact: true }).count()) {
     fails.push(`@${width} G17c: the Trusted page still shows "Action locked"`);
   }
-  /* G17d — the unlocked portal row is external to the demo -> toast. */
-  await p.getByRole('button', { name: 'Go to StudentAidNL' }).click();
+  if (await p.locator('[data-consent-card]').count()) fails.push(`@${width} G17c: the Trusted page still shows the consent card`);
+  {
+    const add = p.getByRole('link', { name: 'Add to wallet', exact: true });
+    if ((await add.count()) !== 1) fails.push(`@${width} G17w: ${await add.count()} "Add to wallet" links on Trusted Student Financial Assistance, expected 1`);
+    else if ((await add.getAttribute('href')) !== '/services/studentaid/wallet/') fails.push(`@${width} G17w: "Add to wallet" points at ${await add.getAttribute('href')}`);
+  }
+  /* G17d — the unlocked action row is external to the demo -> toast. */
+  await p.getByRole('button', { name: 'Apply for Full Time Student Financial Assistance' }).click();
   await p.waitForTimeout(400);
-  at('G17d unlocked portal row must not navigate', '/services/studentaid');
-  await sees('G17e unlocked portal row shows the toast', 'Not part of this demo');
-  /* G17f — "Remove consent" (2026-10-23): Trusted only, inert -> toast, stays Trusted. */
+  at('G17d unlocked action row must not navigate', '/services/studentaid');
+  await sees('G17e unlocked action row shows the toast', 'Not part of this demo');
+  /* G17f — "Remove Consent": Trusted only, inert -> toast, stays Trusted. */
   await p.waitForTimeout(2600);
-  if ((await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) !== 1) fails.push(`@${width} G17f: expected one "Remove consent" button on Trusted StudentAidNL`);
-  await p.getByRole('button', { name: 'Remove consent', exact: true }).click();
+  if ((await p.getByRole('button', { name: 'Remove Consent', exact: true }).count()) !== 1) fails.push(`@${width} G17f: expected one "Remove Consent" button on Trusted Student Financial Assistance`);
+  await p.getByRole('button', { name: 'Remove Consent', exact: true }).click();
   await p.waitForTimeout(400);
-  at('G17g Remove consent must not navigate', '/services/studentaid');
-  await sees('G17h Remove consent shows the toast', 'Not part of this demo');
+  at('G17g Remove Consent must not navigate', '/services/studentaid');
+  await sees('G17h Remove Consent shows the toast', 'Not part of this demo');
   if ((await verifiedAttr()) !== '1') fails.push(`@${width} G17i: Remove consent changed the Trusted state`);
 
   /* G-ISO — and Driver and Vehicle is NOT Trusted. Both the page and the store. */
@@ -1120,7 +1253,8 @@ async function runFlowB(width) {
   if ((await verifiedAttr()) === '1') {
     fails.push(`@${width} G-ISO: completing Flow B made Driver and Vehicle Trusted`);
   }
-  if (await p.getByRole('button', { name: 'Remove consent', exact: true }).count()) fails.push(`@${width} G-ISOr: "Remove consent" shows on the UNVERIFIED Driver and Vehicle page`);
+  if (await p.getByRole('button', { name: 'Remove Consent', exact: true }).count()) fails.push(`@${width} G-ISOr: "Remove Consent" shows on the UNVERIFIED Driver and Vehicle page`);
+  if ((await badgeOf(p)) !== 'unverified') fails.push(`@${width} G-ISO c: Driver and Vehicle badge is ${await badgeOf(p)} after Flow B, expected "unverified"`);
   {
     const dv = await p.evaluate(() => {
       try {
@@ -1134,7 +1268,7 @@ async function runFlowB(width) {
 
   /* ===================== BACKWARD — every Flow B reverse control ========= */
   await p.goto(BASE + '/services/studentaid/', { waitUntil: 'networkidle' });
-  await step('GB1 PP-23 -> dashboard (breadcrumb)', click('← Back to Services'), '/dashboard');
+  await step('GB1 PP-23 -> dashboard (breadcrumb)', click('Back to Services'), '/dashboard');
   await p.goto(BASE + '/services/studentaid/confirmation/', { waitUntil: 'networkidle' });
   await step('GB2 PP-22 -> PP-21 (Back)', click('Back'), '/services/studentaid/prerequisite');
   await step('GB3 PP-21 -> processing (Back)', click('Back'), '/auth/loading');
@@ -1142,8 +1276,14 @@ async function runFlowB(width) {
   await p.waitForTimeout(4200);
   at('GB3b processing must STAY PUT when reached by Back', '/auth/loading');
 
+  /*
+   * GB4 — the retired PP-08 URL still resolves (old links, bookmarks) and
+   * only forwards to Flow B's hand-off, never to Flow A's or the 404.
+   */
   await p.goto(BASE + '/services/studentaid/other-verification/', { waitUntil: 'networkidle' });
-  await step('GB4 PP-08 -> PP-07 (Back)', click('Back'), '/services/studentaid/onboard');
+  await p.waitForURL('**/cid/studentaid/continue-on-mobile/', { timeout: 5000 }).catch(() => {});
+  at('GB4 retired PP-08 URL forwards to the B hand-off', '/cid/studentaid/continue-on-mobile');
+  await p.goto(BASE + '/services/studentaid/onboard/', { waitUntil: 'networkidle' });
   await step('GB5 PP-07 -> PP-06 (Back)', click('Back'), '/services/studentaid/confirm-details');
   await step('GB6 PP-06 -> PP-05 (Back)', click('Back'), '/services/studentaid/terms');
   await step('GB7 PP-05 -> PP-04 (Back)', click('Back'), '/services/studentaid/summary');
@@ -1152,7 +1292,6 @@ async function runFlowB(width) {
   for (const [label, route, control] of [
     ['GB9  PP-07 Cancel', '/services/studentaid/onboard/', 'Cancel'],
     ['GB10 PP-05 Cancel', '/services/studentaid/terms/', 'Cancel'],
-    ['GB11 PP-05 I Do Not Consent', '/services/studentaid/terms/', 'I Do Not Consent'],
     ['GB12 PP-06 Cancel', '/services/studentaid/confirm-details/', 'Cancel'],
     ['GB13 PP-21 Cancel', '/services/studentaid/prerequisite/', 'Cancel'],
   ]) {
@@ -1170,13 +1309,13 @@ async function runFlowB(width) {
    * hand-off has no Back control; the Yoti country screen has none either.
    */
   await p.goto(BASE + '/cid/studentaid/continue-on-mobile/', { waitUntil: 'networkidle' });
-  await step('GB15 B hand-off -> PP-08 (ArrowLeft)', arrow('ArrowLeft'), '/services/studentaid/other-verification');
+  await step('GB15 B hand-off -> PP-07 (ArrowLeft, no PP-08)', arrow('ArrowLeft'), '/services/studentaid/onboard');
   await p.goto(BASE + '/cid/studentaid/country/', { waitUntil: 'networkidle' });
   await step('GB16 B country -> B liveness capture (ArrowLeft)', arrow('ArrowLeft'), '/cid/studentaid/liveness-capture');
   await p.goto(BASE + '/services/studentaid/onboard/', { waitUntil: 'networkidle' });
-  await step('GB17 PP-07 -> PP-08 (ArrowRight)', arrow('ArrowRight'), '/services/studentaid/other-verification');
+  await step('GB17 PP-07 -> B hand-off (ArrowRight, no PP-08)', arrow('ArrowRight'), '/cid/studentaid/continue-on-mobile');
 
-  /* GB18 — PP-08 exists ONLY for services with the step: no Flow A copy. */
+  /* GB18 — the retired PP-08 forwarder exists only for Flow B's old URL: no Flow A copy. */
   await p.goto(BASE + '/services/driver-vehicle/other-verification/', { waitUntil: 'networkidle' });
   await p.waitForTimeout(300);
   if (!(await p.getByText('We can’t find that page', { exact: false }).count())) {
@@ -1213,7 +1352,6 @@ async function runFlowB(width) {
     '/services/studentaid/terms/',
     '/services/studentaid/confirm-details/',
     '/services/studentaid/onboard/',
-    '/services/studentaid/other-verification/',
     '/services/studentaid/prerequisite/',
     '/services/studentaid/confirmation/',
     '/auth/loading/',
@@ -1703,11 +1841,8 @@ async function runIdvStage(width, svc) {
   if ((await state()) !== 'idle') fails.push(`${tag} I-2c: stage state ${await state()} before the hand-off`);
 
   /* I-3 — the portal reaches "Continue on a smartphone": the phone shows its camera. */
+  /* GNWT: both flows go straight from the method step to the hand-off (no PP-08). */
   await desk.getByText('Continue', { exact: true }).last().click();
-  if (svc === 'studentaid') {
-    await until(async () => (at('gnl-stage-desktop') || '').includes('other-verification'));
-    await desk.getByText('Continue', { exact: true }).last().click();
-  }
   await until(async () => (at('gnl-stage-desktop') || '').endsWith('continue-on-mobile/'));
   if (!(at('gnl-stage-desktop') || '').endsWith(cid + 'continue-on-mobile/')) fails.push(`${tag} I-3: the portal frame is at ${at('gnl-stage-desktop')}, not the hand-off`);
   if (!(await until(async () => (await state()) === 'waiting'))) fails.push(`${tag} I-3b: stage state ${await state()} at the hand-off`);
@@ -2182,23 +2317,35 @@ async function runFlow4Stage(width) {
   await ctx.close();
 }
 
-for (const w of [1440, 768, 390]) await run(w);
-for (const w of [1440, 768, 390]) await runFlowBCid(w);
-for (const w of [1440, 768, 390]) await runFlowB(w);
-for (const w of [1440, 768]) await runFlow3Desktop(w);
-await runFlow3Mobile(393);
-await runFlow3Stage(1440);
-for (const w of [1440, 393]) await runFlow3Hydration(w);
-for (const w of [1440, 768]) await runFlow4Desktop(w);
-await runFlow34Both(1440);
-await runFlow4Mobile(393);
-await runFlow4Stage(1440);
-for (const svc of ['driver-vehicle', 'studentaid']) await runIdvStage(1440, svc);
+/*
+ * CLICKS_ONLY=run,runFlowB (comma list of the runner names below) runs a
+ * subset while a fix is being iterated on. The gate itself is the unfiltered
+ * run: with CLICKS_ONLY set the script says so and exits non-zero.
+ */
+const ONLY = (process.env.CLICKS_ONLY ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+const want = (name) => !ONLY.length || ONLY.includes(name);
+if (want('run')) for (const w of [1440, 768, 390]) await run(w);
+if (want('runFlowBCid')) for (const w of [1440, 768, 390]) await runFlowBCid(w);
+if (want('runFlowB')) for (const w of [1440, 768, 390]) await runFlowB(w);
+if (want('runFlow3Desktop')) for (const w of [1440, 768]) await runFlow3Desktop(w);
+if (want('runFlow3Mobile')) await runFlow3Mobile(393);
+if (want('runFlow3Stage')) await runFlow3Stage(1440);
+if (want('runFlow3Hydration')) for (const w of [1440, 393]) await runFlow3Hydration(w);
+if (want('runFlow4Desktop')) for (const w of [1440, 768]) await runFlow4Desktop(w);
+if (want('runFlow34Both')) await runFlow34Both(1440);
+if (want('runFlow4Mobile')) await runFlow4Mobile(393);
+if (want('runFlow4Stage')) await runFlow4Stage(1440);
+if (want('runIdvStage')) for (const svc of ['driver-vehicle', 'studentaid']) await runIdvStage(1440, svc);
 await b.close();
+if (ONLY.length) {
+  console.log(`PARTIAL RUN (CLICKS_ONLY=${ONLY.join(',')}) — not a gate result.`);
+  console.log(fails.length ? 'CLICK FAILURES:\n' + fails.join('\n') : 'no failures in the selected runners');
+  process.exit(1);
+}
 
 console.log(
   fails.length
     ? 'CLICK FAILURES:\n' + fails.join('\n')
-    : 'click-through: Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted), Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) and Flow 4 (notice of assessment at 1440 / 768 and 393; Flow 3 then Flow 4, 2 -> 3 -> 4 cards and one Esc; the stage) and the IDV presenter stage (both services) intact at 1440 / 768 / 390',
+    : 'click-through (GNWT release-2): Flow A forward + backward chain, Flow B CID chain, Flow B full chain (dashboard -> Trusted), Flow 3 (desktop story with two-window live sync, decline / close / Esc / back rules, 2 -> 3 cards, refresh and /reset at 1440 / 768; the mobile story at 393) and Flow 4 (notice of assessment at 1440 / 768 and 393; Flow 3 then Flow 4, 2 -> 3 -> 4 cards and one Esc; the stage) and the IDV presenter stage (both services) intact at 1440 / 768 / 390',
 );
 if (fails.length) process.exit(1);

@@ -23,6 +23,9 @@
  * — 26 = 4 + 18 + 4, where 18 is 12px Lato at leading 1.5. The widths are pure
  * content width, so nothing here is pinned.
  *
+ * GNWT (2026-11-16): unchanged on the GNWT frames (27:69099 et al) apart from
+ * the text colour, which follows --gnl-text (#333333 on this branch).
+ *
  * Three separate text nodes, not one string: the bullet and the counter are
  * their own `<p>` and are `text-right` in the design. Kept as three so the
  * 4px gaps land where Figma puts them.
@@ -41,7 +44,7 @@ export function SubStepReadout({
 }) {
   return (
     <div
-      className="flex shrink-0 items-start gap-[4px] whitespace-nowrap rounded-[16px] bg-[rgba(233,235,240,0.5)] px-[8px] py-[4px] text-[12px] font-normal leading-[1.5] text-[color:var(--gnl-text,#5f6368)] [word-break:break-word]"
+      className="flex shrink-0 items-start gap-[4px] whitespace-nowrap rounded-[16px] bg-[rgba(233,235,240,0.5)] px-[8px] py-[4px] text-[12px] font-normal leading-[1.5] text-[color:var(--gnl-text,#333333)] [word-break:break-word]"
       data-node-id={nodeId}
       data-name="sub-step-readout"
     >

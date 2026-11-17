@@ -2,6 +2,17 @@ import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { ProcessingAdvance } from "@/components/onboarding/ProcessingAdvance";
 import { IDV_STATUS } from "@/lib/data/driver-vehicle";
+import { WIZARD_WELL } from "@/components/onboarding/gnwt-wizard";
+
+/*
+ * GNWT RE-SKIN — release-2, 2026-11-16 (gnwt-specs/B-wizard.md §2.6, §5.15;
+ * Figma 32:54935 / 42:80869, "CID_Redirect to mobile — second state"). Card
+ * 904 wide (content 824), p 40, gap 32, centred; heading 35px Bold #212326
+ * centred; FOUR paragraphs, 16/1.5 #333333, 12px apart — the footnote is now
+ * the fourth paragraph of the block, not a separate line 32px lower. Well
+ * 76 / 76, no pinned height. ProcessingAdvance is unchanged. The GNL notes
+ * below are history.
+ */
 
 /*
  * THIS SCREEN NAMES NO SERVICE — 2026-09-28.
@@ -123,10 +134,7 @@ export default function AuthLoadingPage() {
        * below the design width — the card's copy wraps to more lines as it
        * narrows and would otherwise push out of the fixed box. Inert at 1440.
        */}
-      <main
-        className="gnl-gutter [--gnl-gutter:120px] box-border flex h-[868.981px] w-full flex-col items-center py-[152px] max-[1439px]:h-auto max-md:py-[64px]"
-        data-node-id="6217:79258"
-      >
+      <main className={`${WIZARD_WELL} box-border`} data-node-id="6217:79258">
         {/*
          * The 1px stroke is painted with an inset box-shadow, the same way
          * WizardCard does it: Figma strokes INSIDE the frame, so a CSS border
@@ -137,7 +145,7 @@ export default function AuthLoadingPage() {
          * 1440, where that box is 1200. The 40px inset steps to 24 under 480.
          */}
         <div
-          className="box-border flex w-[824px] max-w-full shrink-0 flex-col items-center gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-md:gap-[24px] max-xs:p-[24px]"
+          className="box-border flex w-[904px] max-w-full shrink-0 flex-col items-center gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-md:gap-[24px] max-md:p-[32px] max-xs:p-[24px]"
           data-node-id="6236:46385"
         >
           {/*
@@ -159,12 +167,12 @@ export default function AuthLoadingPage() {
              * component at level="H4"; that is a type-scale token (40px), not
              * document structure, so it renders as the page's <h1>.
              */}
-            <div className="flex w-full items-start" data-node-id="6236:46387">
+            <div className="flex w-full items-start justify-center" data-node-id="6236:46387">
               {/* 40px is the design's H4 token. On a phone the card interior
                   is ~240px, where 40px type is three words a line, so the
                   scale steps down twice below the tablet breakpoint. */}
               <h1
-                className="max-w-[825px] min-w-px flex-[1_0_0] text-[40px] font-normal leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word] max-md:text-[32px] max-xs:text-[26px]"
+                className="max-w-[825px] min-w-px flex-[1_0_0] text-center text-[35px] font-bold leading-[1.5] text-[#212326] [overflow-wrap:anywhere] max-md:text-[30px] max-xs:text-[24px]"
                 data-node-id="I6236:46387;9411:3313"
               >
                 {IDV_STATUS.heading}
@@ -177,30 +185,20 @@ export default function AuthLoadingPage() {
              * how Figma lays out paragraph spacing inside a single node.
              */}
             <div
-              className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+              className="w-full shrink-0 text-[16px] font-normal text-[#333333] [overflow-wrap:anywhere]"
               data-node-id="6236:46389"
             >
-              {IDV_STATUS.paragraphs.map((text, i) => (
-                <p
-                  key={text}
-                  className={
-                    i === IDV_STATUS.paragraphs.length - 1
-                      ? "leading-[1.5]"
-                      : "mb-[12px] leading-[1.5]"
-                  }
-                >
+              {IDV_STATUS.paragraphs.map((text) => (
+                <p key={text} className="mb-[12px] leading-[1.5]">
                   {text}
                 </p>
               ))}
+              {/* GNWT: the footnote is the 4th paragraph of the block. */}
+              <p className="leading-[1.5]" data-node-id="6236:46390">
+                {IDV_STATUS.footnote}
+              </p>
             </div>
           </div>
-
-          <p
-            className="w-full shrink-0 text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
-            data-node-id="6236:46390"
-          >
-            {IDV_STATUS.footnote}
-          </p>
         </div>
       </main>
 

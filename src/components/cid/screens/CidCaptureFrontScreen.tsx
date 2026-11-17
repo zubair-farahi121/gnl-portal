@@ -1,10 +1,10 @@
-import { CameraViewport } from "@/components/cid/CameraViewport";
 import { CidScreen } from "@/components/cid/CidScreen";
 import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
+import { YotiCaptureWindow } from "@/components/cid/yoti/YotiCaptureWindow";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
-import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
+import { YOTI_CAPTURE, YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
 /*
  * CID_ID1 (capture, front) — Figma 6056:19118, 393 x 1174.810546875.
@@ -36,6 +36,12 @@ import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
  * Flow B therefore never links to the back capture, and — see
  * `cidBackCaptureParams` in src/lib/data/service-config.ts — that route is not
  * generated for it either. There is no orphan page to stumble into.
+ *
+ * GNWT UPDATE 2026-11-16: the corner-bracket EMPTY camera frame is now
+ * built, for both flows, as the first phase of this screen (GNWT Figma
+ * 29:72004, then captured 26:54303) — see YotiCaptureWindow. The portrait
+ * passport asset for Flow 2 is still not in the build. The paragraph below
+ * is the earlier (pre-GNWT) note.
  *
  * WHAT IS *NOT* REPRODUCED, AND IT IS A REAL DIFFERENCE. StudentAidNL's capture
  * frame 6217:76798 draws an EMPTY viewport with four corner brackets, where the
@@ -226,7 +232,7 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
              * below (left -2.62%, top -2.31%, 105.4% x 104.6%) is still
              * Figma's own small centre crop, untouched.
              */}
-            <CameraViewport>
+            <YotiCaptureWindow>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {/*
                * `gnl-yoti-specimen` added 2026-09-27 — the specimen slides in
@@ -240,8 +246,11 @@ export function CidCaptureFrontScreen({ service }: { service: ServiceConfig }) {
                 alt=""
                 className="gnl-yoti-specimen pointer-events-none absolute left-[-2.62%] top-[-2.31%] block h-[104.6%] w-[105.4%] max-w-none"
                 src={ASSETS.idDocFront}
+                /* Held invisible through the empty-viewfinder phase — see
+                   YotiCaptureWindow and YOTI_CAPTURE. */
+                style={{ animationDelay: `${YOTI_CAPTURE.emptyMs}ms` }}
               />
-            </CameraViewport>
+            </YotiCaptureWindow>
           </div>
         </div>
       </div>

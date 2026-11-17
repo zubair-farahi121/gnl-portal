@@ -2,6 +2,7 @@ import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { ConfirmDetailsCard } from "@/components/onboarding/ConfirmDetailsCard";
 import { getOnboardingCopy } from "@/lib/data/onboarding";
+import { WIZARD_WELL } from "@/components/onboarding/gnwt-wizard";
 import { serviceRoutes, type ServiceConfig } from "@/lib/data/service-config";
 
 /*
@@ -62,11 +63,8 @@ import { serviceRoutes, type ServiceConfig } from "@/lib/data/service-config";
  * destination of its own.
  * ------------------------------------------------------------------------
  *
- * RESPONSIVE: the 152px well steps 152 -> 96 -> 48 -> 32, mirroring every other
- * 1440 wizard frame, and the main's pinned height is released below the design
- * width. Height is NOT pinned at all here — there is no measured frame height
- * to pin it to — so `min-h` carries the well instead and the footer still sits
- * at the bottom of a short page via `.gnl-desktop-shell`.
+ * RESPONSIVE (GNWT): the well is 76 / 76 at desktop, stepping to 48 and 32
+ * (WIZARD_WELL). No pinned height; the sticky footer carries a short page.
  *
  * No "use client": nothing on this page uses a hook.
  */
@@ -78,7 +76,7 @@ export function ConfirmRequiredScreen({ service }: { service: ServiceConfig }) {
       <TopNav />
 
       <main className="w-full">
-        <div className="gnl-gutter [--gnl-gutter:310px] flex justify-center pt-[152px] pb-[152px] max-xl:pt-[96px] max-xl:pb-[96px] max-md:pt-[48px] max-md:pb-[48px] max-xs:pt-[32px] max-xs:pb-[32px]">
+        <div className={WIZARD_WELL}>
           <ConfirmDetailsCard
             state="required"
             service={service.id}

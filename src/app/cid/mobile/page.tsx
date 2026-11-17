@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { CidScreen } from "@/components/cid/CidScreen";
+import { CID_PORTAL, CidScreen } from "@/components/cid/CidScreen";
 import { useDemoState } from "@/lib/demo-state";
 import { getCidCopy } from "@/lib/data/cid";
 import { PHONE_PATH_COPY } from "@/lib/data/phone-path";
@@ -35,7 +35,7 @@ import { phoneHomeUrl, stageRole, startStageHandoff } from "@/lib/stage-sync";
  * ?done=1&service=<serviceId> — the PHONE's last screen, reached from CID
  * verified's Continue on a hand-off tab: "You can return to your computer",
  * drawn inside the same CidScreen chrome as CID verified (no new visual
- * language: its 32px bold title and 14px #5f6368 body, verbatim classes).
+ * language: the same CID_PORTAL heading and 14px body classes).
  */
 export default function CidMobilePage() {
   const router = useRouter();
@@ -79,10 +79,10 @@ export default function CidMobilePage() {
     return (
       <CidScreen service={cfg} mainNodeId="6062:22542" subStep={getCidCopy(cfg).verified.subStep}>
         <div className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0" data-phone-done="true">
-          <h1 className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]">
+          <h1 className={CID_PORTAL.heading}>
             {PHONE_PATH_COPY.phoneDoneTitle}
           </h1>
-          <p className="w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]">
+          <p className={CID_PORTAL.bodySmall}>
             {PHONE_PATH_COPY.phoneDoneBody}
           </p>
         </div>

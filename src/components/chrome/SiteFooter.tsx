@@ -1,205 +1,106 @@
-import Link from "next/link";
+/* eslint-disable @next/next/no-img-element -- static export, unoptimized images */
 import { ASSETS } from "@/lib/assets";
 
 /*
- * "footer verified" — one Figma component at two sizes.
- *   desktop  6031:5972  1440 x 140.215
- *   mobile   6039:9695   393 x 265.81   (the `Device=Mobile` variant)
+ * THE GNWT FOOTER — release-2 (2026-11-16).
  *
- * RE-CHECKED 2026-09-22 against 6039:9695 while re-syncing the CID frames. The
- * mobile variant is unchanged by that rework and already matches this code
- * node for node: crest (99.214 x 49.811) → Services / Notifications / Account
- * at gap-[24px] → the wrapping utility row at gap-[8px] px-[16px], all inside
- * bg-[#64717c] px-[16px] pt-[24px] pb-[32px] gap-[24px], items-center,
- * justify-end. It carries NO "Need help? … digitalgovernment@gov.nl.ca" line —
- * that belongs to the desktop variant only, and always has here. Nothing moved.
+ * Replaces the GNL footer. Source: Figma file `Hfj015MPSmeRPYg72vZxTI`,
+ * component `gnwt-footer` 11:22247 (desktop) and 27:69061 (mobile, 393),
+ * cross-checked with GNWT's own design-system markup. Three parts, top to
+ * bottom, with no gap between them:
  *
- * Heights are pinned explicitly. The desktop footer is 140.215px, not 140 —
- * sub-pixel heights compound down an 1880px page and push everything below it
- * out of alignment against the baseline.
+ *   1. the "Need help?" strip   #F3F8FC, 1px #E7F0F9, padding 16, in a block
+ *                               with 48px above and below
+ *   2. the wave                 gnwt-curve-in-motion, full width, 148 tall,
+ *                               stretched (preserveAspectRatio="none")
+ *   3. the navy band  #001F30   row 1: four bold links + the white logo,
+ *                               1px white rule under it; row 2: copyright
+ *                               (bold), Privacy Policy, eService Account Help
+ *                               page (underlined)
  *
- * Height derivations (both match the Figma frame exactly):
- *   desktop  24 (pt) + 36.215 (crest) + 24 (gap) + 24 (links) + 32 (pb) = 140.215
- *   mobile   24 + 49.811 + 24 + 24 + 24 + 88 (3 wrapped link lines) + 32 = 265.81
+ * `variant` is kept from the GNL build so no caller changes: "desktop" is the
+ * responsive footer (rows from 768px, stacked below), "mobile" is ALWAYS the
+ * stacked layout, for the phone-width CertifiO ID column.
+ *
+ * The class strings are written out in full for both layouts (no string
+ * building): Tailwind only generates the classes it can read in the source.
+ *
+ * The links are GNWT's real ones and open in a new tab — a footer link that
+ * leaves the demo should not replace it.
  */
 
 type Variant = "desktop" | "mobile";
 
-/**
- * The GNL crest, in one box at the desktop (72.134 x 36.215) or mobile
- * (99.214 x 49.811) size.
- *
- * 2026-10-01: the designer's single `gnl-crest.svg` (colour flowers, white
- * wordmark) replaces the two stacked placeholder leaves. Its aspect (1.992)
- * is the box's, so it fills the same box exactly.
- */
-function GnlCrest({ className }: { className: string }) {
-  return (
-    <div className={`relative shrink-0 overflow-clip ${className}`} data-node-id="6011:775">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        alt="Government of Newfoundland and Labrador"
-        className="absolute inset-0 block size-full max-w-none object-contain"
-        src={ASSETS.gnlCrest}
-      />
-    </div>
-  );
-}
+const HELP_URL = "https://www.gov.nt.ca/en/nwt-eservices-portal-help";
 
-const UTILITY_LINK =
-  "block whitespace-nowrap text-center text-[12px] leading-[24px] text-[#e0e4e6] underline [text-decoration-skip-ink:none] [text-underline-position:from-font] decoration-solid decoration-from-font";
+const LINKS = [
+  { label: "Phone Directory", href: "https://rdirectory.gov.nt.ca/rDirectory.aspx" },
+  { label: "Terms of use", href: "https://gnwt.ca/terms-use" },
+  { label: "Accessibility", href: "https://gnwt.ca/design-system/getting-started/accessibility" },
+  { label: "News", href: "https://gnwt.ca/newsroom" },
+] as const;
 
-/** 6039:8960 row. One class string, so the wired and inert rows are identical. */
-const MOBILE_PRIMARY_LINK =
-  "shrink-0 whitespace-nowrap text-center text-[12px] font-bold leading-[24px] text-white";
+const EXT = { target: "_blank", rel: "noreferrer" } as const;
 
-/**
- * Only `Services` has a demo screen behind it. The other two keep their
- * markup and are marked inert rather than pointed at a route that does not
- * exist.
- */
-const MOBILE_PRIMARY_LINKS: readonly { label: string; href?: string }[] = [
-  { label: "Services", href: "/dashboard/" },
-  { label: "Notifications" },
-  { label: "Account" },
-];
-
-function ContactUs() {
-  return (
-    <a className={UTILITY_LINK} href="https://www.gov.nl.ca/feedback/mygovnl-contact-form/" target="_blank" rel="noreferrer">
-      Contact us
-    </a>
-  );
-}
-
-function VisitGovNl() {
-  return (
-    <a className={UTILITY_LINK} href="https://gov.nl.ca" target="_blank" rel="noreferrer">
-      Visit gov.nl.ca
-    </a>
-  );
-}
-
-function Disclaimer() {
-  return (
-    <a className={UTILITY_LINK} href="https://www.gov.nl.ca/disclaimer/" target="_blank" rel="noreferrer">
-      Disclaimer / Copyright / Privacy statement
-    </a>
-  );
-}
-
-/*
- * RESPONSIVE (desktop variant):
- *   >= 768   exactly as designed — one 140.215px row, two centred lines.
- *    < 768   the pinned height is released (`h-auto`, with the design height
- *            kept as `min-h`) and both inner rows wrap. The crest/help line
- *            becomes a centred column, the utility links wrap to as many lines
- *            as they need, and their design `whitespace-nowrap` is released so
- *            the long Disclaimer label can break rather than push the page
- *            wider than the screen.
- */
-function DesktopFooter() {
-  return (
-    <footer
-      /*
-       * `gnl-bleed` carries the grey band to the edges of a monitor wider
-       * than the 1440 shell; the content stays inside the cap. Without it the
-       * footer ended at 1440 with white to either side, so the page looked
-       * boxed. Inert at <= 1440 — see .gnl-bleed in globals.css. No
-       * `--gnl-bleed-line`: this footer has no bottom rule.
-       */
-      className="gnl-bleed [--gnl-bleed-bg:#64717c] flex h-[140.215px] w-full max-w-[1440px] flex-col items-center justify-center gap-[24px] bg-[#64717c] pt-[24px] pb-[32px] pl-px max-md:h-auto max-md:min-h-[140.215px] max-md:gap-[16px] max-md:px-[16px]"
-      data-node-id="6031:5972"
-    >
-      {/* UL 4002:483 — crest and help links, bottom-aligned */}
-      <div className="flex shrink-0 items-end gap-[12px] max-md:flex-col max-md:items-center max-md:gap-[8px] max-md:text-center">
-        <GnlCrest className="h-[36.215px] w-[72.134px]" />
-        <p className="shrink-0 whitespace-nowrap text-center text-[12px] font-bold leading-[24px] text-white">
-          Need help?
-        </p>
-        <p className="shrink-0 text-center text-[12px] leading-[24px] font-normal whitespace-nowrap text-white max-md:whitespace-normal">
-          {"Contact us at "}
-          <a
-            className="underline decoration-solid decoration-from-font [text-underline-position:from-font]"
-            href="mailto:digitalgovernment@gov.nl.ca"
-            target="_blank"
-            rel="noreferrer"
-          >
-            digitalgovernment@gov.nl.ca
-          </a>
-        </p>
-      </div>
-
-      {/* 6011:2216 — utility links */}
-      <div className="flex shrink-0 items-center gap-[32px] max-md:w-full max-md:flex-wrap max-md:justify-center max-md:gap-x-[16px] max-md:gap-y-[4px] max-md:[&_a]:whitespace-normal">
-        <ContactUs />
-        <VisitGovNl />
-        <Disclaimer />
-      </div>
-    </footer>
-  );
-}
-
-/*
- * RESPONSIVE (mobile variant). This one's design width is 393, not 1440, so
- * 393 is the width that must not move — `max-xxs:` (< 384) is its equivalent
- * of `max-md:` on a desktop component. See the breakpoint note in globals.css.
- *   >= 384   exactly as designed, pinned to 265.81px.
- *    < 384   height released to `auto` (design height kept as `min-h`) and the
- *            utility labels allowed to break, so a 320px phone gets a fourth
- *            link line instead of a horizontal scrollbar.
- * `w-[393px]` -> `w-full`: the shell caps the column at 480.
- */
-function MobileFooter() {
-  return (
-    <footer
-      className="flex h-[265.81px] w-full flex-col items-center justify-end gap-[24px] bg-[#64717c] px-[16px] pt-[24px] pb-[32px] max-xxs:h-auto max-xxs:min-h-[265.81px]"
-      data-node-id="6039:9695"
-    >
-      {/* UL 6039:8958 */}
-      <div className="flex w-full shrink-0 items-start justify-center">
-        <GnlCrest className="h-[49.811px] w-[99.214px]" />
-      </div>
-
-      {/* 6039:8960 — primary links */}
-      <div className="flex shrink-0 items-start gap-[24px]">
-        {MOBILE_PRIMARY_LINKS.map(({ label, href }) =>
-          href ? (
-            <Link key={label} href={href} className={MOBILE_PRIMARY_LINK}>
-              {label}
-            </Link>
-          ) : (
-            /* No Notifications or Account screen exists in the demo. */
-            <p
-              key={label}
-              className={`${MOBILE_PRIMARY_LINK} cursor-default select-none`}
-              data-demo-inert="true"
-              aria-disabled="true"
-            >
-              {label}
-            </p>
-          ),
-        )}
-      </div>
-
-      {/* 6039:8967 — utility links, wrap to three lines at 393px */}
-      <div className="flex w-full shrink-0 flex-wrap content-center items-center justify-center gap-[8px] px-[16px] max-xxs:px-0 max-xxs:[&_a]:whitespace-normal">
-        <ContactUs />
-        <VisitGovNl />
-        <Disclaimer />
-        <a
-          className={UTILITY_LINK}
-          href="https://gnl.qa.citizenone.ca/en/global_policy"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Terms and Conditions
-        </a>
-      </div>
-    </footer>
-  );
-}
+/** [responsive (rows from 768px), always stacked] */
+const CLS = {
+  container: ["gnwt-container", "gnwt-container !px-[16px]"],
+  help: ["leading-none max-md:leading-[24px]", "leading-[24px]"],
+  row1: [
+    "flex-row items-center justify-between gap-[32px] pr-[16px] max-md:flex-col max-md:items-stretch max-md:gap-0 max-md:pr-0",
+    "flex-col items-stretch",
+  ],
+  links: ["max-md:border-b max-md:border-solid max-md:border-white max-md:pb-[32px]", "border-b border-solid border-white pb-[32px]"],
+  logo: [
+    "h-[27.71px] w-[175.98px] max-md:mt-[32px] max-md:h-[30.23px] max-md:w-[191.99px] max-md:self-end",
+    "mt-[32px] h-[30.23px] w-[191.99px] self-end",
+  ],
+  row2: ["gap-[24px] text-[16px] max-md:gap-x-[48px] max-md:gap-y-[16px] max-md:text-[14px]", "gap-x-[48px] gap-y-[16px] text-[14px]"],
+} as const;
 
 export function SiteFooter({ variant }: { variant: Variant }) {
-  return variant === "desktop" ? <DesktopFooter /> : <MobileFooter />;
+  const i = variant === "mobile" ? 1 : 0;
+
+  return (
+    <footer className="w-full shrink-0" data-gnwt-footer={variant}>
+      <div className={`${CLS.container[i]} py-[48px]`}>
+        <p
+          className={`border border-solid border-[#e7f0f9] bg-[#f3f8fc] p-[16px] text-[16px] font-normal text-[#4e5760] ${CLS.help[i]}`}
+          data-gnwt-need-help="true"
+        >
+          Need help?{" "}
+          <a href={HELP_URL} {...EXT} className="text-[#005d8f] underline hover:text-[#001f30]">
+            Find your answers at the Northwest Territories eService Account Help
+          </a>
+          <span className="text-[#005d8f]">.</span>
+        </p>
+      </div>
+
+      <img alt="" src={ASSETS.gnwtWave} className="-mb-px block h-[148px] w-full max-w-none" />
+
+      <div className="bg-[#001f30] py-[32px] text-white">
+        <div className={CLS.container[i]}>
+          <div className={`flex border-b border-solid border-white pb-[32px] ${CLS.row1[i]}`}>
+            <nav aria-label="Footer" className={`flex flex-wrap gap-x-[48px] gap-y-[16px] text-[16px] font-bold leading-none ${CLS.links[i]}`}>
+              {LINKS.map((l) => (
+                <a key={l.label} href={l.href} {...EXT} className="whitespace-nowrap text-white no-underline hover:underline">
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+            <img alt="Government of Northwest Territories" src={ASSETS.gnwtFooterLogo} className={`block max-w-none shrink-0 ${CLS.logo[i]}`} />
+          </div>
+          <div className={`flex flex-wrap items-center pt-[32px] pr-[16px] leading-none ${CLS.row2[i]}`}>
+            <span className="font-bold">© 2026 Portage CyberTech. All rights reserved.</span>
+            <a href="https://www.portagecybertech.com/en/privacy-policy" {...EXT} className="font-normal text-white no-underline hover:underline">
+              Privacy Policy
+            </a>
+            <a href="https://www.gov.nt.ca/en/nwt-eservices-portal-help-page" {...EXT} className="font-normal text-white underline">
+              eService Account Help page
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
 }

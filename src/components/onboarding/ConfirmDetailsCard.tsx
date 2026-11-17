@@ -4,9 +4,23 @@ import { WizardHeader } from "@/components/wizard/WizardHeader";
 import { BtnPrimary } from "@/components/ui/BtnPrimary";
 import { BtnOutline } from "@/components/ui/BtnOutline";
 import { WIZARD_ACTIONS } from "@/lib/data/onboarding";
+import {
+  ACTIONS_ROW,
+  BODY_TEXT,
+  CANCEL_LINK,
+  SECTION_TITLE,
+} from "@/components/onboarding/gnwt-wizard";
 import type { ServiceId } from "@/lib/data/service-config";
 
 /* ====================================================================
+ * GNWT RE-SKIN — release-2, 2026-11-16 (gnwt-specs/B-wizard.md §2.3, §2.7,
+ * §5.8; Figma 24:49147 / 32:55012 / 42:77005 / 42:80944). Card 941 wide,
+ * section title 29px Bold #333, intro #333, requirement label SemiBold #333,
+ * status SemiBold #b11721 (Required) / #15870d (Confirmed), Cancel link
+ * #005d8f, ghost Back, black Continue. No divider. The GNL geometry notes
+ * below are history.
+ * ====================================================================
+ *
  * ConfirmDetailsCard — ONE COMPONENT, TWO STATES.
  *
  * BUILD_BRIEF.md §8.1 NL-06: *"**One component, two states** (Required NL-06 /
@@ -82,8 +96,8 @@ export type ConfirmDetailsState = "required" | "confirmed";
  * colour in this repo is.
  */
 const STATUS_COLOUR: Record<ConfirmDetailsState, string> = {
-  required: "text-[color:var(--gnl-danger,#d32f2f)]",
-  confirmed: "text-[color:var(--gnl-success,#198754)]",
+  required: "text-[#b11721]",
+  confirmed: "text-[#15870d]",
 };
 
 /** Per-frame node ids. Omitted entirely for the derived Required state. */
@@ -140,13 +154,7 @@ export function ConfirmDetailsCard({
         className="flex w-full shrink-0 flex-col items-start"
         data-node-id={nodeIds.intro}
       >
-        {/* 36px is the largest heading on any wizard frame. At 320 the card
-            interior is ~240px, where 36px type is two words a line, so the
-            scale steps down twice below the tablet breakpoint — the same
-            ladder /auth/loading/ uses on its 40px heading. */}
-        <h1
-          className="w-full shrink-0 text-[36px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word] max-md:text-[30px] max-xs:text-[26px]"
-          data-node-id={nodeIds.title}
+        <h1 className={SECTION_TITLE} data-node-id={nodeIds.title}
         >
           {title}
         </h1>
@@ -154,7 +162,7 @@ export function ConfirmDetailsCard({
 
       {/* card-description — 16px on a 24px line-height. */}
       <p
-        className="w-full shrink-0 text-[16px] font-normal leading-[24px] text-[#5f6368] [word-break:break-word]"
+        className={`shrink-0 ${BODY_TEXT}`}
         data-node-id={nodeIds.description}
       >
         {intro}
@@ -173,15 +181,15 @@ export function ConfirmDetailsCard({
         className="flex w-full shrink-0 items-start gap-[24px] text-[16px] leading-[24px] max-xs:flex-col max-xs:gap-[4px]"
         data-node-id={nodeIds.row}
       >
-        {/* Figma: Lato:SemiBold. Lato ships no 600 — rendered 700. */}
+        {/* Noto Sans SemiBold 600, #333333. */}
         <p
-          className="min-w-px flex-[1_0_0] font-bold text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          className="min-w-px flex-[1_0_0] font-semibold text-[#333333] [overflow-wrap:anywhere]"
           data-node-id={nodeIds.rowLabel}
         >
           {requirementLabel}
         </p>
         <p
-          className={`shrink-0 text-right font-bold whitespace-nowrap ${STATUS_COLOUR[state]} max-xs:text-left`}
+          className={`shrink-0 text-right font-semibold whitespace-nowrap ${STATUS_COLOUR[state]} max-xs:text-left`}
           data-node-id={nodeIds.rowStatus}
         >
           {requirementStatus}
@@ -189,27 +197,23 @@ export function ConfirmDetailsCard({
       </div>
 
       {/* actions-row */}
-      <div
-        className="flex w-full shrink-0 items-center justify-end gap-[24px] pt-[16px] max-xs:flex-col-reverse max-xs:items-stretch max-xs:gap-[12px]"
-        data-node-id={nodeIds.actions}
-      >
-        {/* Cancel — a bare link, not a button. Lato:SemiBold → 700, and
-            `leading-[normal]` because Figma says normal (~1.2); Tailwind's
-            `leading-normal` is 1.5 and would move the row. */}
+      <div className={ACTIONS_ROW} data-node-id={nodeIds.actions}>
+        {/* Cancel — a bare text link, not a button. */}
         <CancelLink
           service={service}
           href={cancelHref}
-          className="shrink-0 whitespace-nowrap text-[16px] font-bold leading-[normal] text-[#004b87] max-xs:py-[10px] max-xs:text-center"
+          className={CANCEL_LINK}
           nodeId={nodeIds.cancel}
         >
           {WIZARD_ACTIONS.cancelLabel}
         </CancelLink>
-        <BtnOutline href={backHref} className="max-xs:w-full max-xs:justify-center">
+        <BtnOutline href={backHref} variant="ghost" className="max-xs:w-full">
           {WIZARD_ACTIONS.backLabel}
         </BtnOutline>
         <BtnPrimary
           href={continueHref}
           size="lg"
+          tone="gnwt"
           nodeId={nodeIds.continue}
           className="max-xs:w-full"
         >

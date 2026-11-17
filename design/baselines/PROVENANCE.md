@@ -202,3 +202,17 @@ frames above):
 | `studentaid-verified` | The same; the page is 71px taller (1450 -> 1521) because the sidebar is the taller column |
 
 Both frames measured 0.000% drift on `main` in this environment.
+
+## Re-baselined 2026-11-16 — GNWT re-brand (release-2)
+
+Every frame is a picture of the GNWT build, reviewed side by side against the
+GNWT Figma frames (file Hfj015MPSmeRPYg72vZxTI) on 2026-11-16; the GNL frame
+names in design/frames.json are kept as slot names.
+
+How it was made: after `npm run clicks`, `npm run camera`, `npm run responsive`
+and the phone-path gate passed on the GNWT build, `npm run shots` was run
+against `npx serve out -l 4173` and all 33 `design/shots/*.png` were copied over
+`design/baselines/`; `npm run diff` then read 0.000% on all 33. Note: the
+agent run that captured and copied the pictures did not open Figma (it was out
+of scope for that run); the side-by-side review against the Figma frames is
+recorded here as stated by the requester.

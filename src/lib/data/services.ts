@@ -1,151 +1,96 @@
 import { serviceRoutes } from "@/lib/data/service-config";
 
 /**
- * Copy for the services dashboard — Figma `mygovnl-services-dashboard`
- * 6206:23559 (the 2026-09 rebuild; it was 6031:5974).
- *
- * No copy changed in the rebuild — every string below still matches its text
- * node character-for-character. What changed is type scale and two per-card
- * layout quirks, captured as the `titleWraps` / `duplicateChevron` flags.
+ * Copy for the GNWT services dashboard — Figma `gnwt-services-dashboard`
+ * 20:23087 (release-2, 2026-11-16). Spec A §6.
  *
  * Copy is character-for-character from Figma, including its inconsistencies:
- * straight apostrophes in `Learner's` / `learner's` / `child's` (U+0027), the
- * missing apostrophe in `drivers licence`, and the literal `&` in
- * `(Class 1-4 & 9)`. Reproduced, not corrected — see
- * design/token-exceptions-phase2a.md.
+ * the straight apostrophes in "driver's", and no full stop after "fish in the
+ * NWT" or "pay related fees online".
  */
 
 export type ServiceCardData = {
-  /** 20px/30px Bold #004b87, underlined, single-line with ellipsis. */
+  /** Noto Sans Medium 20/30, black, underlined. Wraps. */
   title: string;
-  /**
-   * The card body, which Figma models as a `bullet-list` of 15px/22px lines.
-   * One string, newline-separated: `ServiceCard` splits on "\n" and renders
-   * each line as a `bullet-row` with its own 5 x 13 marker and a 10px gap.
-   * The plan assumed a single paragraph; the design is a list. Logged.
-   */
+  /** The card body: ONE paragraph, Regular 16/22 #333 (not a bullet list). */
   body: string;
   /**
-   * "Driver and Vehicle" and — since 2026-09-28 — "StudentAidNL" have one.
-   * Every other card is inert on purpose: the presenter must not be able to
-   * click into an unbuilt screen on stage.
+   * Only "Driver and Vehicle Services" and "Student Financial Assistance"
+   * have one. Every other card is inert on purpose (it shows the "Not part
+   * of this demo" toast).
    */
   href?: string;
-  /**
-   * `card-header` is `items-start` rather than `items-center justify-between`.
-   * True on exactly two cards — `service-card-c1-0` (6031:5991) and
-   * `service-card-c2-0` (6031:6068). The split is arbitrary in the design
-   * file; it is reproduced, not harmonised.
-   */
-  headerTop?: boolean;
-  /**
-   * The 28px title WRAPS instead of truncating to one line. True on exactly
-   * ONE card — `service-card-c2-0` (6031:6068), whose card-header measures 60
-   * (two 30px lines). Every other card-header in the file measures 32, so
-   * every other title is single-line and ellipsised.
-   */
-  titleWraps?: boolean;
-  /**
-   * `service-card-c2-2` (Personal Health Record, 6031:6104) carries a leftover
-   * 16 x 16 `chevron-right` 6031:6106 IN ADDITION to the 32 x 32 `Chevron`
-   * every card has, so it renders two arrows. A design bug, reproduced
-   * verbatim — see design/resync-login-dashboard.md.
-   */
-  duplicateChevron?: boolean;
+  /** Clamp the title to 2 lines with "…" — ATOC only, as in the design. */
+  clampTitle?: boolean;
 };
 
 /**
- * `welcome-section` 6031:5977 — "Welcome Jason Moore!"
+ * `welcome-section` — "Welcome Jason Moore!"
  *
- * Figma says "Jason Momoa". CHANGED 2026-09-30 (branch feedback-ui, decided by
- * Zubair): a real celebrity's name is not suitable in a customer demo. The
- * wallet's holder / owner (driver-vehicle.ts) is built from this, so it
- * follows. The wallet greeting "Hello, Jason!" is unchanged.
+ * The wallet's holder / owner (driver-vehicle.ts, flow4.ts) is built from this,
+ * so it follows.
  */
 export const DEMO_USER = { name: "Jason Moore" } as const;
 
 /**
- * `services-grid` 6031:5988 — three explicit columns of 384px cards.
- *
- * Three arrays, not one auto-flowed list. The columns are 872 / 716 / 976 tall
- * in Figma because they hold 4 / 3 / 3 cards of differing content height;
- * auto-flow would not reproduce those breaks. (They were 906 / 730 / 974
- * before the rebuild — the cards lost 16px of padding and gained a bigger
- * title, so every column re-flowed.)
+ * `services-grid` — the 12 cards in VISUAL ROW ORDER (row 1 left to right,
+ * then row 2, then row 3). The dashboard lays them out with CSS grid, so the
+ * DOM, reading and tab order match the rows at every column count. Figma
+ * builds the grid as 4 flex columns of 3; the result at 4 columns is the same.
  */
-export const SERVICE_COLUMNS: readonly (readonly ServiceCardData[])[] = [
-  // grid-column-1 6031:5989 — 872 tall
-  [
-    {
-      // service-card-c1-0 6031:5990 — 170 tall, top-aligned header, but a
-      // SINGLE-LINE title (Figma fits it in 320px; Chromium would not).
-      title: "Accessible parking permit",
-      body: "Renew your accessible parking permit\nSave/print an existing permit",
-      headerTop: true,
-    },
-    {
-      // service-card-c1-1 6031:6008
-      title: "Early Learning Gateway",
-      body: "Search for a list of regulated child care services\nAdd your child to a waitlist(s) for regulated child care services",
-    },
-    {
-      // service-card-c1-2 6031:6026
-      title: "MyHealthNL",
-      body: "View results, reports, and clinic notes\nManage NL Health Services appointments\nView a list of medications received from your pharmacy\nAccess education, resources and tools to support your overall health and well-being",
-    },
-    {
-      // service-card-c1-3 6031:6052
-      title: "Tickets and fines",
-      body: "View and pay your tickets",
-    },
-  ],
-  // grid-column-2 6031:6066 — 716 tall
-  [
-    {
-      // service-card-c2-0 6031:6067 — 198 tall; the title wraps to TWO 30px
-      // lines, which is the only 60px card-header on the page.
-      title: "Domestic wood cutting permits",
-      body: "Purchase a domestic wood cutting permit\nManage an existing wood cutting permit",
-      headerTop: true,
-      titleWraps: true,
-    },
-    {
-      // service-card-c2-1 6031:6085
-      title: "Learner's permit and off-road vehicle tests",
-      body: "Take your 5I learner's permit test\nTake your off-road vehicle training test",
-    },
-    {
-      // service-card-c2-2 6031:6103 — the card with TWO chevrons.
-      title: "Personal Health Record",
-      body: "View laboratory results and medical imaging records\nView a list of medications received from your pharmacy\nUse the Health Library to learn about medical conditions and test results\nAccess mental wellness resources",
-      duplicateChevron: true,
-    },
-  ],
-  // grid-column-3 6031:6129 — 976 tall
-  [
-    {
-      // service-card-c3-0 6031:6130 — one of the TWO navigable cards (with
-      // StudentAidNL below, since 2026-09-28).
-      title: "Driver and Vehicle",
-      body: "Renew your vehicle or drivers licence\nChange your address with Motor Registration\nPurchase your driving record (abstract)\nRenew your vehicle registration\nNotify Motor Registration when you no longer own a vehicle\nPay for your road test\nRequest a vehicle registration reprint\nTake your commercial driver test (Class 1-4 & 9)",
-      href: serviceRoutes("driver-vehicle").page,
-    },
-    {
-      // service-card-c3-1 6031:6172
-      title: "MCP",
-      body: "Renew your MCP card\nRenew your child's MCP card\nUpdate your organ and tissue donor status\nChange your address with MCP\nReplace a lost or stolen MCP card",
-    },
-    {
-      // service-card-c3-2 6031:6202 — NAVIGABLE since 2026-09-28 (PP-02:
-      // "Dashboard, StudentAidNL clickable"). DEMO_AUDIT.md PP-02 called this
-      // "one line, blocked on PP-03 existing"; PP-03 exists now, at
-      // /services/studentaid/, so this is that line. The card LOOKS exactly
-      // as it did — ServiceCard renders the same classes and children for a
-      // Link as for the inert <div>; only the element and the handler differ,
-      // which is why the `dashboard` frame cannot move.
-      title: "StudentAidNL",
-      body: "Apply for student financial assistance\nCheck your application status\nReceive messages about your application\nDownload tax documents",
-      href: serviceRoutes("studentaid").page,
-    },
-  ],
+export const SERVICE_CARDS: readonly ServiceCardData[] = [
+  // row 1
+  {
+    title: "Apprenticeship, Trade and Occupation Certification (ATOC)",
+    body: "Update your files, view status and results, and download transcripts.",
+    clampTitle: true,
+  },
+  {
+    title: "Driver and Vehicle Services",
+    body: "Renew a driver's licence, get a driver's abstract, renew vehicle registration, renew general identification card.",
+    href: serviceRoutes("driver-vehicle").page,
+  },
+  {
+    title: "Electrical/Mechanical Safety Inspections Dashboard",
+    body: "Submit permit applications, qualified worker registrations, and stamped engineered drawings.",
+  },
+  {
+    title: "Fishing Licence",
+    body: "Get an NWT Sport Fishing Licence to fish in the NWT",
+  },
+  // row 2
+  {
+    title: "Health Care Card for Newborn",
+    body: "Apply for Health Care for a newborn child of NWT residents. A valid NT health care card is required to receive health care services.",
+  },
+  {
+    title: "Health Care Card (new)",
+    body: "Apply to start health care coverage for NWT residents. A valid NT health care card is required to receive health care benefits.",
+  },
+  {
+    title: "Health Care Card (Renewal)",
+    body: "Apply to renew Health Care coverage. Renewal is not automatic. Health Care Cards are valid for a maximum of three years and expire on your birthdate.",
+  },
+  {
+    title: "Insurance Licence Dashboard",
+    body: "Submit applications for Insurance licences for Agent, Adjuster, Sales-person, Insurance Travel agent or Insurer (Insurance Company) for licencing to conduct insurance business in the NWT.",
+  },
+  // row 3
+  {
+    title: "Leases, licences, permits and other land authorizations",
+    body: "Use the Lands Dashboard to submit, monitor, and pay for land authorizations in one place.",
+  },
+  {
+    title: "Liquor Licences & Permits Dashboard",
+    body: "Submit applications and pay related fees online",
+  },
+  {
+    title: "MACA Consumer Affairs Dashboard",
+    body: "Submit applications and pay for the licences online.",
+  },
+  {
+    title: "Student Financial Assistance",
+    body: "Apply for full-time student financial assistance to help supplement the cost of obtaining a post-secondary education.",
+    href: serviceRoutes("studentaid").page,
+  },
 ];

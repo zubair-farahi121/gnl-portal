@@ -73,20 +73,35 @@ const BAR_H = { sm: "h-[8px]", lg: "h-[16px]", cid: "h-[8px] md:h-[16px]" } as c
 /** Column gap of `progress-stepper` itself. CID mobile is 8px, desktop 12px. */
 const STACK_GAP = {
   sm: "gap-[8px]",
-  lg: "gap-[12px]",
+  /* GNWT (release-2, B-wizard.md §1.3): 4px between bar and labels. */
+  lg: "gap-[4px]",
   cid: "gap-[8px] md:gap-[12px]",
 } as const;
-const LABEL_SIZE = {
-  sm: "text-[12px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
-  lg: "text-[16px] max-md:text-[14px] max-xs:gap-[8px] max-xs:text-[12px] max-xs:whitespace-normal max-xxs:gap-[4px] max-xxs:text-[10px]",
-  cid: "text-[12px] md:text-[16px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
+/*
+ * The step-labels ROW. `sm` / `cid` keep the GNL `justify-between` row.
+ * `lg` is the GNWT desktop wizard (release-2, B-wizard.md §1.3): FOUR EQUAL
+ * COLUMNS (215.25 each at 861), each label centred — not justify-between.
+ */
+const LABEL_ROW = {
+  sm: "flex items-start justify-between whitespace-nowrap text-[12px] text-[#5f6368] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
+  lg: "grid grid-cols-4 items-start text-[16px] max-md:text-[14px] max-xs:gap-x-[8px] max-xs:text-[12px] max-xxs:gap-x-[4px] max-xxs:text-[10px]",
+  cid: "flex items-start justify-between whitespace-nowrap text-[12px] text-[#5f6368] md:text-[16px] max-xxs:gap-[6px] max-xxs:text-[11px] max-xxs:whitespace-normal",
 } as const;
-/** Figma marks the current label Lato:Bold on --gnl-heading at both scales. */
+/** Current label. GNWT `lg`: Bold #333333 (`semantic/text/primary`). */
 const CURRENT_LABEL = {
   sm: "font-bold text-[color:var(--gnl-heading,#212326)]",
-  lg: "font-bold text-[#212326]",
+  lg: "font-bold text-[#333333]",
   cid: "font-bold text-[color:var(--gnl-heading,#212326)]",
 } as const;
+/** Other labels. GNWT `lg`: Medium 500 #676869 (`semantic/text/secondary`). */
+const INACTIVE_LABEL = {
+  sm: "font-normal",
+  lg: "font-medium text-[#676869]",
+  cid: "font-normal",
+} as const;
+/** Track and fill. GNWT `lg`: #e9ecef track, pure black fill. */
+const TRACK = { sm: "bg-[#e9ebf0]", lg: "bg-[#e9ecef]", cid: "bg-[#e9ebf0]" } as const;
+const FILL = { sm: "bg-[#243746]", lg: "bg-[#000000]", cid: "bg-[#243746]" } as const;
 
 /**
  * Releasing `whitespace-nowrap` on the row is not enough on its own: the
@@ -103,7 +118,8 @@ const CURRENT_LABEL = {
  */
 const LABEL_ITEM = {
   sm: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
-  lg: "shrink-0 max-xs:min-w-px max-xs:flex-1 max-xs:text-center",
+  /* A grid cell: centred, and free to wrap once the column gets narrow. */
+  lg: "min-w-0 text-center [overflow-wrap:anywhere]",
   /* Same as `sm`: at >= 768 the 16px labels have a >= 700px track, which is
    * what `lg` already survives at 1440, so nothing needs releasing there. */
   cid: "shrink-0 max-xxs:min-w-px max-xxs:flex-1 max-xxs:text-center",
@@ -155,7 +171,7 @@ export function ProgressStepper({
       data-node-id="6031:6310"
     >
       <div
-        className={`flex ${BAR_H[size]} w-full shrink-0 items-start overflow-clip rounded-[4px] bg-[#e9ebf0]`}
+        className={`flex ${BAR_H[size]} w-full shrink-0 items-start overflow-clip rounded-[4px] ${TRACK[size]}`}
         data-node-id="6031:6311"
       >
         {/*
@@ -178,7 +194,7 @@ export function ProgressStepper({
          * this changes nothing.
          */}
         <div
-          className="h-full shrink-0 bg-[#243746] w-[var(--gnl-step-fill)] md:w-[var(--gnl-step-fill-md)]"
+          className={`h-full shrink-0 ${FILL[size]} w-[var(--gnl-step-fill)] md:w-[var(--gnl-step-fill-md)]`}
           style={
             {
               "--gnl-step-fill": fillWidth ?? pctWidth,
@@ -189,16 +205,14 @@ export function ProgressStepper({
         />
       </div>
       <div
-        className={`flex w-full shrink-0 items-start justify-between whitespace-nowrap ${LABEL_SIZE[size]} leading-[1.5] text-[#5f6368]`}
+        className={`w-full shrink-0 ${LABEL_ROW[size]} leading-[1.5]`}
         data-node-id="6031:6313"
       >
         {STEPPER_STEPS.map((label, i) => (
-          // Figma marks inactive labels Lato:Medium; the webfont has no 500, so
-          // they render at 400. See design/token-exceptions.md.
           <p
             key={label}
             className={`${LABEL_ITEM[size]} ${
-              i === current ? CURRENT_LABEL[size] : "font-normal"
+              i === current ? CURRENT_LABEL[size] : INACTIVE_LABEL[size]
             }`}
           >
             {label}

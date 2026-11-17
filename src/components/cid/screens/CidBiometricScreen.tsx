@@ -1,10 +1,12 @@
-import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnOutline } from "@/components/ui/BtnOutline";
+import { CID_PORTAL, CidButton, CidScreen } from "@/components/cid/CidScreen";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
 
 /*
  * CID_Biometric — Figma 6217:62835, 393 x 834.810546875.
+ *
+ * GNWT RE-BRAND 2026-11-16 — Figma 28:69933 (Flow 1) / 42:77329 (Flow 2).
+ * Same portal styling as CidTermsScreen; copy unchanged.
  *
  * ONE COMPONENT, TWO ROUTES — 2026-09-23. Rendered at /cid/biometric/ (Flow A)
  * and /cid/studentaid/biometric/ (Flow B, §9 PP-11, a plain instance of this
@@ -64,7 +66,7 @@ export function CidBiometricScreen({ service }: { service: ServiceConfig }) {
         data-node-id="6049:12239"
       >
         <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          className={CID_PORTAL.heading}
           data-node-id="6049:12240"
         >
           {copy.title}
@@ -72,13 +74,13 @@ export function CidBiometricScreen({ service }: { service: ServiceConfig }) {
 
         {/* card-description 6049:12262 */}
         <div
-          className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+          className={CID_PORTAL.body}
           data-node-id="6049:12262"
         >
           <p className="mb-[16px] leading-[24px]">{copy.body}</p>
           {/* Inert, as on CID_TU — the design gives it no destination. */}
           <p
-            className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+            className={CID_PORTAL.link}
             data-demo-inert="true"
           >
             {copy.linkLabel}
@@ -88,15 +90,15 @@ export function CidBiometricScreen({ service }: { service: ServiceConfig }) {
 
       {/* Frame 6 — 6049:12264 */}
       <div
-        className="flex w-full shrink-0 items-start gap-[8px] md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        className="flex w-full shrink-0 flex-wrap items-start gap-[24px] md:items-center md:justify-end md:pt-[16px]"
         data-node-id="6049:12264"
       >
-        <BtnOutline
+        <CidButton
+          tone="ghost"
           href={routes.terms}
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
           {actions.decline}
-        </BtnOutline>
+        </CidButton>
         {/*
          * RETARGETED 2026-09-22: "I agree" used to jump straight to
          * /cid/verified/, which skipped the identity verification itself. It
@@ -125,12 +127,12 @@ export function CidBiometricScreen({ service }: { service: ServiceConfig }) {
          * for THIS service, so Flow B's consent screen advances to
          * /cid/studentaid/liveness/ and never crosses into Flow A's run.
          */}
-        <BtnOutline
+        <CidButton
+          tone="ghost"
           href={routes.liveness}
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
           {actions.accept}
-        </BtnOutline>
+        </CidButton>
       </div>
     </CidScreen>
   );

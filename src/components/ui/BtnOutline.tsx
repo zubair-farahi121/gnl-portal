@@ -28,13 +28,27 @@ import Link from "next/link";
 const CLASSES =
   "gnl-touch box-border inline-flex items-center rounded-[6px] bg-white px-[20px] py-[10px] text-[16px] font-bold leading-[normal] text-[#243746] shadow-[inset_0_0_0_1px_#243746]";
 
+/*
+ * `ghost` — GNWT re-brand (release-2, B-wizard.md §1.5 / §5.7): the GNWT
+ * wizard's Back. No fill, no border; 16px Bold #333333 on 1.5, padding 8 / 12,
+ * radius 6 -> 40 tall. The default `outline` box is unchanged for the CID
+ * screens that still use it.
+ */
+const GHOST_CLASSES =
+  "gnl-touch box-border inline-flex min-h-[40px] items-center justify-center rounded-[6px] bg-transparent px-[12px] py-[8px] text-[16px] font-bold leading-[1.5] text-[#333333] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]";
+
+const VARIANT = { outline: CLASSES, ghost: GHOST_CLASSES } as const;
+
 export function BtnOutline({
   children,
   onClick,
   href,
   className,
+  variant = "outline",
 }: {
   children: React.ReactNode;
+  /** `ghost` is the GNWT wizard Back. Defaults to the GNL outline button. */
+  variant?: "outline" | "ghost";
   onClick?: () => void;
   href?: string;
   /**
@@ -44,7 +58,8 @@ export function BtnOutline({
    */
   className?: string;
 }) {
-  const classes = className ? `${CLASSES} ${className}` : CLASSES;
+  const base = VARIANT[variant];
+  const classes = className ? `${base} ${className}` : base;
 
   if (href) {
     return (

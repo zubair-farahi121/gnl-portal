@@ -219,8 +219,8 @@ export const FLOW = [
  * FLOW B — StudentAidNL — the same idea, added 2026-09-28.
  *
  * §5 / §9 order: dashboard -> PP-03 -> Onboard -> PP-04 Summary -> PP-05 Terms
- * -> PP-06 Required -> PP-07 method -> PP-08 Other verification -> PP-09
- * hand-off -> PP-10..PP-19 (the CID run, NO back capture) -> PP-20 processing
+ * -> PP-06 Required -> PP-07 method -> PP-09 hand-off (GNWT release-2: the
+ * old PP-08 "Other verification" step is gone) -> PP-10..PP-19 (the CID run, NO back capture) -> PP-20 processing
  * -> PP-21 Confirmed -> PP-22 Success -> PP-23 Trusted.
  *
  * WHY IT MATTERS MORE THAN IT LOOKS: until today every /services/studentaid/…
@@ -249,7 +249,8 @@ export const FLOW_B = [
   B.terms,
   B.confirmDetails,
   B.onboard,
-  B.otherVerification,
+  /* GNWT (release-2): no "Other verification" step — the method step goes
+     straight to the CertifiO hand-off. */
   CID_B.handoff,
   CID_B.terms,
   CID_B.biometric,

@@ -209,7 +209,7 @@ export function PresenterStage({
         style={{ minHeight: HEADER }}
       >
         <div className="flex min-w-0 items-center gap-[16px]">
-          <img alt="MyGovNL" src={ASSETS.mygovnlLogo} className="block h-[28px] w-auto shrink-0" />
+          <img alt="Government of Northwest Territories" src={ASSETS.gnwtFooterLogo} className="block h-[28px] w-auto shrink-0" />
           <span className="h-[30px] w-px shrink-0 bg-white/20" />
           <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8fb2d6]">{eyebrow}</p>
@@ -330,26 +330,26 @@ export function BrowserFrame({
 function PhoneStatusBar() {
   return (
     <div
-      className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-[#2b3a4e] px-[30px] pt-[4px] text-white"
+      className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-white px-[30px] pt-[4px] text-[#333333]"
       style={{ height: STATUS_BAR }}
       aria-hidden="true"
     >
       <span className="text-[15px] font-bold tracking-[-0.01em]">9:41</span>
       <span className="flex items-center gap-[6px]">
         <svg viewBox="0 0 17 11" width="17" height="11" className="block">
-          <rect x="0" y="7" width="3" height="4" rx="0.8" fill="#fff" />
-          <rect x="4.6" y="5" width="3" height="6" rx="0.8" fill="#fff" />
-          <rect x="9.2" y="2.6" width="3" height="8.4" rx="0.8" fill="#fff" />
-          <rect x="13.8" y="0" width="3" height="11" rx="0.8" fill="#fff" />
+          <rect x="0" y="7" width="3" height="4" rx="0.8" fill="#333333" />
+          <rect x="4.6" y="5" width="3" height="6" rx="0.8" fill="#333333" />
+          <rect x="9.2" y="2.6" width="3" height="8.4" rx="0.8" fill="#333333" />
+          <rect x="13.8" y="0" width="3" height="11" rx="0.8" fill="#333333" />
         </svg>
         <svg viewBox="0 0 16 11" width="16" height="11" className="block">
-          <path d="M8 10.6 5.7 8.3a3.3 3.3 0 0 1 4.6 0L8 10.6Z" fill="#fff" />
-          <path d="M3.6 6.2a6.2 6.2 0 0 1 8.8 0M1.2 3.8a9.6 9.6 0 0 1 13.6 0" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M8 10.6 5.7 8.3a3.3 3.3 0 0 1 4.6 0L8 10.6Z" fill="#333333" />
+          <path d="M3.6 6.2a6.2 6.2 0 0 1 8.8 0M1.2 3.8a9.6 9.6 0 0 1 13.6 0" fill="none" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
         <svg viewBox="0 0 25 12" width="25" height="12" className="block">
-          <rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="#fff" strokeOpacity="0.45" />
-          <rect x="2" y="2" width="18" height="8" rx="1.6" fill="#fff" />
-          <path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#fff" fillOpacity="0.45" />
+          <rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="#333333" strokeOpacity="0.45" />
+          <rect x="2" y="2" width="18" height="8" rx="1.6" fill="#333333" />
+          <path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#333333" fillOpacity="0.45" />
         </svg>
       </span>
     </div>
