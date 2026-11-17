@@ -204,9 +204,13 @@ async function flow3() {
   await p.waitForURL('**/wallet/code/', { timeout: 10000 }).catch(() => {});
   ok(path(p) === '/wallet/code/', `a9 W-05 Add to wallet -> W-06 -> W-07 (at ${path(p)})`);
   ok((await status()) === 'adding', 'a10 the laptop still reads "Adding" mid-flow');
-  const sms = p.locator('[data-wallet-sms]');
-  await sms.waitFor({ timeout: 5000 }).catch(() => {});
-  await sms.click();
+  /* GNWT release-2 (2026-11-17): Flow 3's W-07 is the wallet-PIN screen too —
+     no SMS banner; any six digits on the keypad enable Continue. */
+  await p.getByText('Enter your wallet PIN').first().waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await p.getByText('Enter your wallet PIN').first().isVisible().catch(() => false), 'a10b W-07 is the wallet-PIN screen');
+  await p.waitForTimeout(1300);
+  ok(!(await p.locator('[data-wallet-sms]').count()), 'a10c no SMS banner in wallet-PIN mode');
+  for (const k of ['4', '8', '2', '9', '1', '5']) await p.getByRole('button', { name: k, exact: true }).click();
   await p.getByRole('button', { name: /Continue/ }).click();
   await p.waitForURL('**/wallet/added/', { timeout: 8000 }).catch(() => {});
   ok(path(p) === '/wallet/added/', `a11 W-07 code -> W-08 (at ${path(p)})`);
@@ -285,7 +289,7 @@ async function flow4() {
   });
   ok(kind === 'studentaid/NoticeOfAssessment', `n4 the phone received the notice-of-assessment offer (${kind})`);
   ok(
-    await p.getByText('StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.').isVisible().catch(() => false),
+    await p.getByText('Student Financial Assistance, GNWT wants to offer you a new digital notice of assessment for your wallet.').isVisible().catch(() => false),
     'n5 the phone shows Flow 4\'s W-03 copy',
   );
   ok(await waitStatus('adding'), 'n6 the laptop hears the scan: "Adding to your wallet…"');

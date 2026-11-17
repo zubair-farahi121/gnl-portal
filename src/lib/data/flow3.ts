@@ -16,11 +16,20 @@ import type { OfferStatus } from "@/lib/mock-issuer";
  * 6289:45276 and 6289:46104 (the same page, both reading "Adding to your
  * wallet…"), and the phone twin 6220:86488 (393 x 1471, buttons instead of a
  * QR). Canvas annotation 6220:86486 names the three states.
+ *
+ * GNWT RELEASE-2 (2026-11-17): re-branded to the GNWT flow 3 section 45:91986
+ * (file Hfj015MPSmeRPYg72vZxTI, read-only). Issuer "Government of Northwest
+ * Territories" / "Driver and Vehicle Services", an Issuer row on W-05, the
+ * wallet-PIN W-07 (CODE_MODE), "Driver and Vehicle Services, GNWT" on W-03 and
+ * W-09. The team's earlier copy decisions (C1 subtitle without a wallet brand;
+ * W-05 "Add to wallet" / "Cancel" instead of "Accept" / "Decline") are KEPT;
+ * the GNWT frames still draw the original wording — open question.
+ * Node ids in this file are still the GNL file's (provenance of the layout).
  */
 
 /** 6220:86450 — U+2190 is part of the string, as on the service page's crumb. */
 export const C1_BREADCRUMB = {
-  label: "← Back to Driver and Vehicle",
+  label: "← Back to Driver and Vehicle Services",
   /**
    * Figma points it at https://www.gov.nl.ca (same as every crumb in the
    * file). Retargeted to the TRUSTED Driver and Vehicle page, which is where
@@ -53,7 +62,7 @@ export const C1_COPY = {
    * 6285:90653 — two spans in Figma ("Issued " + "by the Government of…"),
    * one sentence on screen.
    */
-  issuedBy: "Issued by the Government of Newfoundland and Labrador",
+  issuedBy: "Issued by the Government of Northwest Territories",
   /**
    * 6220:86469 — "This code expires in **8 minutes**. Trouble scanning? [Get a
    * new code]". Split where the weight changes. STATIC: nothing counts down.
@@ -204,7 +213,9 @@ export const WALLET_ISSUER = VRC.issuingAuthority;
 export const SAME_DEVICE_KEY = "gnl-demo:wallet-same-device";
 
 export type CodeMode = "sms" | "wallet_pin";
-export const CODE_MODE: CodeMode = "sms";
+/* GNWT release-2 (2026-11-17): the GNWT flow 3 frame 1:25053 is the
+   wallet-PIN screen ("Enter your wallet PIN", 6 boxes, no SMS). */
+export const CODE_MODE: CodeMode = "wallet_pin";
 
 /**
  * W-05's consent — ONE CONSTANT (brief §7 W-05): Tatyana may replace it with
@@ -268,7 +279,7 @@ export const WALLET_COPY = {
   /** W-03 6325:60170. */
   connect: {
     heading: "Allow connection?",
-    body: "MyGovNL wants to offer you a new digital Vehicle Registration Certificate for your wallet.",
+    body: "Driver and Vehicle Services, GNWT wants to offer you a new digital Vehicle Registration Certificate for your wallet.",
     verifiedTitle: "Verified government issuer",
     verifiedBody: "Issuer identity has been cryptographically confirmed",
     firstTimeTitle: "First-time interaction",
@@ -281,7 +292,8 @@ export const WALLET_COPY = {
     heading: "Certificate offered",
     body: "Your registration certificate is verified and ready for secure on-device storage.",
     cardTitle: "Vehicle registration certificate",
-    cardSubtitle: "Verifiable Digital Credential",
+    /* GNWT 1:23430: lower-case "digital". */
+    cardSubtitle: "Verifiable digital credential",
     action: "View offer",
   },
   /** W-05 6240:55097. */
@@ -291,7 +303,9 @@ export const WALLET_COPY = {
     cardTitle: "Vehicle Registration Certificate",
     intro: "Verify your vehicle registration details before saving them onto this device.",
     /** 6345:12853 … 6345:12877 — label / value, in frame order (brief §7 table). */
+    /* GNWT 1:24181: the first row is the issuer. */
     rows: [
+      { label: "Issuer", value: "Driver and Vehicle Services, Government of Northwest Territories" },
       { label: "Registration Number (License Plate)", value: VRC.plate },
       { label: "Vehicle Identification Number (VIN)", value: VRC.vin },
       { label: "Make (Manufacturer)", value: VRC.make },
@@ -331,9 +345,9 @@ export const WALLET_COPY = {
       /**
        * DESIGNED SINCE — Flow 4's W-07, 6412:86737 (2026-10-14): "Headings"
        * 6412:86750 and 6412:86751, verbatim (U+0027 apostrophe). These were
-       * placeholders (brief §11 item 6) until that frame existed. Flow 3 still
-       * runs CODE_MODE "sms" above, so nothing Flow 3 shows changes; Flow 4's
-       * notice of assessment uses this mode (src/lib/data/credentials.ts).
+       * placeholders (brief §11 item 6) until that frame existed. Since GNWT
+       * release-2 (2026-11-17) Flow 3 uses this mode too (CODE_MODE above, GNWT
+       * frame 1:25053), as does Flow 4 (src/lib/data/credentials.ts).
        */
       heading: "Enter your wallet PIN",
       bodyBefore: "Enter the PIN you created when you set up your wallet app. This confirms it's you adding the credential.",
@@ -344,12 +358,12 @@ export const WALLET_COPY = {
     action: "Continue",
     /** The simulated SMS (brief §7 W-07). "Messages · Your GNL code is 482 915". */
     smsApp: "Messages",
-    smsText: "Your GNL code is 482 915",
+    smsText: "Your GNWT code is 482 915",
     smsCode: "482915",
     length: 6,
     /** Accessible names for the non-digit controls — not drawn as text. */
     deleteLabel: "Delete last digit",
-    smsLabel: "Messages: Your GNL code is 482 915. Tap to fill in the code.",
+    smsLabel: "Messages: Your GNWT code is 482 915. Tap to fill in the code.",
   },
   /** W-08 6240:55218. */
   added: {

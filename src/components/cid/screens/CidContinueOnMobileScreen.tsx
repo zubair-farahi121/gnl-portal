@@ -4,8 +4,16 @@ import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { HandoffQr } from "@/components/cid/HandoffQr";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
+import { WIZARD_WELL } from "@/components/onboarding/gnwt-wizard";
 
 /*
+ * GNWT RE-SKIN — release-2, 2026-11-16 (gnwt-specs/B-wizard.md §2.5, §5.13;
+ * Figma 25:53994 / 42:77069). Card 941 wide (content 861), p 40, gap 32,
+ * centred; heading 35px Bold #212326 centred; body and footnote #333333;
+ * "Continue on my computer" Bold #005d8f underlined; well 76 / 76. Copy is
+ * unchanged (src/lib/data/cid.ts already matches). The GNL notes below are
+ * history.
+ *
  * CID_Redirect to mobile — Figma 6217:62059, 1440 x 1161.1964111328125.
  *
  * ====================================================================
@@ -137,8 +145,8 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
       <TopNav />
 
       {/* main-content 6156:58459 */}
-      <main className="h-[951.981px] w-full max-[1439px]:h-auto" data-node-id="6156:58459">
-        <div className="gnl-gutter [--gnl-gutter:308px] flex justify-center pt-[152px] max-[1439px]:pb-[152px] max-xl:pt-[96px] max-xl:pb-[96px] max-md:pt-[48px] max-md:pb-[48px] max-xs:pt-[32px] max-xs:pb-[32px]">
+      <main className="w-full" data-node-id="6156:58459">
+        <div className={WIZARD_WELL}>
           {/*
            * Frame 2 6156:60701 — the 824px card.
            *
@@ -150,7 +158,7 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
            * make the card 826 wide and its interior 742 instead of 744.
            */}
           <div
-            className="box-border flex w-[824px] max-w-full shrink-0 flex-col items-center gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-md:gap-[24px] max-xs:p-[24px]"
+            className="box-border flex w-[941px] max-w-full shrink-0 flex-col items-center gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-md:gap-[24px] max-md:p-[32px] max-xs:p-[24px]"
             data-node-id="6156:60701"
           >
             {/* Frame 1 6156:60702 */}
@@ -164,9 +172,9 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
                * (40px Lato Regular), not document structure, so it renders as
                * the page's <h1>. Identical treatment to /auth/loading/.
                */}
-              <div className="flex w-full items-start" data-node-id="6156:60703">
+              <div className="flex w-full items-start justify-center" data-node-id="6156:60703">
                 <h1
-                  className="min-w-px flex-[1_0_0] text-[40px] font-normal leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word] max-md:text-[32px] max-xs:text-[26px]"
+                  className="min-w-px max-w-[825px] flex-[1_0_0] text-center text-[35px] font-bold leading-[1.5] text-[#212326] [overflow-wrap:anywhere] max-md:text-[30px] max-xs:text-[24px]"
                   data-node-id="I6156:60703;9411:3313"
                 >
                   {copy.heading}
@@ -181,7 +189,7 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
                * not 144.
                */}
               <div
-                className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+                className="w-full shrink-0 text-[16px] font-normal text-[#333333] [overflow-wrap:anywhere]"
                 data-node-id="6156:60705"
               >
                 {copy.paragraphs.map((text, i) => (
@@ -225,7 +233,7 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
             {/* 6156:60707 — w-full, so the card's `items-center` cannot move it
                 and the line stays left-aligned as the frame shows. */}
             <p
-              className="w-full shrink-0 text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+              className="w-full shrink-0 text-[16px] font-normal leading-[1.5] text-[#333333] [overflow-wrap:anywhere]"
               data-node-id="6156:60707"
             >
               {copy.footnote}
@@ -242,7 +250,7 @@ export function CidContinueOnMobileScreen({ service }: { service: ServiceConfig 
              */}
             <Link
               href={routes.terms}
-              className="shrink-0 whitespace-nowrap text-[16px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font [text-decoration-skip-ink:none] [text-underline-position:from-font] max-xs:py-[10px] max-xs:text-center"
+              className="shrink-0 whitespace-nowrap rounded-[2px] text-[16px] font-bold leading-[normal] text-[#005d8f] underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f] decoration-solid decoration-from-font [text-decoration-skip-ink:none] [text-underline-position:from-font] max-xs:py-[10px] max-xs:text-center"
               data-node-id="6156:60708"
             >
               {copy.continueOnComputer}

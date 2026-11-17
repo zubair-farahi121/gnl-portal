@@ -67,8 +67,8 @@ const STEPS = [
 ] as const;
 
 const TITLES: Record<CredentialKind, string> = {
-  "driver-vehicle": "Driver and Vehicle — vehicle registration certificate",
-  studentaid: "StudentAidNL — notice of assessment",
+  "driver-vehicle": "Driver and Vehicle Services — vehicle registration certificate",
+  studentaid: "Student Financial Assistance — notice of assessment",
 };
 
 function stateOf(offer: CredentialOffer | null): { active: number; tone: StageTone; icon: string; label: string } {
@@ -133,14 +133,14 @@ export function WalletStage() {
       <div className={`flex flex-1 items-center justify-center ${side ? "flex-row" : "flex-col gap-[40px]"}`}>
         <DeviceSlot
           height={side ? deviceH : undefined}
-          label={<DeviceLabel icon={ICON.monitor} title="Computer" subtitle="MyGovNL portal" />}
+          label={<DeviceLabel icon={ICON.monitor} title="Computer" subtitle="NWT eServices Portal" />}
         >
           <BrowserFrame w={C1.w} h={C1.h} scale={sDesk} url={{ host, path: kind ? C1_ROUTE[kind] : "" }}>
             {kind ? (
               <iframe
                 key={`c1-${nonce}`}
                 src={C1_ROUTE[kind]}
-                title="MyGovNL — add to your wallet (computer)"
+                title="NWT eServices Portal — add to your wallet (computer)"
                 className="block border-0"
                 style={{ width: C1.w, height: C1.h }}
                 data-stage-frame="c1"

@@ -1,261 +1,114 @@
 import { LoginHeader } from "@/components/chrome/LoginHeader";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
-import { ASSETS } from "@/lib/assets";
-import { FAQ_ITEMS, LANDING_SERVICES } from "@/lib/data/landing";
 import { LoginForm } from "@/components/login/LoginForm";
 
 /*
- * mygovnl-login-page — Figma 6206:23558, 1440 x 1880.215.
+ * gnwt-login-page — Figma 20:23088 (1920 x 1238). release-2, 2026-11-16.
+ * Spec A §5.
  *
- * RESYNCED 2026-09: the designer deleted the old 6031:5865 frame and rebuilt
- * this screen as a main component. Re-read against the rebuilt node, every
- * section, size, colour, weight and string is IDENTICAL — the frame changed
- * identity, not content. Only the root id above moved; the child node ids
- * below all survived the rebuild. See design/resync-login-dashboard.md.
+ *   header (unauthenticated, 99)   → <LoginHeader />
+ *   HeroSection 11:23118 (672)     white, pt 48 / pb 24, LoginCard centred
+ *   footer (466.71)                → <SiteFooter variant="desktop" />
  *
- * Geometry, verbatim from get_design_context on 6031:5867 / 5890 / 5957:
- *   header            1440 x 128     at y=0        → <LoginHeader />
- *   HeroSection       1440 x 560     at y=128
- *   ServicesSection   1440 x 676     at y=688
- *   FAQSection        1440 x 376     at y=1364
- *   footer verified   1440 x 140.215 at y=1740     → <SiteFooter variant="desktop" />
- *   128 + 560 + 676 + 376 + 140.215 = 1880.215
+ * LoginCard 11:23119 — 921 x 600: 1px #8B8D90 border, radius 6, the
+ * "gnwt-drop shadow" (0 8 16 #00000026), padding 32, flex-col centred, gap 24:
+ *   1. two-line title, Bold 26
+ *   2. intro block 16:24898 (two links, real, new tab)
+ *   3. main content 11:24885 — row, gap 32:
+ *        left panel 11:24886 (397 wide, "First time…" + Reset Password)
+ *        login fields 11:24884 (428 wide) → <LoginForm />, the one client part
  *
- * Every section height is derived, not pinned, because Figma derives them the
- * same way from auto-layout. ServicesSection checks out: 80 (pt) + 42 (28px
- * heading) + 48 (gap) + 426 (tallest column) + 80 (pb) = 676. FAQSection:
- * 60 + 36 + 32 + 168 (3 x 56) + 80 = 376.
- *
- * RESPONSIVE (2026-09-21, all of it below the 1440 design width, all CSS):
- * the two 170px section gutters became `.gnl-gutter [--gnl-gutter:170px]`, the
- * 440px login card and the 800px FAQ panel became capped fluid boxes, and the
- * three-column services grid goes 3 -> 2 -> 1. Each section carries the detail
- * in its own comment. At >= 1440 every one of those is a no-op, which is what
- * keeps the geometry above true.
- *
- * The login form is the only live part of this page. Since 2026-09-30 (branch
- * feedback-ui, team meeting) it has real Email Address / Password inputs and a
- * submit button — see src/components/login/LoginForm.tsx, the one client
- * component here. Before that the inputs were empty presentational boxes
- * (Figma fills them with a zero-width space) and "Log in" was a <Link>. The
- * accordion rows are CLOSED and inert — the design shows no open state, so
- * adding one would invent a design that does not exist and break the 56px row.
- * This file itself still needs no "use client".
+ * RESPONSIVE: the card is `w-full max-w-[921px]`; from 768 up its two columns
+ * shrink proportionally, below 768 they stack (left panel first, as in the
+ * DOM). Under 480 the card and panel paddings drop to 16 so a 320 screen has
+ * no horizontal scroll.
  */
 
-/**
- * HeroSection 6031:5867 — full-bleed image, grey scrim, centred 440px LoginCard.
- *
- * RESPONSIVE:
- *   >= 480  exactly as designed — a 560px band with a 440px card centred in it.
- *    < 480  the card is wider than the screen, so the band gains a 16px gutter
- *           and the card becomes `max-w-full` (see below). The pinned 560px
- *           height is released to `min-h` at the same time: once the card's
- *           title and labels start wrapping it can outgrow the band, and a
- *           fixed height would let it spill over ServicesSection.
- */
+const LINK =
+  "text-[#005d8f] underline decoration-solid decoration-from-font [text-underline-position:from-font] hover:text-[#001f30] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]";
+
+/** Left panel 11:24886 — for NTKey / Interac users. Reset Password is inert. */
+function FirstTimePanel() {
+  return (
+    <div
+      className="box-border flex w-[397px] min-w-0 shrink flex-col items-center justify-center rounded-[6px] bg-white px-[24px] py-[44px] text-center text-[#333333] shadow-[0_8px_8px_rgba(0,0,0,0.15)] max-md:w-full max-md:py-[32px] max-xs:px-[16px]"
+      data-node-id="11:24886"
+    >
+      <h2 className="text-[20px] font-bold leading-[1.5]">
+        First time on this page and
+        <br />
+        already have an account?
+      </h2>
+      <div className="w-full max-w-[349px] pt-[24px] pb-[8px]">
+        <p className="text-[16px] font-bold leading-[1.5] [word-break:break-word]">
+          If you used NTKey or Interac (Banking) Sign-in before, you will need
+          to verify your email and set a new password.
+        </p>
+      </div>
+      {/* No password-reset screen exists in the demo — inert (toast). */}
+      <button
+        type="button"
+        className={`box-border flex min-h-[46px] w-[300px] max-w-full cursor-pointer items-center justify-center rounded-[6px] bg-[rgba(25,135,84,0.2)] p-[8px] text-[20px] font-bold leading-[1.5] ${LINK}`}
+        data-demo-inert="true"
+      >
+        Reset Password to Continue
+      </button>
+    </div>
+  );
+}
+
 function HeroSection() {
   return (
     <section
-      className="relative flex h-[560px] w-full flex-col items-center justify-center max-xs:h-auto max-xs:min-h-[560px] max-xs:px-[16px] max-xs:py-[40px]"
-      data-node-id="6031:5867"
+      className="flex w-full flex-col items-center bg-white px-[24px] pt-[48px] pb-[24px] max-md:px-[16px] max-md:pt-[32px]"
+      data-node-id="11:23118"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="absolute size-full max-w-none object-cover"
-          src={ASSETS.heroBackground}
-        />
-        <div className="absolute inset-0 bg-[rgba(122,134,144,0.35)]" />
-      </div>
-
-      {/* LoginCard 6031:5868 — 440 wide by design; `max-w-full` is a no-op at
-          every width above ~472 and hands the card the band's content box
-          below that, so it stops being clipped on BOTH edges on a phone.
-          The 32px inset costs a fifth of a 320px screen, so it drops to 24
-          under 480. */}
       <div
-        className="relative flex w-[440px] max-w-full shrink-0 flex-col items-start gap-[24px] rounded-[6px] bg-white p-[32px] drop-shadow-[0px_4px_8px_rgba(0,0,0,0.1)] max-xs:p-[24px]"
-        data-node-id="6031:5868"
+        className="box-border flex w-full max-w-[921px] flex-col items-center gap-[24px] rounded-[6px] border border-solid border-[#8b8d90] bg-white p-[32px] shadow-[0_8px_16px_rgba(0,0,0,0.15)] max-xs:p-[16px]"
+        data-node-id="11:23119"
       >
-        <p
-          className="w-full text-center text-[22px] font-bold leading-[1.5] text-[#212326] [word-break:break-word]"
-          data-node-id="6031:5869"
-        >
-          Welcome to MyGovNL QA
-        </p>
+        <h1 className="w-full text-center text-[26px] font-bold leading-[1.5] text-[#333333] [word-break:break-word] max-xs:text-[22px]">
+          <span className="block">Welcome to the</span>
+          <span className="block">Northwest Territories eServices Portal</span>
+        </h1>
 
-        {/* 6125:46291 — the two spans sit on a 0px parent so only their own
-            22px line boxes contribute height. Note the 15px/14px size split. */}
-        <div className="flex w-full shrink-0 items-center" data-node-id="6125:46291">
-          <p className="shrink-0 text-[0px] leading-[0] font-normal whitespace-nowrap text-[#5f6368] [word-break:break-word]">
-            <span className="text-[15px] leading-[22px]">
-              Don&#x2019;t have an account?{" "}
-            </span>
-            {/* No account-creation screen exists in the demo — inert, not wired. */}
-            <span
-              className="cursor-default text-[14px] font-bold leading-[22px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-underline-position:from-font]"
-              data-demo-inert="true"
+        {/* Intro block 16:24898 */}
+        <div
+          className="flex flex-col items-center gap-[16px] text-center text-[16px] font-bold leading-[1.5] text-[#333333]"
+          data-node-id="16:24898"
+        >
+          <p>
+            We have improved security
+            <br />
+            and made it easier to access
+            <br />
+            <a
+              href="https://www.gov.nt.ca/en/participating-online-eservices"
+              target="_blank"
+              rel="noreferrer"
+              className={LINK}
             >
-              Create account
-            </span>
+              these online services.
+            </a>
           </p>
+          <a
+            href="https://www.gov.nt.ca/en/nwt-eservices-portal-help"
+            target="_blank"
+            rel="noreferrer"
+            className={LINK}
+          >
+            NWT eServices Help Page
+          </a>
         </div>
 
-        {/* FormFields 6031:5870, "Forgot password?" 6031:5884 and
-            ActionButtons 6031:5885 — since 2026-09-30 a client form with real
-            inputs; see LoginForm. */}
-        <LoginForm />
-      </div>
-    </section>
-  );
-}
-
-/**
- * ServicesSection 6031:5890.
- *
- * Three explicit columns from LANDING_SERVICES — see that file for why this is
- * not one auto-flowed list. Bullets carry their own "•  " prefix from Figma, so
- * the line needs `whitespace-pre-wrap` to keep the second space.
- *
- * RESPONSIVE:
- *   the 170px design gutter moves to `.gnl-gutter`, which honours 170 verbatim
- *   above 1280 and steps it down from there (96 / 64 / 24 / 16). That also
- *   takes the section out of the OVERFLOW CONTAINMENT block in globals.css,
- *   which only ever existed to cap gutters that had not been converted yet.
- *
- *   the grid goes three columns -> two -> one, the same way the dashboard's
- *   services grid does (that file carries the long version of the reasoning):
- *     >= 1280   three columns, as designed (340px each at the design width).
- *     768..1279 two columns — 340px at 768, i.e. exactly the designed column
- *               width. Three columns here would be ~213px of 14px bullet copy,
- *               which is the "squashed" failure mode this pass exists to
- *               remove.
- *      < 768    one column.
- *
- *   Below 1280 the three column wrappers go `display: contents` and the seven
- *   CATEGORY blocks become the grid's own children, so they flow and wrap
- *   evenly rather than leaving the short middle column's slot empty. The
- *   wrappers' 40px gap goes with them and the grid's own 40px gap takes over,
- *   so the rhythm does not change. DOM order — and therefore reading order —
- *   is untouched.
- */
-function ServicesSection() {
-  return (
-    <section
-      className="gnl-gutter [--gnl-gutter:170px] flex w-full flex-col items-start gap-[48px] py-[80px] max-md:gap-[32px] max-md:py-[48px]"
-      data-node-id="6031:5890"
-    >
-      <p
-        className="w-full text-[28px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]"
-        data-node-id="6031:5891"
-      >
-        Things you can do here
-      </p>
-
-      {/* ServicesGrid 6031:5892 — 1100 wide at x=170, three 340px columns, 40px
-          gutters. Wraps to two columns below 1280 and one below 768. */}
-      <div
-        className="flex w-full shrink-0 items-start gap-[40px] max-xl:flex-wrap"
-        data-node-id="6031:5892"
-      >
-        {LANDING_SERVICES.map((column, index) => (
-          <div
-            key={index}
-            className="relative flex min-w-px flex-[1_0_0] flex-col items-start gap-[40px] max-xl:contents"
-          >
-            {column.map((category) => (
-              <div
-                key={category.heading}
-                className="flex w-full shrink-0 flex-col items-start gap-[12px] max-xl:grow-0 max-xl:basis-[calc(50%-20px)] max-md:basis-full"
-              >
-                <p className="w-full text-[18px] font-bold leading-[24px] text-[#004b87] [word-break:break-word]">
-                  {category.heading}
-                </p>
-                <div className="flex w-full shrink-0 flex-col items-start gap-[8px]">
-                  {category.items.map((item) => (
-                    <div key={item} className="flex w-full shrink-0 items-center">
-                      {/*
-                       * The "•  " prefix is baked into the string by Figma
-                       * rather than being a list marker, so a wrapped line has
-                       * nothing to hang from and its continuation runs back to
-                       * the left margin. At 1440 none of these wrap; from 1280
-                       * down — where the grid goes two-up and the columns get
-                       * narrower than 340 — many do, so a hanging indent the
-                       * width of the prefix is added there. Purely a
-                       * wrapped-line rule: it cannot move a line that fits.
-                       */}
-                      <p className="min-w-px flex-[1_0_0] text-[14px] font-normal leading-[22px] whitespace-pre-wrap text-[#5f6368] [word-break:break-word] max-xl:pl-[14px] max-xl:-indent-[14px]">
-                        {item}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/**
- * FAQSection 6031:5957 — three CLOSED, non-interactive rows.
- *
- * The container's 1px stroke is painted as an inset ring rather than a border.
- * Figma draws it inside the 168px box (3 x 56 = 168 exactly), and a real
- * `border` would add 2px of layout and push the footer off the baseline. Same
- * trick TopNav uses for its white underline.
- *
- * RESPONSIVE: the 170px gutter moves to `.gnl-gutter` (as ServicesSection
- * above), and the 800px panel becomes `w-full max-w-[800px]` so it stops
- * running off the right edge from 816px downwards.
- */
-function FaqSection() {
-  return (
-    <section
-      className="gnl-gutter [--gnl-gutter:170px] flex w-full flex-col items-start gap-[32px] bg-[#f0f2f5] pt-[60px] pb-[80px] max-md:pt-[48px] max-md:pb-[48px]"
-      data-node-id="6031:5957"
-    >
-      <p
-        className="w-full text-[24px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]"
-        data-node-id="6031:5958"
-      >
-        How can we help?
-      </p>
-
-      {/* AccordionContainer 6031:5959 */}
-      <div
-        className="flex w-full max-w-[800px] shrink-0 flex-col items-start overflow-clip rounded-[8px] shadow-[inset_0_0_0_1px_#d4d8da]"
-        data-node-id="6031:5959"
-      >
-        {FAQ_ITEMS.map((item) => (
-          /* Below 480 the 56px row height is released to a minimum and the
-             label is allowed to wrap: the design's `whitespace-nowrap` is what
-             holds the row to one line at 800px, and a question that cannot
-             break is the classic cause of a sideways-scrolling phone page. */
-          <div
-            key={item.question}
-            className="box-border flex h-[56px] w-full shrink-0 cursor-default items-center justify-between border-b border-solid border-[#d4d8da] bg-white px-[24px] select-none max-xs:h-auto max-xs:min-h-[56px] max-xs:gap-[12px] max-xs:px-[16px] max-xs:py-[12px]"
-            data-node-id={item.nodeId}
-            data-demo-inert="true"
-            aria-disabled="true"
-          >
-            <p className="shrink-0 text-[16px] font-bold leading-[1.5] whitespace-nowrap text-[#5f6368] [word-break:break-word] max-xs:min-w-px max-xs:shrink max-xs:whitespace-normal">
-              {item.question}
-            </p>
-            <div className="relative size-[16px] shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="absolute inset-0 block size-full max-w-none"
-                src={ASSETS.iconChevronDown}
-              />
-            </div>
-          </div>
-        ))}
+        {/* Main content 11:24885 */}
+        <div
+          className="flex w-full max-w-[857px] items-start gap-[32px] max-md:flex-col max-md:items-stretch"
+          data-node-id="11:24885"
+        >
+          <FirstTimePanel />
+          <LoginForm />
+        </div>
       </div>
     </section>
   );
@@ -265,9 +118,9 @@ export default function LoginPage() {
   return (
     <div className="gnl-desktop-shell">
       <LoginHeader />
-      <HeroSection />
-      <ServicesSection />
-      <FaqSection />
+      <main className="flex w-full flex-col">
+        <HeroSection />
+      </main>
       <SiteFooter variant="desktop" />
     </div>
   );

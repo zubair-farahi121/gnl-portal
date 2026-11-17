@@ -1,10 +1,19 @@
-# GNL demo
+# GNWT demo (release-2)
 
-This is a clickable demo of MyGovNL. A signed-in user opens the Driver and Vehicle
-service, proves who they are with CertifiO ID, and gets access. They can then add their
-vehicle registration certificate to a digital wallet. A second service, StudentAidNL,
-shows the same journey with a few differences, and adds a notice of assessment to the
-same wallet.
+This is a clickable demo of the NWT eServices Portal (Government of Northwest
+Territories). A signed-in user opens Driver and Vehicle Services, proves who they are
+with the GNWT Identity Verification Service (CertifiO ID, with a driver's licence), and
+gets access. A second service, Student Financial Assistance, shows the same journey for
+a non-resident, with a passport.
+
+> **Branches.** `main` is the first release, the MyGovNL (Newfoundland and Labrador)
+> demo, and stays live as it is. This branch, `release-2`, is the GNWT demo. It is
+> deployed by its own Vercel project, whose Production Branch is `release-2`. Never
+> merge `release-2` into `main`.
+>
+> **Not redesigned yet.** The wallet flows (adding a vehicle registration certificate
+> or a notice of assessment to a digital wallet) still use the first release's content
+> under the new header and footer. They will follow the GNWT design later.
 
 There is no real backend and no real data. The user in the demo, Jason Moore, is
 fictional. Everything runs from a small static website.
@@ -47,7 +56,7 @@ Use the same Docker command, plus three things:
    screens show a still picture instead, and the demo still works. If a reverse proxy
    sits in front, it must forward the original Host header. For nginx:
    `proxy_set_header Host $http_host;`
-3. **Keep it private.** It carries GNL branding. Put it behind a VPN, an IP allow-list
+3. **Keep it private.** It carries GNWT branding. Put it behind a VPN, an IP allow-list
    or a password at the proxy.
 
 `docker compose ps` should show `healthy`. More options, such as another port or a

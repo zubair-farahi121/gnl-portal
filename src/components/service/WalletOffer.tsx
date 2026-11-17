@@ -273,7 +273,7 @@ export function OfferQr() {
       href={WALLET_WINDOW.href}
       target={WALLET_WINDOW.name}
       aria-label={`${content.qrLabel}. Opens the wallet in a new window.`}
-      className="relative flex h-[196.5px] w-[220.4px] cursor-pointer items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004b87]"
+      className="relative flex h-[196.5px] w-[220.4px] cursor-pointer items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#005d8f]"
       data-wallet-qr="true"
       data-qr-text={text ?? ""}
       data-qr-url={text ?? ""}
@@ -311,7 +311,7 @@ export function OfferQr() {
       )}
       {state === "adding" ? (
         <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
-          <span className="gnl-c1w-spin block size-[36px] rounded-full border-[3px] border-[#d4d8da] border-t-[#004b87]" />
+          <span className="gnl-c1w-spin block size-[36px] rounded-full border-[3px] border-[#d4d8da] border-t-[#005d8f]" />
         </span>
       ) : null}
       {state === "added" ? (
@@ -351,7 +351,7 @@ export function OfferStateLine() {
     >
       <span key={state} className="gnl-c1w-fade inline-flex items-center justify-center gap-[8px]">
         {state === "waiting" ? (
-          <span aria-hidden="true" className="gnl-c1w-pulse inline-block size-[8px] rounded-full bg-[#004b87]" />
+          <span aria-hidden="true" className="gnl-c1w-pulse inline-block size-[8px] rounded-full bg-[#005d8f]" />
         ) : null}
         {state === "adding" ? (
           <span>
@@ -377,14 +377,14 @@ function mmss(ms: number): string {
  * 6220:86469 — "This code expires in **8 minutes**. Trouble scanning? Get a
  * new code". P1 (brief §13): the time counts down as **mm:ss**, and "Get a new
  * code" makes a new offer and QR. Lato Regular 16 #5f6368, the time Bold, the
- * link #004b87 underlined.
+ * link #005d8f underlined.
  */
 export function OfferExpiryLine() {
   const { content, remainingMs, newCode } = useOfferCtx();
   const copy = content.copy;
   return (
     <p
-      className="w-full text-[16px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+      className="w-full text-[16px] font-normal leading-[1.5] text-[#333333] [word-break:break-word]"
       data-node-id={content.nodes.expiry}
     >
       {copy.expiry.before}{" "}
@@ -396,7 +396,7 @@ export function OfferExpiryLine() {
         type="button"
         onClick={newCode}
         data-wallet-new-code="true"
-        className="cursor-pointer text-[16px] font-normal leading-[1.5] text-[#004b87] underline decoration-solid decoration-from-font [text-decoration-skip-ink:none] [text-underline-position:from-font] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004b87]"
+        className="cursor-pointer text-[16px] font-normal leading-[1.5] text-[#005d8f] underline decoration-solid decoration-from-font [text-decoration-skip-ink:none] [text-underline-position:from-font] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
       >
         {copy.expiry.link}
       </button>
@@ -422,7 +422,7 @@ export function SameDeviceButtons() {
   const kindParam = kind !== DEFAULT_KIND ? `kind=${encodeURIComponent(kind)}&` : "";
   const href = `${FLOW3_ROUTES.start}?${offer ? `offer=${encodeURIComponent(offer.id)}&` : ""}${kindParam}from=mygovnl`;
   const cls =
-    "box-border flex h-[48px] w-full items-center justify-center gap-[10px] rounded-[8px] px-[16px] py-[12px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004b87]";
+    "box-border flex h-[48px] w-full items-center justify-center gap-[10px] rounded-[8px] px-[16px] py-[12px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]";
   return (
     <div className="flex w-full flex-col items-start gap-[12px]" data-node-id={n?.buttons}>
       <Link href={href} className={`${cls} bg-black`} data-wallet-same-device="apple" data-node-id={n?.apple}>

@@ -1,10 +1,15 @@
-import { CidScreen } from "@/components/cid/CidScreen";
-import { BtnOutline } from "@/components/ui/BtnOutline";
+import { CID_PORTAL, CidButton, CidScreen } from "@/components/cid/CidScreen";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, serviceRoutes, type ServiceConfig } from "@/lib/data/service-config";
 
 /*
  * CID_TU — Figma 6217:62834, 393 x 810.810546875.
+ *
+ * GNWT RE-BRAND 2026-11-16 — Figma 27:69099 (Flow 1) / 42:77306 (Flow 2).
+ * Copy unchanged. Portal styling: 36px Bold #333 heading, #333 body, link
+ * #005d8f, and the two actions are borderless natural-width text buttons
+ * (16px Bold #333, px-12 py-8, 24px apart, left-aligned on the phone) —
+ * CidButton tone="ghost". Older GNL notes below describe the previous skin.
  *
  * ====================================================================
  * ONE COMPONENT, TWO ROUTES — 2026-09-23.
@@ -99,7 +104,7 @@ export function CidTermsScreen({ service }: { service: ServiceConfig }) {
         data-node-id="6039:11320"
       >
         <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          className={CID_PORTAL.heading}
           data-node-id="6039:11321"
         >
           {copy.title}
@@ -107,7 +112,7 @@ export function CidTermsScreen({ service }: { service: ServiceConfig }) {
 
         {/* card-description 6039:11341 */}
         <div
-          className="w-full shrink-0 text-[16px] font-normal text-[#5f6368] [word-break:break-word]"
+          className={CID_PORTAL.body}
           data-node-id="6039:11341"
         >
           <p className="mb-[16px] leading-[24px]">{copy.body}</p>
@@ -117,7 +122,7 @@ export function CidTermsScreen({ service }: { service: ServiceConfig }) {
            * flow mid-demo.
            */}
           <p
-            className="cursor-default leading-[24px] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-decoration-skip-ink:none] [text-underline-position:from-font]"
+            className={CID_PORTAL.link}
             data-demo-inert="true"
           >
             {copy.linkLabel}
@@ -127,7 +132,7 @@ export function CidTermsScreen({ service }: { service: ServiceConfig }) {
 
       {/* Frame 6 — 6049:12216 */}
       <div
-        className="flex w-full shrink-0 items-start gap-[8px] md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        className="flex w-full shrink-0 flex-wrap items-start gap-[24px] md:items-center md:justify-end md:pt-[16px]"
         data-node-id="6049:12216"
       >
         {/*
@@ -135,18 +140,18 @@ export function CidTermsScreen({ service }: { service: ServiceConfig }) {
          * that screen was cut from the flow on 2026-09-21, so Terms of Use
          * is the first step of the IDV journey.
          */}
-        <BtnOutline
+        <CidButton
+          tone="ghost"
           href={serviceRoutes(service.id).onboard}
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
           {actions.decline}
-        </BtnOutline>
-        <BtnOutline
+        </CidButton>
+        <CidButton
+          tone="ghost"
           href={routes.biometric}
-          className="min-w-px flex-[1_0_0] justify-center md:flex-none"
         >
           {actions.accept}
-        </BtnOutline>
+        </CidButton>
       </div>
     </CidScreen>
   );

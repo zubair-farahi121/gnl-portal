@@ -2,6 +2,7 @@ import { TopNav } from "@/components/chrome/TopNav";
 import { SiteFooter } from "@/components/chrome/SiteFooter";
 import { ConfirmDetailsCard, type ConfirmDetailsNodeIds } from "@/components/onboarding/ConfirmDetailsCard";
 import { getOnboardingCopy } from "@/lib/data/onboarding";
+import { WIZARD_WELL } from "@/components/onboarding/gnwt-wizard";
 import {
   APP_ROUTES,
   serviceRoutes,
@@ -35,6 +36,9 @@ import {
 /**
  * The frame-specific bits: node ids and the main-content box.
  *
+ * GNWT (release-2): neither service pins its main height any more; both use
+ * the 76 / 76 WIZARD_WELL. The GNL notes below are history.
+ *
  * FLOW A keeps its PINNED 787px main (69 + 787 + 140.215 = 996.215), exactly
  * the class strings the page always had. FLOW B is NOT pinned: its measured
  * 811 (152 + 507 + 152) assumes the requirement wraps where Figma's fixed
@@ -54,9 +58,8 @@ const CONFIRMED_FRAME: Record<
 > = {
   "driver-vehicle": {
     mainNodeId: "6217:81646",
-    mainClassName: "h-[787px] w-full max-[1439px]:h-auto",
-    wellClassName:
-      "gnl-gutter [--gnl-gutter:310px] flex justify-center pt-[152px] max-[1439px]:pb-[152px] max-xl:pt-[96px] max-xl:pb-[96px] max-md:pt-[48px] max-md:pb-[48px] max-xs:pt-[32px] max-xs:pb-[32px]",
+    mainClassName: "w-full",
+    wellClassName: WIZARD_WELL,
     nodeIds: {
       intro: "6217:81658",
       title: "6217:81659",
@@ -72,8 +75,7 @@ const CONFIRMED_FRAME: Record<
   studentaid: {
     mainNodeId: "6217:80073",
     mainClassName: "w-full",
-    wellClassName:
-      "gnl-gutter [--gnl-gutter:310px] flex justify-center pt-[152px] pb-[152px] max-xl:pt-[96px] max-xl:pb-[96px] max-md:pt-[48px] max-md:pb-[48px] max-xs:pt-[32px] max-xs:pb-[32px]",
+    wellClassName: WIZARD_WELL,
     nodeIds: {
       intro: "6217:80085",
       title: "6217:80086",

@@ -103,13 +103,13 @@ export function WalletDigitalIdGlyph() {
 }
 
 /** "Truck_delivery" — 32 x 32 in W-09's mint icon box (6240:55272). */
-export function WalletTruckGlyph() {
-  const c = WALLET_COLOR.brand;
+export function WalletTruckGlyph({ color = WALLET_COLOR.brand, fill = WALLET_COLOR.mint }: { color?: string; fill?: string } = {}) {
+  const c = color;
   return (
     <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true" className="block">
       <path d="M2.5 9h17v13h-17zM19.5 13h5.5l4.5 4.5V22h-10" {...line(c, 1.3)} />
-      <circle cx="8" cy="23" r="2.5" {...line(c, 1.3)} fill={WALLET_COLOR.mint} />
-      <circle cx="24" cy="23" r="2.5" {...line(c, 1.3)} fill={WALLET_COLOR.mint} />
+      <circle cx="8" cy="23" r="2.5" {...line(c, 1.3)} fill={fill} />
+      <circle cx="24" cy="23" r="2.5" {...line(c, 1.3)} fill={fill} />
     </svg>
   );
 }
@@ -150,13 +150,16 @@ export function WalletSuccessGlyph() {
   );
 }
 
-/** Backspace — the bottom-right key on W-07 (6322:60958, "Trashcan" in the frame). */
+/**
+ * The delete key on W-07 — GNWT release-2: drawn as the frame's "Trashcan"
+ * 16 x 16 (GNWT 1:25053), grey, instead of the earlier backspace arrow.
+ */
 export function WalletBackspaceGlyph() {
-  const c = WALLET_COLOR.text;
+  const c = WALLET_COLOR.textSecondary;
   return (
-    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" className="block">
-      <path d="M8.5 5H20a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 20 19H8.5L2.5 12l6-7Z" {...line(c, 1.5)} />
-      <path d="m11.5 9.5 5 5M16.5 9.5l-5 5" {...line(c, 1.5)} />
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" className="block">
+      <path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" {...line(c, 1.1)} />
+      <path d="M6.7 6.5v4.5M9.3 6.5v4.5" {...line(c, 1.1)} />
     </svg>
   );
 }

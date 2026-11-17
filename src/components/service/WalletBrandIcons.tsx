@@ -26,19 +26,25 @@ import type { BenefitIcon } from "@/lib/data/credentials";
  */
 export function BenefitGlyph({ icon }: { icon: BenefitIcon }) {
   if (icon === "monitor-check" || icon === "laptop-cap" || icon === "eye-blue") return <NoaBenefitGlyph icon={icon} />;
-  if (icon === "lock") {
-    return <img src="/assets/flow3/icon-lock.svg" alt="" width={40} height={40} className="block size-[40px] shrink-0" />;
-  }
+  /* GNWT release-2: Flow 3's icons drawn as GNWT-blue line icons, like the
+     GNWT flow 4 frames (the GNL lock was a grey raster-style SVG). */
   const stroke = {
     fill: "none",
-    stroke: "#5f6368",
+    stroke: "#005d8f",
     strokeWidth: 1.6,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
   };
   return (
     <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true" className="block shrink-0">
-      {icon === "id" ? (
+      {icon === "lock" ? (
+        <>
+          <rect x="9" y="18" width="22" height="16" rx="2.5" {...stroke} />
+          <path d="M14 18v-5a6 6 0 0 1 12 0v5" {...stroke} />
+          <circle cx="20" cy="25.5" r="2" {...stroke} />
+          <path d="M20 27.5V30" {...stroke} />
+        </>
+      ) : icon === "id" ? (
         <>
           <rect x="4" y="10" width="32" height="20" rx="3" {...stroke} />
           <circle cx="13" cy="18" r="3" {...stroke} />
@@ -92,7 +98,7 @@ export function CertificateStandIn() {
 function NoaBenefitGlyph({ icon }: { icon: "monitor-check" | "laptop-cap" | "eye-blue" }) {
   const stroke = {
     fill: "none",
-    stroke: "#004b87",
+    stroke: "#005d8f",
     strokeWidth: 1.6,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,

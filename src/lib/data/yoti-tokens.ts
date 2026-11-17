@@ -206,3 +206,26 @@ export const YOTI_HELP_SCREENS = ["Y1", "Y3", "Y5"] as const;
 export function yotiUploadCopy(documentLabel: string): string {
   return `Please don't close this window until we've uploaded your ${documentLabel}. This usually takes less than a minute.`;
 }
+
+/**
+ * The capture screens' EMPTY-VIEWFINDER state — GNWT Figma 29:72004 (front)
+ * and 29:72219 (back), added 2026-11-16. Each capture route now shows two
+ * states in one place instead of two routes: first the empty grey panel with
+ * four dark corner brackets (no document), then — after `emptyMs` — the
+ * specimen slides in (the existing `gnl-yoti-specimen` animation, delayed by
+ * the same amount) and the brackets fade out over `fadeMs`, leaving the
+ * captured frame (26:54303 / 26:54328), which has no brackets.
+ *
+ * Bracket geometry, pixel-measured on 29:72004 at 393: they frame the image
+ * box (310 x 207 around the 329 x 204 box, i.e. ~8px in from each side), arms
+ * ~50px, stroke ~3px, colour #243746, rounded outer corner.
+ */
+export const YOTI_CAPTURE = {
+  emptyMs: 1200,
+  fadeMs: 250,
+  bracketColor: "#243746",
+  bracketArm: "50px",
+  bracketStroke: "3px",
+  bracketRadius: "8px",
+  bracketInsetX: "8px",
+} as const;

@@ -30,6 +30,12 @@ import type { C1Content } from "@/lib/data/credentials";
  *   6412:86701  W-01  6412:85792 W-02  6412:86796 W-03  6412:85809 W-04
  *   6412:86558  W-05  6412:86535 W-06  6412:86737 W-07  6412:86625 W-08
  *   6412:86648  W-09
+ *
+ * GNWT RELEASE-2 (2026-11-17): re-branded to the GNWT flow 4 section
+ * (file Hfj015MPSmeRPYg72vZxTI, frames 45:99865 / 45:100059 / 45:100973 C1,
+ * 45:101143 … 45:93850 wallet; read-only). StudentAidNL -> Student Financial
+ * Assistance, NL -> NWT funding rows, "Student Financial Assistance, GNWT".
+ * Decisions 1-5 above are kept. Node ids below are still the GNL file's.
  */
 
 /* ======================================================================== *
@@ -71,7 +77,7 @@ export const NOA_C1: C1Content = {
   kind: "studentaid",
   breadcrumb: {
     /** 6412:85668 — U+2190, as on Flow 3's crumb. */
-    label: "← Back to StudentAidNL",
+    label: "← Back to Student Financial Assistance",
     /**
      * Figma points it at https://www.gov.nl.ca, like every crumb in the file;
      * retargeted to the TRUSTED StudentAidNL page the user came from — Flow
@@ -165,7 +171,7 @@ export const NOA_C1: C1Content = {
  * Jason Moore and comes from DEMO_USER, never retyped (decision 1).
  */
 export const NOTICE_OF_ASSESSMENT = {
-  issuer: "StudentAidNL, Government of Newfoundland and Labrador",
+  issuer: "Student Financial Assistance, Government of Northwest Territories",
   recipient: DEMO_USER.name,
   reference: "SA-2026-048217",
   academicYear: "2026-2027",
@@ -202,9 +208,9 @@ export function noaIssuedLabel(iso: string | null | undefined): string {
 
 export const NOA_WALLET_COPY = {
   /** The line under "Government of Newfoundland & Labrador" on W-03 (6420:96729), W-04 (6420:97429), W-05 (6420:98129). */
-  issuerSubline: "StudentAidNL",
+  issuerSubline: "Student Financial Assistance",
   /** W-03 6412:87509. Heading, trust cards and buttons are Flow 3's strings (6412:87508, 6412:87510, 6412:87525). */
-  connectBody: "StudentAidNL, MyGovNL wants to offer you a new digital notice of assessment for your wallet.",
+  connectBody: "Student Financial Assistance, GNWT wants to offer you a new digital notice of assessment for your wallet.",
   /** W-04 6412:85809. */
   offer: {
     /** 6412:86522 — H4: Inter 900 28/110 %, no tracking (Flow 3's W-04 heading is H3 36). */
@@ -218,7 +224,7 @@ export const NOA_WALLET_COPY = {
   /** W-05 6412:86558. */
   review: {
     /** The dark card 6420:95309: the GNL mark, "StudentAidNL" (6420:95312), "Notice of assessment" (6420:95313). */
-    cardSubline: "StudentAidNL",
+    cardSubline: "Student Financial Assistance",
     cardTitle: "Notice of assessment",
     /** 6412:86588 — capital N, as drawn. */
     intro: "Verify your Notice of assessment details before saving them onto this device.",
@@ -235,8 +241,8 @@ export const NOA_WALLET_COPY = {
       { label: "MSFAA status", value: NOA.msfaaStatus },
       { label: "Federal funding, Canada Student Grant", value: NOA.canadaStudentGrant },
       { label: "Federal funding, Canada Student Loan", value: NOA.canadaStudentLoan },
-      { label: "Provincial funding, NL Student Grant", value: NOA.nlStudentGrant },
-      { label: "Provincial funding, NL Student Loan", value: NOA.nlStudentLoan },
+      { label: "Provincial funding, NWT Student Grant", value: NOA.nlStudentGrant },
+      { label: "Provincial funding, NWT Student Loan", value: NOA.nlStudentLoan },
       { label: "Total approved funding", value: NOA.totalApproved },
       { label: "Status", value: NOA.status },
       { label: "Credential ID", value: NOA.credentialId },
@@ -258,7 +264,7 @@ export const NOA_WALLET_COPY = {
   card: {
     title: "Notice of assessment",
     /** 6420:95304 — full ink, not 70 %. */
-    subline: "StudentAidNL, MyGovNL",
+    subline: "Student Financial Assistance, GNWT",
     rows: [
       { label: "Recipient", value: NOA.recipient },
       { label: "Institution", value: NOA.institution },

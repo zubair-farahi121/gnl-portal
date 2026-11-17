@@ -295,7 +295,7 @@ export const WALLET_PERSONA = {
     owner: DEMO_USER.name,
     issuingCountry: VEHICLE_CHEV.issuingCountry,
     /** "&", as the wallet frames spell it (6337:82531 …); C1 says "and". */
-    issuingAuthority: "Government of Newfoundland & Labrador",
+    issuingAuthority: "Government of Northwest Territories",
   },
   existingWalletCards: [
     { title: "Photo ID", issued: "Issued Aug 1, 2024" },

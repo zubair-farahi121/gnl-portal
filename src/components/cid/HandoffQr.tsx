@@ -147,7 +147,7 @@ export function HandoffQr({ serviceId }: { serviceId: ServiceId }) {
             type="button"
             onClick={() => requestStageScan(handoff.run)}
             disabled={started}
-            className="block cursor-pointer rounded-[8px] transition-shadow hover:shadow-[0_0_0_4px_rgba(0,75,135,0.18)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#004b87] disabled:cursor-default disabled:hover:shadow-none"
+            className="block cursor-pointer rounded-[8px] transition-shadow hover:shadow-[0_0_0_4px_rgba(0,93,143,0.18)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#005d8f] disabled:cursor-default disabled:hover:shadow-none"
             title="Scan with the phone"
             data-stage-qr="true"
           >
@@ -158,7 +158,7 @@ export function HandoffQr({ serviceId }: { serviceId: ServiceId }) {
         )}
       </div>
       <p
-        className="w-full shrink-0 text-center text-[16px] font-light leading-[1.5] text-[#5f6368] [word-break:break-word]"
+        className="w-full shrink-0 text-center text-[16px] font-light leading-[1.5] text-[#333333] [word-break:break-word]"
         role="status"
         aria-live="polite"
         data-handoff-status="true"

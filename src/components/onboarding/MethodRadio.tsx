@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
  * Space on the focused radio, which the browser turns into a click) and Enter
  * both navigate — what the old <Link> card did.
  *
- * 16px, no margin, `accent-color` #004b87: the old selected image's colour.
+ * 16px, no margin, `accent-color` #005d8f (GNWT link blue, release-2).
  */
 export function MethodRadio({
   name,
@@ -63,7 +63,7 @@ export function MethodRadio({
       }
       aria-labelledby={labelledBy}
       aria-disabled={href || checked ? undefined : true}
-      className="m-0 block size-[16px] shrink-0 cursor-[inherit] accent-[#004b87]"
+      className="m-0 block size-[16px] shrink-0 cursor-[inherit] accent-[#005d8f]"
       data-node-id={nodeId}
     />
   );

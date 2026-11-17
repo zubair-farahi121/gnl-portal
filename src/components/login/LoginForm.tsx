@@ -1,46 +1,33 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+/* eslint-disable @next/next/no-img-element -- static export, unoptimized images */
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ASSETS } from "@/lib/assets";
 import { APP_ROUTES } from "@/lib/data/service-config";
 
 /*
- * LoginForm — FormFields 6031:5870, "Forgot password?" 6031:5884 and
- * ActionButtons 6031:5885 of the login card. ADDED 2026-09-30 (branch
- * feedback-ui).
+ * LoginForm — "Login fields" 11:24884 of the GNWT login card (Figma
+ * 20:23088). release-2, 2026-11-16. Spec A §5.
  *
- * WHY. Team meeting (Bob): the presenter should TYPE a user ID and a
- * password, and any value is accepted. Until now the two fields were empty
- * presentational boxes and "Log in" was a <Link>, so the demo opened with a
- * click on a button beside two boxes nobody filled in.
+ *   FormFields (gap 16)
+ *     Email Address   label Bold 14 #333, gap 8, input h40, square,
+ *                     1px rgba(51,51,51,.75), px 12, text 14 #5F6368
+ *     Password        the same, with the eye (show / hide) inside the box
+ *     Forgot password?  Medium 16 #005D8F underlined, 8 under the input — inert
+ *   ActionButtons     right-aligned, gap 24: "Create Account" (secondary,
+ *                     inert) and "Sign-in" (primary #333, the submit)
  *
- * WHAT IT DOES
- *   - Real <input>s: "Email Address" (type email, autocomplete="username")
- *     and "Password" (type password, autocomplete="current-password"). Both
- *     start empty.
- *   - The eye in the password box is now a button: it shows / hides the
- *     password. Same 16px eye image, same place.
- *   - Submit with "Log in" or Enter. Either field empty (or only spaces) ->
- *     an inline error in the GNL danger style (the NL-05 terms message's
- *     classes), announced with role="alert", and the page stays. Any
- *     non-empty values -> the dashboard. Nothing is checked or stored.
- *   - `noValidate`: the browser's own "enter an email address" bubble would
- *     reject a presenter typing a plain user ID, and any value is accepted.
- *   - "Forgot password?" stays inert (the toast), as before.
- *
- * PIXELS. At rest the form draws what the static markup drew: the same
- * 40px boxes, the same labels, the same button. The <form> is
- * `display: contents`, so the three rows stay direct flex children of the
- * login card and its 24px gap is unchanged. The error line only exists
- * after a failed submit, so it is never in the `login` baseline.
+ * BEHAVIOUR (unchanged since 2026-09-30): any non-empty email and password
+ * go to the dashboard; nothing is checked or stored. Either field empty (or
+ * only spaces) shows an inline error with role="alert" and the page stays.
+ * `noValidate`, because the presenter may type a plain user ID.
  */
 
-/** Label, 40px box and input — InputField 6031:5871 / 6031:5878. */
+/** Label, 40px square box and input. */
 function Field({
   id,
   label,
-  nodeId,
   type,
   autoComplete,
   value,
@@ -51,29 +38,27 @@ function Field({
 }: {
   id: string;
   label: string;
-  nodeId: string;
   type: string;
   autoComplete: string;
   value: string;
   onChange: (v: string) => void;
   invalid: boolean;
   describedBy?: string;
-  trailing?: React.ReactNode;
+  trailing?: ReactNode;
 }) {
   return (
-    <div
-      className="flex w-full shrink-0 flex-col items-start gap-[6px]"
-      data-node-id={nodeId}
-    >
+    <div className="flex w-full flex-col items-start gap-[8px]">
       <label
         htmlFor={id}
-        className="block w-full text-[14px] font-bold leading-[1.5] text-[#5f6368] [word-break:break-word]"
+        className="block w-full text-[14px] font-bold leading-[1.5] text-[#333333] [word-break:break-word]"
       >
         {label}
       </label>
-      {/* The box keeps its border; focus shows as a 1px #004b87 ring on it
-          (the link blue), so the input itself needs no outline. */}
-      <div className="box-border flex h-[40px] w-full shrink-0 items-center rounded-[6px] border border-solid border-[#d4d8da] bg-white px-[12px] focus-within:border-[#004b87] focus-within:shadow-[0_0_0_1px_#004b87]">
+      <div
+        className={`box-border flex h-[40px] w-full items-center gap-[8px] rounded-none border border-solid bg-white px-[12px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[#005d8f] ${
+          invalid ? "border-[color:var(--gnl-danger,#d32f2f)]" : "border-[rgba(51,51,51,0.75)]"
+        }`}
+      >
         <input
           id={id}
           name={id}
@@ -83,7 +68,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
-          className="m-0 h-[21px] min-w-px flex-[1_0_0] border-0 bg-transparent p-0 text-[14px] font-normal leading-[1.5] text-[#212326] outline-none"
+          className="m-0 h-[21px] min-w-px flex-[1_0_0] border-0 bg-transparent p-0 text-[14px] font-normal leading-[1.5] text-[#5f6368] outline-none"
         />
         {trailing}
       </div>
@@ -114,16 +99,18 @@ export function LoginForm() {
   };
 
   return (
-    <form className="contents" noValidate onSubmit={onSubmit} aria-label="Log in">
-      {/* FormFields 6031:5870 */}
-      <div
-        className="flex w-full shrink-0 flex-col items-start gap-[16px]"
-        data-node-id="6031:5870"
-      >
+    <form
+      className="flex w-[428px] min-w-0 shrink flex-col gap-[24px] max-md:w-full"
+      noValidate
+      onSubmit={onSubmit}
+      aria-label="Sign in"
+      data-node-id="11:24884"
+    >
+      {/* FormFields */}
+      <div className="flex w-full flex-col items-start gap-[16px]">
         <Field
           id={emailId}
           label="Email Address"
-          nodeId="6031:5871"
           type="email"
           autoComplete="username"
           value={email}
@@ -134,40 +121,44 @@ export function LoginForm() {
           invalid={showError && !email.trim()}
           describedBy={showError ? errorId : undefined}
         />
-        <Field
-          id={passwordId}
-          label="Password"
-          nodeId="6031:5878"
-          type={showPassword ? "text" : "password"}
-          autoComplete="current-password"
-          value={password}
-          onChange={(v) => {
-            setPassword(v);
-            if (showError) setShowError(false);
-          }}
-          invalid={showError && !password.trim()}
-          describedBy={showError ? errorId : undefined}
-          trailing={
-            <button
-              type="button"
-              className="relative block size-[16px] shrink-0 cursor-pointer"
-              data-node-id="6031:5882"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              aria-pressed={showPassword}
-              aria-controls={passwordId}
-              onClick={() => setShowPassword((v) => !v)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="absolute inset-0 block size-full max-w-none"
-                src={ASSETS.iconEye}
-              />
-            </button>
-          }
-        />
-        {/* Only after a failed submit. The NL-05 validation message's style:
-            14px, #d32f2f (§11.2 `danger`), role="alert". */}
+
+        <div className="flex w-full flex-col items-start gap-[8px]">
+          <Field
+            id={passwordId}
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={(v) => {
+              setPassword(v);
+              if (showError) setShowError(false);
+            }}
+            invalid={showError && !password.trim()}
+            describedBy={showError ? errorId : undefined}
+            trailing={
+              <button
+                type="button"
+                className="relative block size-[16px] shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                aria-controls={passwordId}
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                <img alt="" className="absolute inset-0 block size-full max-w-none" src={ASSETS.iconEye} />
+              </button>
+            }
+          />
+          {/* No password-reset screen exists in the demo — inert (toast). */}
+          <button
+            type="button"
+            className="cursor-pointer text-left text-[16px] font-medium leading-normal text-[#005d8f] underline decoration-solid decoration-from-font [text-underline-position:from-font] hover:text-[#001f30] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
+            data-demo-inert="true"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        {/* Only after a failed submit. */}
         {showError ? (
           <p
             id={errorId}
@@ -179,28 +170,20 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      {/* No password-reset screen exists in the demo — inert, not wired. */}
-      <p
-        className="w-full cursor-default text-[14px] font-bold leading-[normal] text-[#004b87] underline decoration-solid decoration-from-font select-none [text-underline-position:from-font] [word-break:break-word]"
-        data-node-id="6031:5884"
-        data-demo-inert="true"
-      >
-        Forgot password?
-      </p>
-
-      {/* ActionButtons 6031:5885 — was a <Link>, now the form's submit. */}
-      <div
-        className="flex w-full shrink-0 items-center justify-end"
-        data-node-id="6031:5885"
-      >
+      {/* ActionButtons — right-aligned "Double button", gap 24. */}
+      <div className="flex w-full flex-wrap items-center justify-end gap-[24px]">
+        <button
+          type="button"
+          className="inline-flex h-[40px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent px-[12px] py-[8px] text-[16px] font-bold leading-[1.5] whitespace-nowrap text-[#333333] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
+          data-demo-inert="true"
+        >
+          Create Account
+        </button>
         <button
           type="submit"
-          className="flex min-w-px flex-[1_0_0] cursor-pointer items-center justify-center overflow-clip rounded-[4px] bg-[#263854] px-[24px] py-[10px]"
-          data-node-id="6031:5888"
+          className="inline-flex h-[40px] cursor-pointer items-center justify-center rounded-[6px] bg-[#333333] px-[12px] py-[8px] text-[16px] font-bold leading-[1.5] whitespace-nowrap text-white hover:bg-[#001f30] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
         >
-          <span className="shrink-0 text-[14px] font-bold leading-[normal] whitespace-nowrap text-white [word-break:break-word]">
-            Log in
-          </span>
+          Sign-in
         </button>
       </div>
     </form>

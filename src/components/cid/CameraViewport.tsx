@@ -152,6 +152,7 @@ export function CameraViewport({
   children,
   videoClassName = "",
   facingMode = "environment",
+  onLiveChange,
 }: {
   /**
    * The static mock, authored in the page so its Figma provenance, its
@@ -186,8 +187,22 @@ export function CameraViewport({
    * falls back to whatever exists.
    */
   facingMode?: "environment" | "user";
+  /**
+   * Told whenever the live feed starts or stops. Added 2026-11-16 for the
+   * GNWT empty-viewfinder state (YotiCaptureWindow): its corner brackets stay
+   * on screen over the live feed and fade out only over the captured mock.
+   * Purely an observer — it changes nothing about when the camera runs.
+   */
+  onLiveChange?: (live: boolean) => void;
 }) {
   const [live, setLive] = useState(false);
+  const onLiveChangeRef = useRef(onLiveChange);
+  useEffect(() => {
+    onLiveChangeRef.current = onLiveChange;
+  }, [onLiveChange]);
+  useEffect(() => {
+    onLiveChangeRef.current?.(live);
+  }, [live]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 

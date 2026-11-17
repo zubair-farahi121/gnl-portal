@@ -700,15 +700,21 @@ const CID_LIVENESS_CAPTURE = {
  * named `btn-back` in Figma and styled identically; the right-hand one is the
  * forward action despite the name.
  *
- * `continue` names the service out loud — "Continue to Driver and Vehicle
- * service" / "Continue to StudentAidNL service" — so it is the one label that
- * has to be computed rather than declared.
+ * `continue` names the service out loud, so it is the one label that has to
+ * be computed rather than declared.
+ *
+ * GNWT (2026-11-16, Figma 28:71505): the label is "Continue to" + the
+ * service's TITLE — "Continue to Driver and Vehicle Services" — no longer
+ * `successServiceLabel` + " service". The title comes from service-config
+ * (owned elsewhere), so Flow 2 reads "Continue to Student Financial
+ * Assistance" once that title lands; see the Flow 2 note in
+ * gnwt-specs/C-certifio-mobile.md.
  */
 function cidActions(service: ServiceConfig) {
   return {
     decline: "I do not agree",
     accept: "I agree",
-    continue: `Continue to ${service.successServiceLabel} service`,
+    continue: `Continue to ${service.title}`,
     logOut: "Log out",
     /**
      * The `Yoti ContinueButton` label on all three ID-document frames

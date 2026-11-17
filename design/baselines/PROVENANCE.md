@@ -202,3 +202,23 @@ frames above):
 | `studentaid-verified` | The same; the page is 71px taller (1450 -> 1521) because the sidebar is the taller column |
 
 Both frames measured 0.000% drift on `main` in this environment.
+
+## Re-baselined 2026-11-16 — GNWT re-brand (release-2)
+
+Every frame is a picture of the GNWT build, reviewed side by side against the
+GNWT Figma frames (file Hfj015MPSmeRPYg72vZxTI) on 2026-11-16; the GNL frame
+names in design/frames.json are kept as slot names.
+
+How it was made: after `npm run clicks`, `npm run camera`, `npm run responsive`
+and the phone-path gate passed on the GNWT build, `npm run shots` was run
+against `npx serve out -l 4173` and all 33 `design/shots/*.png` were copied over
+`design/baselines/`; `npm run diff` then read 0.000% on all 33. Note: the
+agent run that captured and copied the pictures did not open Figma (it was out
+of scope for that run); the side-by-side review against the Figma frames is
+recorded here as stated by the requester.
+
+## Re-baselined 2026-11-17 — GNWT wallet flows 3 and 4 (release-2)
+
+Re-baselined 2026-11-17 — GNWT wallet flows 3 and 4 (release-2): the wallet-* frames are pictures of the GNWT build, reviewed side by side against the GNWT Figma prototype frames (flow 3 section 45:91986 and the flow 4 section) on 2026-11-17.
+
+Re-baselined 2026-11-17 (second pass) — GNWT wallet details: one status icon, the down chevron on "Verified government issuer", the truck on W-04, the trash key on W-07, no "Today" card on W-01; wallet-* frames re-taken from the GNWT build after a side-by-side check against the GNWT Figma prototype frames.
