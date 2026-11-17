@@ -121,14 +121,8 @@ export default function WalletHomePage() {
 
       {/* credentials-list-section 6288:59160 */}
       <div className="flex w-full flex-col items-center gap-[24px] px-[24px] py-[40px]">
-        {/* today-card 6288:59161 — toast */}
-        <button type="button" data-wallet-inert="true" className={LIST_CARD_CLASS} style={LIST_CARD} data-node-id="6288:59161">
-          <span className="flex min-w-px flex-[1_0_0] flex-col items-start gap-[4px]">
-            <span style={WALLET_TYPE.cardTitle}>{c.todayTitle}</span>
-            <span style={WALLET_TYPE.cardDesc}>{c.todaySubtitle}</span>
-          </span>
-          <IconChevron />
-        </button>
+        {/* GNWT release-2: the GNWT wallet home (45:93914) has no "Today"
+            card — only "Your credentials", with a down chevron. */}
 
         {/* all-cards-card 6288:59167 — W-09 */}
         <Link href={FLOW3_ROUTES.cards} className={LIST_CARD_CLASS} style={LIST_CARD} data-wallet-all-cards="true" data-node-id="6288:59167">
@@ -136,7 +130,7 @@ export default function WalletHomePage() {
             <span style={WALLET_TYPE.cardTitle}>{c.credentialsTitle}</span>
             <WalletCardCount style={WALLET_TYPE.cardDesc} />
           </span>
-          <IconChevron />
+          <IconChevron dir="down" />
         </Link>
       </div>
     </WalletScreen>

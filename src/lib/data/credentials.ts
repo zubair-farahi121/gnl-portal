@@ -142,7 +142,7 @@ export type WalletCredential = {
     cardTitle: string;
     cardSubtitle: string;
     /** The icon beside the offer card's title. */
-    icon: "vc" | "tasks";
+    icon: "vc" | "tasks" | "truck";
   };
   review: {
     cardTitle: string;
@@ -181,7 +181,8 @@ const VRC_WALLET: WalletCredential = {
     body: WALLET_COPY.offer.body,
     cardTitle: WALLET_COPY.offer.cardTitle,
     cardSubtitle: WALLET_COPY.offer.cardSubtitle,
-    icon: "vc",
+    /* GNWT 1:23430: "Truck_delivery" 32 x 32 beside the title. */
+    icon: "truck",
   },
   review: {
     cardTitle: WALLET_COPY.review.cardTitle,

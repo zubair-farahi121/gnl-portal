@@ -68,7 +68,7 @@ export default function WalletConnectPage() {
         {/* trust-indicators-stack 6325:60913 */}
         <div className="flex w-full flex-col items-start gap-[12px]">
           <div
-            className="flex w-full items-center gap-[16px] p-[16px]"
+            className="flex w-full items-center gap-[12px] p-[16px]"
             style={{ background: WALLET_COLOR.mint, border: `1px solid ${WALLET_COLOR.mintBorder}`, borderRadius: WALLET_SIZE.radiusMain }}
             data-node-id="6325:60914"
           >
@@ -86,7 +86,8 @@ export default function WalletConnectPage() {
               aria-label={`${c.verifiedTitle}: more details`}
               className="-m-[4px] flex cursor-pointer items-center justify-center rounded-full p-[4px] focus-visible:outline-2 focus-visible:outline-[#1e404d]"
             >
-              <IconChevron />
+              {/* GNWT 1:25112: the chevron points down. */}
+              <IconChevron dir="down" />
             </button>
           </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { WalletHeader, WalletScreen, WalletStatusButton, useWalletCredential } from "@/components/wallet/WalletClient";
-import { WalletTasksGlyph, WalletVcGlyph } from "@/components/wallet/WalletGlyphs";
+import { WalletTasksGlyph, WalletTruckGlyph, WalletVcGlyph } from "@/components/wallet/WalletGlyphs";
 import { IssuerBlock, WalletHeading, WalletLead, WalletStatusBar } from "@/components/wallet/WalletUi";
 import { WALLET_COPY } from "@/lib/data/flow3";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
@@ -49,7 +49,7 @@ export default function WalletOfferPage() {
           data-node-id="6240:54983"
         >
           <div className="flex items-center gap-[12px]">
-            <span className="shrink-0">{o.icon === "tasks" ? <WalletTasksGlyph /> : <WalletVcGlyph />}</span>
+            <span className="shrink-0">{o.icon === "tasks" ? <WalletTasksGlyph /> : o.icon === "truck" ? <WalletTruckGlyph color={WALLET_COLOR.text} fill="none" /> : <WalletVcGlyph />}</span>
             <span className="flex flex-col items-start gap-[2px]">
               <span style={WALLET_TYPE.cardTitle}>{o.cardTitle}</span>
               <span style={WALLET_TYPE.cardDesc}>{o.cardSubtitle}</span>

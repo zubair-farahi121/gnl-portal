@@ -292,7 +292,8 @@ export const WALLET_COPY = {
     heading: "Certificate offered",
     body: "Your registration certificate is verified and ready for secure on-device storage.",
     cardTitle: "Vehicle registration certificate",
-    cardSubtitle: "Verifiable Digital Credential",
+    /* GNWT 1:23430: lower-case "digital". */
+    cardSubtitle: "Verifiable digital credential",
     action: "View offer",
   },
   /** W-05 6240:55097. */

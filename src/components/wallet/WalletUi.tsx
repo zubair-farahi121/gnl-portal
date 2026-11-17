@@ -118,24 +118,14 @@ export function WalletStatusBar({
         <SameDeviceBackLink />
       </span>
       <span className="flex items-center gap-[6px]" aria-hidden="true">
-        {/* signal */}
+        {/* GNWT release-2: the GNWT wallet frames draw ONE status icon,
+            "Icons/icon-mutual-growth" 17 x 11 (outlined rising bars), not
+            signal + wifi + battery. */}
         <svg viewBox="0 0 17 11" width="17" height="11" className="block">
-          <rect x="0" y="7" width="3" height="4" rx="0.8" fill={WALLET_COLOR.text} />
-          <rect x="4.6" y="5" width="3" height="6" rx="0.8" fill={WALLET_COLOR.text} />
-          <rect x="9.2" y="2.6" width="3" height="8.4" rx="0.8" fill={WALLET_COLOR.text} />
-          <rect x="13.8" y="0" width="3" height="11" rx="0.8" fill={WALLET_COLOR.text} />
-        </svg>
-        {/* wifi */}
-        <svg viewBox="0 0 16 11" width="16" height="11" className="block">
-          <path d="M8 10.6 5.7 8.3a3.3 3.3 0 0 1 4.6 0L8 10.6Z" fill={WALLET_COLOR.text} />
-          <path d="M3.6 6.2a6.2 6.2 0 0 1 8.8 0" {...strokeProps(WALLET_COLOR.text, 1.5)} />
-          <path d="M1.2 3.8a9.6 9.6 0 0 1 13.6 0" {...strokeProps(WALLET_COLOR.text, 1.5)} />
-        </svg>
-        {/* battery */}
-        <svg viewBox="0 0 25 12" width="25" height="12" className="block">
-          <rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke={WALLET_COLOR.text} strokeOpacity="0.4" />
-          <rect x="2" y="2" width="18" height="8" rx="1.6" fill={WALLET_COLOR.text} />
-          <path d="M23 4v4a2 2 0 0 0 0-4Z" fill={WALLET_COLOR.text} fillOpacity="0.4" />
+          <rect x="0.5" y="6.5" width="3" height="4" rx="0.5" fill="none" stroke={WALLET_COLOR.text} strokeWidth="1" />
+          <rect x="4.75" y="4.5" width="3" height="6" rx="0.5" fill="none" stroke={WALLET_COLOR.text} strokeWidth="1" />
+          <rect x="9" y="2.5" width="3" height="8" rx="0.5" fill="none" stroke={WALLET_COLOR.text} strokeWidth="1" />
+          <rect x="13.25" y="0.5" width="3" height="10" rx="0.5" fill="none" stroke={WALLET_COLOR.text} strokeWidth="1" />
         </svg>
       </span>
     </div>
