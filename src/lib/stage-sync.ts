@@ -43,6 +43,27 @@ export const STAGE_FRAME_NAME = {
 } as const;
 
 export const IDV_STAGE_ROUTE = "/demo/idv-stage/";
+
+/**
+ * The WALLET presenter stage's two frames (/demo/wallet-stage/). FIX
+ * 2026-11-23: they had no name, so a page inside them could not tell it was
+ * framed — Shift+W pressed in a frame opened a SECOND stage inside the frame
+ * (a stage in the phone), and Shift+W on the stage itself never left it.
+ */
+export const WALLET_STAGE_FRAME_NAME = {
+  desktop: "gnl-wstage-desktop",
+  phone: "gnl-wstage-phone",
+} as const;
+
+/** True inside one of the wallet stage's frames. */
+export function inWalletStageFrame(): boolean {
+  try {
+    if (typeof window === "undefined" || window.self === window.top) return false;
+    return window.name === WALLET_STAGE_FRAME_NAME.desktop || window.name === WALLET_STAGE_FRAME_NAME.phone;
+  } catch {
+    return false;
+  }
+}
 export const STAGE_PHONE_HOME = "/demo/idv-phone/";
 
 export type StageRole = keyof typeof STAGE_FRAME_NAME;

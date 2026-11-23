@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   BrowserFrame,
@@ -19,7 +19,7 @@ import { useDemoState } from "@/lib/demo-state";
 import { C1_ROUTE } from "@/lib/data/credentials";
 import { FLOW3_ROUTES } from "@/lib/data/service-config";
 import { WALLET_SIZE } from "@/lib/data/wallet-tokens";
-import { STAGE_MSG } from "@/lib/stage-sync";
+import { STAGE_MSG, WALLET_STAGE_FRAME_NAME, safeStagePath } from "@/lib/stage-sync";
 import {
   isCredentialKind,
   offerKind,
@@ -102,15 +102,46 @@ export function WalletStage() {
     setHost(window.location.host);
   }, []);
 
+  const desk = useRef<HTMLIFrameElement>(null);
+  const phone = useRef<HTMLIFrameElement>(null);
+
+  /* Shift+W = leave the stage (fix 2026-11-23): full screen on the page the
+     computer frame shows now (same origin), else the credential's C1 page. */
+  const exit = useCallback(() => {
+    let to: string | null = null;
+    try {
+      const l = desk.current?.contentWindow?.location;
+      if (l) to = safeStagePath(`${l.pathname}${l.search}`);
+    } catch {
+      /* ignore */
+    }
+    window.location.assign(to ?? (kind ? C1_ROUTE[kind] : "/dashboard/"));
+  }, [kind]);
+
   /* Esc on the stage page (DemoNav) = Reset demo. */
-  useEffect(() => {
-    const onReset = () => {
-      resetAll();
-      setNonce((n) => n + 1);
-    };
-    window.addEventListener(STAGE_MSG.reset, onReset);
-    return () => window.removeEventListener(STAGE_MSG.reset, onReset);
+  const reset = useCallback(() => {
+    resetAll();
+    setNonce((n) => n + 1);
   }, [resetAll]);
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      /* Only the stage's own two frames may ask. */
+      if (e.source !== desk.current?.contentWindow && e.source !== phone.current?.contentWindow) return;
+      const type = (e.data as { gnlStage?: string } | null)?.gnlStage;
+      if (type === STAGE_MSG.exit) exit();
+      if (type === STAGE_MSG.reset) reset();
+    };
+    window.addEventListener("message", onMsg);
+    window.addEventListener(STAGE_MSG.exit, exit);
+    window.addEventListener(STAGE_MSG.reset, reset);
+    return () => {
+      window.removeEventListener("message", onMsg);
+      window.removeEventListener(STAGE_MSG.exit, exit);
+      window.removeEventListener(STAGE_MSG.reset, reset);
+    };
+  }, [exit, reset]);
 
   const { side, sDesk, sPhone } = fitStage(view, { w: C1.w, h: C1.h + BAR });
   const offer = kind && walletOffer && offerKind(walletOffer) === kind ? walletOffer : null;
@@ -138,6 +169,8 @@ export function WalletStage() {
           <BrowserFrame w={C1.w} h={C1.h} scale={sDesk} url={{ host, path: kind ? C1_ROUTE[kind] : "" }}>
             {kind ? (
               <iframe
+                ref={desk}
+                name={WALLET_STAGE_FRAME_NAME.desktop}
                 key={`c1-${nonce}`}
                 src={C1_ROUTE[kind]}
                 title="NWT eServices Portal — add to your wallet (computer)"
@@ -159,6 +192,8 @@ export function WalletStage() {
           <PhoneFrame scale={sPhone} statusBar={false}>
             {kind ? (
               <iframe
+                ref={phone}
+                name={WALLET_STAGE_FRAME_NAME.phone}
                 key={`w-${nonce}`}
                 src={FLOW3_ROUTES.walletHome}
                 title="Wallet (phone)"
