@@ -158,7 +158,7 @@ export function IdvStage() {
       title={
         (deskPath && serviceFromPath(deskPath)) || rec
           ? `${SERVICES[service].title} — CertifiO ID on a smartphone`
-          : "MyGovNL — identity verification with CertifiO ID"
+          : "NWT eServices Portal — identity verification with CertifiO ID"
       }
       steps={STEPS}
       active={st.active}
@@ -172,7 +172,7 @@ export function IdvStage() {
       <div className={`flex flex-1 items-center justify-center ${side ? "flex-row" : "flex-col gap-[40px]"}`}>
         <DeviceSlot
           height={side ? deviceH : undefined}
-          label={<DeviceLabel icon={ICON.monitor} title="Computer" subtitle="MyGovNL portal" />}
+          label={<DeviceLabel icon={ICON.monitor} title="Computer" subtitle="NWT eServices Portal" />}
         >
           <BrowserFrame w={DESK.w} h={DESK.h} scale={sDesk} url={{ host, path: deskPath || cfg?.from || "" }}>
             {cfg ? (
@@ -181,7 +181,7 @@ export function IdvStage() {
                 ref={desk}
                 name={STAGE_FRAME_NAME.desktop}
                 src={cfg.from}
-                title="MyGovNL portal (computer)"
+                title="NWT eServices Portal (computer)"
                 allow="camera"
                 className="block border-0"
                 style={{ width: DESK.w, height: DESK.h }}

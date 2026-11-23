@@ -353,7 +353,8 @@ export function SameDeviceBackLink() {
       style={{ fontSize: "12px", fontWeight: 600, lineHeight: "18px", color: WALLET_COLOR.brand }}
       data-wallet-mygovnl="true"
     >
-      ◀ MyGovNL
+      {/* GNWT release-2: the portal's short name (no GNWT frame draws this link). */}
+      ◀ eServices
     </Link>
   );
 }

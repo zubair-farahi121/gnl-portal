@@ -1,178 +1,59 @@
+/* eslint-disable @next/next/no-img-element -- static export, unoptimized images */
 import Link from "next/link";
 import { ASSETS } from "@/lib/assets";
 
 /*
- * `service-card-*` — Figma 6031:5990 and its nine siblings on
- * `mygovnl-services-dashboard` 6206:23559. One component, ten instances.
+ * `service-card-*` — GNWT services dashboard (Figma 20:23087, e.g. 18:21629).
+ * release-2, 2026-11-16. Spec A §6.
  *
- * Geometry, verbatim from get_design_context on 6031:5990 / 6068 / 6085 / 6104:
- *   card          w-full (384 in a 1200 grid) p-[16px] gap-[16px] r-[6px]
- *                 1px #d4d8da stroke, white fill, NO shadow
- *   card-header   6031:5991  title (flex-1) + Chevron 32 x 32
- *   bullet-list   6031:5995  pl-[32px] gap-[10px]
- *     bullet-row  6031:5996  gap-[8px], marker 5 x 13 + text (flex-1)
- *   card-footer   6031:6004  placeholder-space 1 x 20 + star-off 20 x 20
+ *   card          white, 1px #D4D8DA border, radius 6, padding 12, gap 16,
+ *                 flex-col, NO shadow. Min height 232 (grid row 1) or 285
+ *                 (rows 2 and 3) at the 4-column width — see `minHeight`.
+ *   card-header   items-start: title (flex-1, Noto Sans Medium 20/30, black,
+ *                 underlined, wraps) + Chevron 32 pointing right, black.
+ *   bullet-list   ONE paragraph (not bullets): Regular 16/22, #333.
+ *   card-footer   flex-1, items-end, justify-end: 1x20 placeholder + star-off 20.
  *
- * The 2026-09 redesign changed four things here: padding 24 -> 16, the title
- * 20px -> 28px, the body 15px -> 16px, and the header chevron from a flat
- * 16 x 16 `chevron-right` to a 32 x 32 `Chevron` instance rotated -90deg.
- * The bullet list also gained a 32px left indent it did not have before.
+ * THE TITLE IS THE LINK. Its `::after` is stretched over the whole card, so a
+ * click anywhere on the card follows it, while the accessible name stays the
+ * service title. Only "Driver and Vehicle Services" and "Student Financial
+ * Assistance" pass an `href`; every other card's title is a <button> marked
+ * `data-demo-inert`, which raises the "Not part of this demo" toast (the
+ * delegated listener in DemoToast) and is keyboard-operable.
  *
- * Height checks out against Figma exactly, which is why the stroke is an inset
- * ring and not a `border`: Figma draws it inside the 384px box, so a real
- * border would add 2px to every one of the ten cards and push the grid columns
- * 6-8px past their measured heights.
- *   c1-0: 16 + 32 (header) + 16 + 54 (2 bullets) + 16 + 20 + 16 = 170  ✓
- *   c3-0: 16 + 32 + 16 + 312 (8 bullets) + 16 + 20 + 16 = 428          ✓
- *
- * `body` is newline-separated because the Figma body is a bullet list, not a
- * paragraph. See ServiceCardData in src/lib/data/services.ts.
+ * The Chevron is inline (not `ASSETS.iconChevron32`) because that asset is
+ * stroked in the old NL navy and the GNWT card draws it black. Same path,
+ * rotated -90deg exactly as the Figma instance is.
  */
 
-/*
- * RESPONSIVE — the card is a grid item below 1280.
- *
- * At >= 1280 the dashboard's services-grid is three flex COLUMNS and each card
- * is `w-full` inside its column; `basis` is unset, so nothing here applies and
- * the designed 384px card is untouched.
- *
- * Below 1280 those column wrappers go `display: contents` (see
- * AllServicesSection) and the cards become direct children of the grid, so the
- * card itself now carries the column count: half width down to 768, full width
- * below it. That is what lets the ten cards flow and wrap evenly instead of
- * leaving an empty column, and `w-full` is inert while a flex-basis is set.
- */
 const CARD =
-  "box-border flex w-full flex-col items-start gap-[16px] rounded-[6px] bg-white p-[16px] shadow-[inset_0_0_0_1px_#d4d8da] max-xl:grow-0 max-xl:basis-[calc(50%-12px)] max-md:basis-full";
+  "group relative box-border flex w-full flex-col items-start gap-[16px] rounded-[6px] border border-solid border-[#d4d8da] bg-white p-[12px] hover:border-[#8b8d90]";
 
-/**
- * The title is 28px/30px Bold #004b87, underlined, and flexes to fill the
- * header.
- *
- * Two independent quirks ride on it, and they do NOT coincide:
- *
- *   `headerTop`  — `service-card-c1-0` 6031:5991 and `service-card-c2-0`
- *                  6031:6068 are `items-start`; the other eight headers are
- *                  `items-center justify-between`. Worth 1px of title offset
- *                  in a 32px header, and reproduced because it is there.
- *   `titleWraps` — ONLY `service-card-c2-0` wraps. Its card-header is 60 tall
- *                  (two 30px lines); every other header in the file measures
- *                  32, so every other title is single-line and ellipsised.
- *
- * `service-card-c1-0` ("Accessible parking permit") is the awkward one: Figma
- * fits it on one line at exactly 320px, Chromium's Lato is a hair wider and
- * wraps it. Single-line wins, because the 170px card height it produces is
- * what Figma measured and what grid-column-1's 872px depends on. The cost is
- * an ellipsis Figma does not show. Logged in
- * design/resync-login-dashboard.md — do not "fix" it by letting it wrap.
- *
- * RESPONSIVE: below 1280 the title drops `whitespace-nowrap` and the ellipsis
- * and is allowed to wrap. The single-line rule above exists to protect a
- * measured 170px card height inside a 1200px THREE-COLUMN grid — and that grid
- * only exists at >= 1280 (below it the cards go two-up, then one-up). So 1280
- * is exactly where the reason for the rule stops applying, and it is where the
- * rule stops. It was 768 before the grid gained its two-column step, which
- * left every title ellipsised across the whole 768..1279 band for a card
- * height that nothing was measuring any more.
- *
- * A truncated service name on a layout where the card is not the designed
- * 384px is a usability failure, not a fidelity win. Nothing about the type
- * changes — only whether it wraps.
- */
-const TITLE =
-  "min-w-px flex-[1_0_0] overflow-hidden text-ellipsis text-[28px] font-bold leading-[30px] text-[#004b87] underline decoration-solid decoration-from-font [text-underline-position:from-font] [word-break:break-word] max-xl:overflow-visible max-xl:whitespace-normal";
+/** Fixed design heights, as minimums, applied only at the 4-column width. */
+const MIN_HEIGHT = {
+  232: "xl:min-h-[232px]",
+  285: "xl:min-h-[285px]",
+} as const;
 
-function CardBody({
-  title,
-  body,
-  headerTop = false,
-  titleWraps = false,
-  duplicateChevron = false,
-}: {
-  title: string;
-  body: string;
-  headerTop?: boolean;
-  titleWraps?: boolean;
-  duplicateChevron?: boolean;
-}) {
+const TITLE_CONTROL =
+  "block w-full cursor-pointer text-left text-[20px] font-medium leading-[30px] text-black underline decoration-solid decoration-from-font [text-underline-position:from-font] [word-break:break-word] after:absolute after:inset-0 after:content-[''] hover:text-[#001f30] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]";
+
+function Chevron() {
   return (
-    <>
-      {/* card-header 6031:5991 */}
-      <div
-        className={`flex w-full shrink-0 rounded-[6px] max-xl:items-start ${
-          headerTop ? "items-start" : "items-center justify-between"
-        }`}
-      >
-        <p className={titleWraps ? TITLE : `${TITLE} whitespace-nowrap`}>
-          {title}
-        </p>
-
-        {/* chevron-right 6031:6106 — Personal Health Record ONLY. That card
-            carries BOTH this leftover 16px chevron and the 32px Chevron below
-            it, so two arrows render side by side. Logged, not fixed. */}
-        {duplicateChevron ? (
-          <div className="relative size-[16px] shrink-0" data-node-id="6031:6106">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt=""
-              className="absolute inset-0 block size-full max-w-none"
-              src={ASSETS.iconChevronRight}
-            />
-          </div>
-        ) : null}
-
-        {/* Chevron 6217:35028 — 32 x 32, source glyph points down, rotated
-            -90deg by the design to point right. */}
-        <div className="flex size-[32px] shrink-0 items-center justify-center">
-          <div className="flex-none -rotate-90">
-            <div className="relative size-[32px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="absolute inset-0 block size-full max-w-none"
-                src={ASSETS.iconChevron32}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* bullet-list 6031:5995 — pl-[32px] is new in the redesign. The indent
-          halves below 480, where 32px of it is a tenth of the screen. */}
-      <div className="flex w-full shrink-0 flex-col items-start gap-[10px] pl-[32px] max-xs:pl-[16px]">
-        {body.split("\n").map((line) => (
-          <div key={line} className="flex w-full shrink-0 items-start gap-[8px]">
-            {/* marker 6031:5997 — 5 x 13, deliberately not square */}
-            <div className="relative h-[13px] w-[5px] shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="absolute inset-0 block size-full max-w-none"
-                src={ASSETS.bulletMarker}
-              />
-            </div>
-            <p className="flex-[1_0_0] min-w-px text-[16px] font-normal leading-[22px] text-[#5f6368] [word-break:break-word]">
-              {line}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* card-footer 6031:6004 */}
-      <div className="flex w-full shrink-0 items-end justify-between rounded-[6px]">
-        {/* placeholder-space 6031:6005 — a real 1 x 20 spacer in the design,
-            not padding. It holds the footer open on cards with no left action. */}
-        <div className="h-[20px] w-px shrink-0" />
-        <div className="relative size-[20px] shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt=""
-            className="absolute inset-0 block size-full max-w-none"
-            src={ASSETS.iconStarOff}
-          />
-        </div>
-      </div>
-    </>
+    <svg
+      viewBox="0 0 32 32"
+      width="32"
+      height="32"
+      fill="none"
+      stroke="#000000"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="block size-[32px] shrink-0 -rotate-90"
+    >
+      <path d="m5 10 11 12 11-12" />
+    </svg>
   );
 }
 
@@ -180,51 +61,61 @@ export function ServiceCard({
   title,
   body,
   href,
-  headerTop,
-  titleWraps,
-  duplicateChevron,
+  clampTitle = false,
+  minHeight,
 }: {
   title: string;
   body: string;
+  /** Only the two demo services have one. Without it the card is inert. */
   href?: string;
-  headerTop?: boolean;
-  titleWraps?: boolean;
-  duplicateChevron?: boolean;
+  /** Clamp the title to two lines with an ellipsis (ATOC only, per Figma). */
+  clampTitle?: boolean;
+  /** Design height of the card's grid row at 4 columns (232 or 285). */
+  minHeight?: keyof typeof MIN_HEIGHT;
 }) {
-  const inner = (
-    <CardBody
-      title={title}
-      body={body}
-      headerTop={headerTop}
-      titleWraps={titleWraps}
-      duplicateChevron={duplicateChevron}
-    />
+  const label = (
+    <span
+      className={clampTitle ? "line-clamp-2 overflow-hidden text-ellipsis" : "block"}
+      title={clampTitle ? title : undefined}
+    >
+      {title}
+    </span>
   );
 
-  /*
-   * Without an href the card is a plain <div> — not a disabled link, not a
-   * button with a no-op handler. Nothing to click means nothing can strand the
-   * presenter on an unbuilt screen. Only "Driver and Vehicle" and — since
-   * 2026-09-28 — "StudentAidNL" pass an href. The two branches render the same
-   * classes (`cursor-default select-none` aside, neither of which paints) and
-   * the same children, so flipping a card from inert to linked changes no
-   * pixel: the whole card becomes the link, with no visual change.
-   */
-  if (!href) {
-    return (
-      <div
-        className={`${CARD} cursor-default select-none`}
-        data-demo-inert="true"
-        aria-disabled="true"
-      >
-        {inner}
-      </div>
-    );
-  }
-
   return (
-    <Link className={CARD} href={href}>
-      {inner}
-    </Link>
+    <div
+      className={`${CARD} ${minHeight ? MIN_HEIGHT[minHeight] : ""}`}
+      data-service-card={href ? "link" : "inert"}
+    >
+      {/* card-header */}
+      {/* Review 2026-11-23 (Tatyana, nice to have): the title row takes
+          --menu-color-hover (#F2F2F2) while the card is hovered. The negative
+          margin + equal padding keep the layout identical when not hovered. */}
+      <div className="-m-[6px] flex w-[calc(100%+12px)] shrink-0 items-start gap-[8px] rounded-[4px] p-[6px] transition-colors group-hover:bg-[var(--menu-color-hover)]">
+        <h3 className="m-0 min-w-px flex-[1_0_0]">
+          {href ? (
+            <Link href={href} className={TITLE_CONTROL}>
+              {label}
+            </Link>
+          ) : (
+            <button type="button" className={TITLE_CONTROL} data-demo-inert="true">
+              {label}
+            </button>
+          )}
+        </h3>
+        <Chevron />
+      </div>
+
+      {/* bullet-list — a single paragraph in the GNWT design */}
+      <p className="w-full text-[16px] font-normal leading-[22px] text-[#333333] [word-break:break-word]">
+        {body}
+      </p>
+
+      {/* card-footer */}
+      <div className="flex w-full flex-1 items-end justify-end">
+        <div className="h-[20px] w-px shrink-0" />
+        <img alt="" aria-hidden="true" className="block size-[20px] shrink-0" src={ASSETS.iconStarOff} />
+      </div>
+    </div>
   );
 }

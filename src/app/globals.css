@@ -1,16 +1,29 @@
 @import "tailwindcss";
 
 /*
- * GNL / C1 design tokens.
- * Values taken verbatim from Figma (C1 | GNL - R3, node 6102:101147).
- * Do not round or "improve" these — the pixel gate compares against the mockup.
+ * GNWT design tokens (release-2, 2026-11-16).
+ *
+ * This branch re-brands the GNL demo for the Government of Northwest
+ * Territories. The token NAMES keep their `--gnl-` prefix so the ~100 files
+ * that read them did not have to change; the VALUES are GNWT's, from the
+ * Figma file "GNWT | Demo - IDV and VC integration" and GNWT's own design
+ * system stylesheet (Bootstrap variables): body text / primary button
+ * #333333, link #005D8F, navy #001F30, border #C2C4C6.
  */
 :root {
-  --gnl-primary: #243746;
-  --gnl-heading: #212326;
-  --gnl-text: #5f6368;
-  --gnl-border: #e0e4e6;
+  --gnl-primary: #333333;
+  --gnl-heading: #333333;
+  --gnl-text: #333333;
+  --gnl-border: #c2c4c6;
   --gnl-surface: #ffffff;
+
+  --gnwt-link: #005d8f;
+  --gnwt-link-hover: #001f30;
+  --gnwt-navy: #001f30;
+  /* Review 2026-11-23 (Tatyana): service-card hover, GNWT --menu-color-hover. */
+  --menu-color-hover: #f2f2f2;
+  --gnwt-success: #15870d;
+  --gnwt-danger: #c20020;
 
   --gnl-radius-card: 6px;
   --gnl-radius-btn: 4px;
@@ -110,9 +123,26 @@ body {
  */
 .gnl-desktop-shell {
   width: 100%;
-  max-width: 1440px;
-  margin-inline: auto;
+  /* GNWT: the page is full width (the design is drawn at 1920); the header
+     and footer bars run edge to edge and the content sits in
+     `.gnwt-container`. The GNL build capped the shell at 1440. */
   background: var(--gnl-surface);
+}
+
+/*
+ * GNWT content container: 1336 wide, centred (x = 292 on the 1920 frame),
+ * with a side gutter that only shows once the window is narrower than that.
+ */
+.gnwt-container {
+  width: 100%;
+  max-width: calc(1336px + 48px);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+@media (max-width: 767px) {
+  .gnwt-container {
+    padding-inline: 16px;
+  }
 }
 
 /*

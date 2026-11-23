@@ -1,5 +1,6 @@
 /*
- * wizard-card — Figma 6031:6307, 820 x 689 at x=310 inside the 1440 canvas.
+ * wizard-card — GNWT: 941 wide (B-wizard.md §1.2). GNL history below:
+ * Figma 6031:6307, 820 x 689 at x=310 inside the 1440 canvas.
  *
  * Padding and gap are read off the child offsets rather than assumed:
  *   children start at x=40 and y=40, and the last child (actions-row) ends at
@@ -24,8 +25,10 @@
  *             while still reading as a card. The 32px child gap tightens to 24
  *             at phone width for the same reason.
  */
+/* GNWT re-brand (release-2, B-wizard.md §1.2 / §5.4): 941 wide = 861 content
+ * + 2 x 40 padding. Everything else is unchanged. */
 const CARD =
-  "box-border flex w-[820px] max-w-full flex-col items-start gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-lg:w-full max-md:p-[32px] max-xs:gap-[24px] max-xs:p-[24px]";
+  "box-border flex w-[941px] max-w-full flex-col items-start gap-[32px] rounded-[6px] bg-white p-[40px] shadow-[inset_0_0_0_1px_#e0e4e6] [filter:drop-shadow(0px_4px_12px_rgba(0,0,0,0.03))] max-lg:w-full max-md:p-[32px] max-xs:gap-[24px] max-xs:p-[24px]";
 
 export function WizardCard({
   children,

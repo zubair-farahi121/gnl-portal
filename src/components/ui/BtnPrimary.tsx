@@ -49,11 +49,23 @@ import Link from "next/link";
  *
  * `gnl` is the default, so the four existing call sites are byte-identical.
  */
+/*
+ * `gnwt` — GNWT re-brand (release-2, B-wizard.md §1.5 / §5.7): the black
+ * primary of the GNWT onboarding wizard. Pure #000 fill, 16px Bold white on a
+ * 1.5 line-height, padding 8 / 12, radius 6 -> 40 tall. A different BOX from
+ * the GNL button, so the tone carries the box classes too. The `gnl` and
+ * `yoti` boxes are unchanged (the CID and wallet screens still use them).
+ */
 const CLASSES =
-  "gnl-touch box-border inline-flex items-center justify-center overflow-clip rounded-[4px] px-[24px] py-[10px] font-bold leading-[normal] text-white";
+  "gnl-touch box-border inline-flex items-center justify-center overflow-clip font-bold text-white";
 
+const GNL_BOX = "rounded-[4px] px-[24px] py-[10px] leading-[normal]";
 const LABEL_SIZE = { sm: "text-[14px]", lg: "text-[16px]" } as const;
-const TONE = { gnl: "bg-[#243746]", yoti: "bg-[#27619b]" } as const;
+const TONE = {
+  gnl: `${GNL_BOX} bg-[#243746]`,
+  yoti: `${GNL_BOX} bg-[#27619b]`,
+  gnwt: "min-h-[40px] rounded-[6px] px-[12px] py-[8px] leading-[1.5] bg-[#000000] hover:bg-[#333333] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]",
+} as const;
 
 export function BtnPrimary({
   children,
@@ -71,8 +83,11 @@ export function BtnPrimary({
   className?: string;
   /** `lg` is the rebuilt desktop scale (16px label). Defaults to `sm`. */
   size?: "sm" | "lg";
-  /** `yoti` is the #27619b `Yoti ContinueButton`. Defaults to the GNL navy. */
-  tone?: "gnl" | "yoti";
+  /**
+   * `yoti` is the #27619b `Yoti ContinueButton`; `gnwt` the black GNWT wizard
+   * primary (use with `size="lg"`). Defaults to the GNL navy.
+   */
+  tone?: "gnl" | "yoti" | "gnwt";
   /** The frame's own button node id. Defaults to `ContinueButton` 6031:6352. */
   nodeId?: string;
 }) {

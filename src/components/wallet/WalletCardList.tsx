@@ -103,6 +103,10 @@ export function WalletCardList() {
                 </span>
                 <span className="flex min-w-px flex-[1_0_0] flex-col items-start gap-[2px]">
                   <span style={WALLET_TYPE.cardTitle}>{c.vrc.title}</span>
+                  {/* GNWT release-2: the card's subline (credentials.ts VRC_WALLET.card.subline), as ExpandedCard renders it. */}
+                  {WALLET_CREDENTIALS["driver-vehicle"].card.subline ? (
+                    <span style={{ ...WALLET_TYPE.cardDesc, color: WALLET_COLOR.text }}>{WALLET_CREDENTIALS["driver-vehicle"].card.subline}</span>
+                  ) : null}
                   <span style={WALLET_TYPE.cardDesc} data-wallet-issued="true">
                     {issuedLabel(top.issuedAt)}
                   </span>

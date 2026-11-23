@@ -153,7 +153,10 @@ const ROUTES = [
   ['b-terms', '/services/studentaid/terms/'],
   ['b-confirm-details', '/services/studentaid/confirm-details/'],
   ['b-onboard', '/services/studentaid/onboard/'],
-  ['b-other-verification', '/services/studentaid/other-verification/'],
+  // b-other-verification removed 2026-11-16 (GNWT release-2): PP-08 is no
+  // longer a step — its URL only forwards to /cid/studentaid/continue-on-mobile/,
+  // which is measured on its own; measuring the forwarder would measure the
+  // hand-off a second time, mid-redirect.
   ['b-prerequisite', '/services/studentaid/prerequisite/'],
   ['b-confirmation', '/services/studentaid/confirmation/'],
   ['b-service-verified', '/services/studentaid/?verified=1'],
@@ -341,10 +344,22 @@ for (const [name, route, seed] of ROUTES) {
      * so a future 404 names the URL instead of Chromium's anonymous "the server
      * responded with a status of 404".
      */
+    /*
+     * THE PHONE-MODE PANEL'S PROBE (added 2026-11-16). /demo/phone/ asks
+     * /api/health once on mount (src/lib/remote-sync.ts `probeSync`) to learn
+     * whether the sync server is there; on this gate's STATIC server the
+     * answer is a 404, which is the designed "no server" result — and Chromium
+     * logs every 4xx resource as a console error. This has been true since the
+     * panel landed (b6b7086). Exempt ONLY that: on `demo-phone`, a 404 whose
+     * every failed URL is /api/health. Any other 404 or error there still fails.
+     */
+    const healthProbeOnly =
+      name === 'demo-phone' && badUrls.length > 0 && badUrls.every((u) => new URL(u).pathname === '/api/health');
     const real = msgs.filter(
       (t) =>
         !/favicon|Download the React DevTools/i.test(t) &&
-        !(name === 'not-found' && /status of 404/i.test(t)),
+        !(name === 'not-found' && /status of 404/i.test(t)) &&
+        !(healthProbeOnly && /status of 404/i.test(t)),
     );
     if (real.length) {
       const urls = badUrls.length ? ` [failed: ${badUrls.join(', ')}]` : '';

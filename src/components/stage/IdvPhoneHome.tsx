@@ -136,7 +136,7 @@ export function IdvPhoneHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rec?.scan, rec?.status]);
 
-  if (!ready) return <main className="h-[100dvh] w-full bg-[#2b3a4e]" />;
+  if (!ready) return <main className="h-[100dvh] w-full bg-[#001f30]" />;
 
   if (mode !== "idle") {
     return (
@@ -170,12 +170,12 @@ export function IdvPhoneHome() {
 
   return (
     <main className="flex h-[100dvh] w-full flex-col overflow-y-auto bg-white" data-phone-home="idle">
-      <div className="relative flex flex-col items-center bg-[linear-gradient(180deg,#2b3a4e_0%,#34506d_100%)] px-[28px] pt-[36px] pb-[56px] text-center text-white">
+      <div className="relative flex flex-col items-center bg-[linear-gradient(180deg,#001f30_0%,#005d8f_100%)] px-[28px] pt-[36px] pb-[56px] text-center text-white">
         <span className="gnl-stage-pop flex size-[78px] items-center justify-center rounded-[24px] bg-[linear-gradient(145deg,#4b9be6,#286cab)] shadow-[0_14px_34px_rgba(20,60,110,0.55),inset_0_1px_0_rgba(255,255,255,0.35)]">
           <Icon d={ICON.shield} size={40} width={1.9} />
         </span>
         <p className="mt-[18px] text-[26px] font-bold leading-[1.2]">CertifiO ID</p>
-        <p className="mt-[6px] text-[14px] text-[#c4d3e2]">Secure identity verification for MyGovNL</p>
+        <p className="mt-[6px] text-[14px] text-[#c4d3e2]">Secure identity verification for the NWT eServices Portal</p>
       </div>
       <div className="relative -mt-[28px] flex flex-1 flex-col rounded-t-[28px] bg-white px-[24px] pt-[28px] pb-[28px]">
         <h1 className="text-[22px] font-bold leading-[1.3] text-[#212326]">Ready when you are</h1>

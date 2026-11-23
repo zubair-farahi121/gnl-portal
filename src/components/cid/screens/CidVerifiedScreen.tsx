@@ -1,10 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CidScreen } from "@/components/cid/CidScreen";
+import { CID_PORTAL, CidButton, CidScreen } from "@/components/cid/CidScreen";
 import { HandoffDoneNotice } from "@/components/cid/HandoffDoneNotice";
-import { BtnPrimary } from "@/components/ui/BtnPrimary";
-import { BtnOutline } from "@/components/ui/BtnOutline";
 import { useDemoState } from "@/lib/demo-state";
 import { getCidCopy } from "@/lib/data/cid";
 import { APP_ROUTES, type ServiceConfig } from "@/lib/data/service-config";
@@ -14,6 +12,13 @@ import { isStageHandoffTab } from "@/lib/stage-sync";
 
 /*
  * CID_ID_success — Figma 6217:66058, 393 x 1014.810546875.
+ *
+ * GNWT RE-BRAND 2026-11-16 — Figma 28:71505 (Flow 1). Pixel-measured:
+ * heading 36px Bold #333 (2 lines), description 14px / 1.5 #333, primary
+ * button full width, BLACK, white 16px Bold, 40 tall, label
+ * `Continue to ${service.title}` ("Continue to Driver and Vehicle Services");
+ * `Log out` is a borderless centred text button 24px below it.
+ * Behaviour (markVerified, the phone hand-off branch, resetAll) unchanged.
  *
  * ====================================================================
  * ONE COMPONENT, TWO ROUTES — 2026-09-23. /cid/verified/ (Flow A) and
@@ -133,9 +138,8 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
         className="flex w-full shrink-0 flex-col items-start gap-[16px] py-[24px] md:py-0"
         data-node-id="6062:22553"
       >
-        {/* All three CID headings are #212326 now; this one always was. */}
         <p
-          className="w-full shrink-0 text-[32px] font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)] [word-break:break-word]"
+          className={CID_PORTAL.heading}
           data-node-id="6062:22554"
         >
           {copy.title}
@@ -143,7 +147,7 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
 
         {/* card-description 6062:23365 — one text node: 3 paragraphs + a bulleted list. */}
         <div
-          className="w-full shrink-0 text-[14px] font-normal leading-[1.5] text-[#5f6368] [word-break:break-word]"
+          className={CID_PORTAL.bodySmall}
           data-node-id="6062:23365"
         >
           {copy.description.map((block, i) =>
@@ -166,12 +170,13 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
 
       {/* Frame 6 — 6062:22582 */}
       <div
-        className="flex w-full shrink-0 flex-col items-start gap-[8px] md:flex-row md:items-center md:justify-end md:gap-[24px] md:pt-[16px]"
+        className="flex w-full shrink-0 flex-col items-stretch gap-[24px] md:flex-row md:items-center md:justify-end md:pt-[16px]"
         data-node-id="6062:22582"
       >
-        <BtnPrimary className="w-full md:order-2 md:w-auto" onClick={onContinue}>
+        {/* GNWT: black fill, white 16px Bold, full width on the phone. */}
+        <CidButton tone="primary" className="w-full md:order-2 md:w-auto" onClick={onContinue}>
           {actions.continue}
-        </BtnPrimary>
+        </CidButton>
         {/*
          * "Log out" returns to the login page and clears the store, so the next
          * run starts from scratch. It used to be inert, which read as a broken
@@ -184,13 +189,14 @@ export function CidVerifiedScreen({ service }: { service: ServiceConfig }) {
          * the honest behaviour. The header's is a portal sign-out and keeps
          * progress. Two controls, two meanings, both deliberate.
          */}
-        <BtnOutline
+        <CidButton
+          tone="ghost"
           href={APP_ROUTES.login}
           onClick={resetAll}
-          className="w-full justify-center md:order-1 md:w-auto"
+          className="w-full md:order-1 md:w-auto"
         >
           {actions.logOut}
-        </BtnOutline>
+        </CidButton>
       </div>
     </CidScreen>
   );

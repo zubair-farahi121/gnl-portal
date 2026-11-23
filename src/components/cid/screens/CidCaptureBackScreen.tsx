@@ -1,11 +1,16 @@
-import { CameraViewport } from "@/components/cid/CameraViewport";
 import { CidScreen } from "@/components/cid/CidScreen";
 import { YotiActionBar, YotiContinue } from "@/components/cid/yoti/YotiChrome";
+import { YotiCaptureWindow } from "@/components/cid/yoti/YotiCaptureWindow";
 import { ASSETS } from "@/lib/assets";
 import { getCidCopy } from "@/lib/data/cid";
 import { cidRoutes, type ServiceConfig } from "@/lib/data/service-config";
-import { YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
+import { YOTI_CAPTURE, YOTI_COLOR, YOTI_TEXT } from "@/lib/data/yoti-tokens";
 
+/*
+ * GNWT 2026-11-16: empty camera frame (Figma 29:72219, corner brackets, no
+ * document) then the captured back (26:54328), as two phases of this one
+ * route — see YotiCaptureWindow. Flow 1 only; Flow 2 has no back capture.
+ */
 /*
  * CID_ID1 (capture, back) — Figma 6057:20924, 393 x 1174.810546875.
  *
@@ -171,7 +176,7 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
           >
             {/* The live camera fills this box; its child is the fallback, the
                 mock exactly as it was authored — same box, same object-cover. */}
-            <CameraViewport>
+            <YotiCaptureWindow>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {/* `gnl-yoti-specimen` — see the identical note on
                   /cid/capture-front/ and the rule in globals.css. */}
@@ -179,8 +184,11 @@ export function CidCaptureBackScreen({ service }: { service: ServiceConfig }) {
                 alt=""
                 className="gnl-yoti-specimen pointer-events-none absolute inset-0 block size-full max-w-none object-cover"
                 src={ASSETS.idDocBack}
+                /* Held invisible through the empty-viewfinder phase — see
+                   YotiCaptureWindow and YOTI_CAPTURE. */
+                style={{ animationDelay: `${YOTI_CAPTURE.emptyMs}ms` }}
               />
-            </CameraViewport>
+            </YotiCaptureWindow>
           </div>
         </div>
       </div>

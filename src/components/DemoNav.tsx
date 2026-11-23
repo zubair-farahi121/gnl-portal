@@ -10,6 +10,7 @@ import {
   STAGE_MSG,
   askStage,
   idvStageUrl,
+  inWalletStageFrame,
   isWalletStagePath,
   isServiceIdValue,
   phoneHomeUrl,
@@ -144,6 +145,17 @@ export function DemoNav() {
           window.dispatchEvent(new Event(STAGE_MSG.exit));
           return;
         }
+        /* Wallet presenter stage (fix 2026-11-23): Shift+W in one of its
+           frames, or on the stage page itself, LEAVES it — back to the
+           computer frame's page, full screen. */
+        if (inWalletStageFrame()) {
+          askStage(STAGE_MSG.exit);
+          return;
+        }
+        if (pathname === FLOW3_ROUTES.stage) {
+          window.dispatchEvent(new Event(STAGE_MSG.exit));
+          return;
+        }
         /* …and from anywhere else in the journey — login, dashboard, the
            service page before onboarding, the wizard, CertifiO ID — opens it
            on this very page. Wallet pages and a Trusted service page keep
@@ -194,6 +206,12 @@ export function DemoNav() {
         return;
       }
       if (e.key === "Escape" && WALLET_ESC_CLOSES.has(pathname)) return;
+      /* In a wallet-stage frame, Esc resets the whole stage (both frames),
+         as on the stage page — never the frame alone. */
+      if (e.key === "Escape" && inWalletStageFrame()) {
+        askStage(STAGE_MSG.reset);
+        return;
+      }
       if (e.key === "Escape") {
         resetAll();
         /*

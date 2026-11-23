@@ -1,193 +1,185 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- static export, unoptimized images */
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+
 import { ASSETS } from "@/lib/assets";
 
 /*
- * "top-nav actions" — Figma 6031:6245, 1440 x 69.
+ * THE GNWT HEADER — release-2 (2026-11-16).
  *
- * Used by every authenticated desktop page. The login page uses the taller
- * `header` component (LoginHeader) instead — they are two distinct components
- * in Figma, so they are two distinct components here. Do not merge them.
+ * Replaces the GNL "MyGovNL" top nav. Source: Figma file
+ * `Hfj015MPSmeRPYg72vZxTI`, component `gnwt-header` 11:22211 (desktop) and
+ * 26:68888 (mobile, 393), cross-checked with GNWT's own design-system markup.
  *
- * Height derivation: 16 (pt) + 37 (btn-signout) + 16 (pb) = 69.
- * The white bottom border is painted with an inset shadow rather than
- * `border-b` so it does not consume a pixel of the 69px box.
+ *   desktop  white bar, 1px #333 bottom rule, 99 tall (16 + 66 + 16 + 1);
+ *            inner row 1440 wide, centred: logo 304 x 66, then, right-aligned
+ *            with 32px gaps: "Français", a 256px search box, the user button
+ *            (signed-in pages only) and "Menu".
+ *   mobile   65 tall, padding 8/16: logo 150 x 32.566, then "FR", a search
+ *            icon and "Menu". No user button, as drawn.
  *
- * INTERACTIVITY (2026-09-21). This component is now "use client" because
- * `Log Out` has to clear the demo state before it navigates. Nothing visual
- * changed: every wired control keeps its exact classes and only swaps its
- * wrapper element for a <Link>, which carries the same `display` once it is a
- * flex item. See design/interactivity-map.md.
+ * ONE COMPONENT, three exports, so every page that already renders
+ * <TopNav />, <LoginHeader /> or <MobileTopNav /> gets the new header with no
+ * change of its own:
+ *
+ *   TopNav         signed in; desktop layout from 1024px up, mobile below
+ *   LoginHeader    the same without the user button (see LoginHeader.tsx)
+ *   MobileTopNav   signed in, ALWAYS the mobile layout — the CertifiO ID
+ *                  screens are a phone-width column even on a laptop
+ *
+ * WHAT IS REAL. The logo goes to the dashboard (or the login page when signed
+ * out). The user button opens a one-item menu, "Sign out", which goes to the
+ * login page WITHOUT clearing the demo — the same rule the GNL build's "Log
+ * Out" had (brief §7.1): only Esc and /reset clear it. "Français", the search
+ * box and "Menu" are out of scope for the demo: `data-demo-inert` -> the "Not
+ * part of this demo" toast.
  */
 
-type NavLink = {
-  label: string;
-  icon: string;
-  nodeId: string;
-  /** The Gear is a 16px box wrapping a smaller inner group; the others fill the box. */
-  innerInset?: string;
-  /**
-   * Demo destination. Only `Services` has one — the demo has no Account,
-   * Notifications or Contact Us screen, so those three stay deliberately inert
-   * rather than being pointed at a plausible-looking wrong route.
-   */
-  href?: string;
-};
+const TEXT = "text-[#333333]";
 
-export const TOP_NAV_LINKS: readonly NavLink[] = [
-  { label: "Services", icon: ASSETS.iconGear, nodeId: "6022:2282", innerInset: "inset-[8.56%_8.78%]", href: "/dashboard/" },
-  { label: "Account", icon: ASSETS.iconUser, nodeId: "6022:2285" },
-  { label: "Notifications", icon: ASSETS.iconBell, nodeId: "6022:2289" },
-  { label: "Contact Us", icon: ASSETS.iconInfo, nodeId: "6022:2293" },
-];
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="block shrink-0">
+      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+    </svg>
+  );
+}
 
-export function NavIcon({ icon, innerInset }: { icon: string; innerInset?: string }) {
-  if (innerInset) {
-    return (
-      <div className="relative size-[16px] shrink-0">
-        <div className={`absolute ${innerInset}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="" className="absolute inset-0 block size-full max-w-none" src={icon} />
+function PersonIcon() {
+  return (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="block shrink-0">
+      <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+      <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" className="block shrink-0">
+      <path fillRule="evenodd" clipRule="evenodd" d="M1.5 19.6023C1.5 19.0751 1.92736 18.6477 2.45455 18.6477H21.5455C22.0726 18.6477 22.5 19.0751 22.5 19.6023C22.5 20.1295 22.0726 20.5568 21.5455 20.5568H2.45455C1.92736 20.5568 1.5 20.1295 1.5 19.6023Z" fill="currentColor" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M1.5 11.9659C1.5 11.4387 1.92736 11.0114 2.45455 11.0114H21.5455C22.0726 11.0114 22.5 11.4387 22.5 11.9659C22.5 12.4931 22.0726 12.9205 21.5455 12.9205H2.45455C1.92736 12.9205 1.5 12.4931 1.5 11.9659Z" fill="currentColor" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M1.5 4.32955C1.5 3.80236 1.92736 3.375 2.45455 3.375H21.5455C22.0726 3.375 22.5 3.80236 22.5 4.32955C22.5 4.85673 22.0726 5.28409 21.5455 5.28409H2.45455C1.92736 5.28409 1.5 4.85673 1.5 4.32955Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** The demo persona's name, as the header's user button shows it. */
+const USER_NAME = "Jason Moore";
+
+/**
+ * The signed-in user button and its one-item menu. A real <button> with
+ * `aria-expanded`; the menu closes on a click elsewhere or when focus leaves.
+ */
+function UserMenu() {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("focusin", away);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("focusin", away);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex cursor-pointer items-center gap-[8px] rounded-[6px] border-[1.6px] border-solid border-[#005d8f] bg-white px-[11.2px] py-[6.4px] text-[#005d8f] hover:bg-[#f3f8fc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#005d8f]"
+        data-user-menu="true"
+      >
+        <PersonIcon />
+        <span className="whitespace-nowrap text-[14px] font-bold leading-[1.5] tracking-[0.42px]">{USER_NAME}</span>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute top-[calc(100%+6px)] right-0 z-30 min-w-full rounded-[6px] border border-solid border-[#c2c4c6] bg-white py-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          <Link
+            role="menuitem"
+            href="/"
+            className="block whitespace-nowrap px-[16px] py-[8px] text-[16px] font-normal leading-[1.5] text-[#333333] no-underline hover:bg-[#f3f8fc] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#005d8f]"
+            data-sign-out="true"
+          >
+            Sign out
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const INERT = { "data-demo-inert": "true", "aria-disabled": true } as const;
+
+export function GnwtHeader({ authenticated, compact = false }: { authenticated: boolean; compact?: boolean }) {
+  /* `compact` forces the phone layout at every width; otherwise it applies below 1024px. */
+  const wide = compact ? "hidden" : "max-lg:hidden";
+  const narrow = compact ? "" : "lg:hidden";
+  const home = authenticated ? "/dashboard/" : "/";
+
+  return (
+    <header
+      className={`w-full shrink-0 border-b border-solid border-[#333333] bg-white ${compact ? "px-[16px] py-[8px]" : "px-[16px] py-[16px] max-lg:py-[8px]"}`}
+      data-gnwt-header={authenticated ? "authenticated" : "unauthenticated"}
+    >
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-[16px]">
+        <Link href={home} className="block shrink-0" aria-label="Government of Northwest Territories — home">
+          <img alt="" src={ASSETS.gnwtLogo} className={`block h-[66px] w-[304px] max-w-none ${wide}`} />
+          <img alt="" src={ASSETS.gnwtLogo} className={`block h-[32.566px] w-[150px] max-w-none ${narrow}`} />
+        </Link>
+
+        {/* desktop cluster */}
+        <div className={`flex min-w-0 flex-1 items-center justify-end gap-[32px] ${wide}`}>
+          <span className={`cursor-default select-none text-[16px] font-bold leading-none ${TEXT}`} {...INERT}>
+            Français
+          </span>
+          <div
+            className={`flex w-[256px] shrink-0 cursor-default select-none items-center border border-solid border-[#8b8d90] p-[12px] ${TEXT}`}
+            {...INERT}
+          >
+            {/* Review 2026-11-23 (Tatyana): 1rem, 75 % opacity. */}
+            <span className="flex-1 text-[1rem] font-normal leading-none opacity-75">Search</span>
+            <SearchIcon />
+          </div>
+          {authenticated ? <UserMenu /> : null}
+          <span className={`flex cursor-default select-none items-center gap-[8px] px-[7px] py-[12px] ${TEXT}`} {...INERT}>
+            <MenuIcon />
+            <span className="text-[18px] font-bold leading-none">Menu</span>
+          </span>
+        </div>
+
+        {/* phone cluster */}
+        <div className={`flex flex-1 items-center justify-end gap-[16px] ${narrow}`}>
+          <span className={`cursor-default select-none text-[16px] font-bold leading-none ${TEXT}`} {...INERT}>
+            FR
+          </span>
+          <span className={`flex w-[32px] cursor-default select-none justify-center px-[8px] py-[12px] ${TEXT}`} aria-label="Search" role="img" {...INERT}>
+            <SearchIcon />
+          </span>
+          <span className={`flex cursor-default select-none items-center gap-[8px] py-[12px] ${TEXT}`} {...INERT}>
+            <MenuIcon />
+            <span className="text-[18px] font-bold leading-none">Menu</span>
+          </span>
         </div>
       </div>
-    );
-  }
-  return (
-    <div className="relative size-[16px] shrink-0">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img alt="" className="absolute inset-0 block size-full max-w-none" src={icon} />
-    </div>
+    </header>
   );
 }
 
-/**
- * The nav row box. Identical on the wired link and on the inert ones.
- *
- * `gnl-touch` raises it to a 44px target below 768 — but only inside
- * `.gnl-desktop-shell`, so the same markup reused by MobileTopNav inside the
- * 393px CID shell keeps its designed height. See globals.css.
- */
-const NAV_ROW = "gnl-touch flex shrink-0 items-center gap-[8px]";
-
-/** Shared by TopNav and MobileTopNav — identical in both Figma variants. */
-export function NavLinks({ className }: { className: string }) {
-  return (
-    <div className={className}>
-      {TOP_NAV_LINKS.map((link) => {
-        const inner = (
-          <>
-            <NavIcon icon={link.icon} innerInset={link.innerInset} />
-            {/* Figma says Lato:Medium; the webfont has no 500. See token-exceptions.md. */}
-            <p className="shrink-0 whitespace-nowrap text-[15px] font-normal leading-normal text-[#bfc4c8]">
-              {link.label}
-            </p>
-          </>
-        );
-
-        if (link.href) {
-          return (
-            <Link key={link.label} className={NAV_ROW} href={link.href} data-node-id={link.nodeId}>
-              {inner}
-            </Link>
-          );
-        }
-
-        /*
-         * No screen exists behind these. They keep every visual value and are
-         * marked inert instead of being wired somewhere arbitrary, so the
-         * presenter gets an unresponsive label rather than a wrong screen.
-         */
-        return (
-          <div
-            key={link.label}
-            className={`${NAV_ROW} cursor-default select-none`}
-            data-node-id={link.nodeId}
-            data-demo-inert="true"
-            aria-disabled="true"
-          >
-            {inner}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * btn-signout — Figma calls this Lato:SemiBold; the webfont has no 600.
- *
- * ====================================================================
- * IT NO LONGER CLEARS THE DEMO STATE — CHANGED 2026-09-23, Q-17 SETTLED.
- *
- * This used to call `reset()` on the way out, which is what DEMO_AUDIT.md X-04
- * flagged as a **direct conflict with BUILD_BRIEF.md §7.1**: *"Header **Log
- * Out** -> `/login`, **keeps** onboarding progress; only 'Reset demo' clears
- * everything."* Q-17 asked which was demo-day behaviour; it was settled in the
- * brief's favour.
- *
- * So Log Out is now a plain navigation. The `gnl-demo:v1` store survives it,
- * which means the presenter can log out mid-story, log back in, and the service
- * is still where they left it — including still Trusted. The only things that
- * clear the store are `/reset` and the presenter's Escape key (`DemoNav`).
- *
- * Nothing visual changed: same element, same classes, same destination.
- * ====================================================================
- */
-export function BtnSignOut() {
-  return (
-    <Link
-      href="/"
-      className="gnl-touch flex shrink-0 items-center justify-center rounded-[6px] border border-solid border-white px-[20px] py-[10px]"
-    >
-      <p className="shrink-0 whitespace-nowrap text-[14px] font-bold leading-normal text-[#bfc4c8]">Log Out</p>
-    </Link>
-  );
-}
-
-/*
- * RESPONSIVE BEHAVIOUR (all of it below the 1440 design width, all CSS):
- *
- *   >= 1024   exactly as designed — 69px tall, px-[80px], one row.
- *    < 1024   gutters and gaps tighten (80 -> 32, 48 -> 24, 32 -> 20). The bar
- *             is still 69px and still one row; measured width at 768 is ~718.
- *    < 768    the bar wraps to two rows and grows. `max-md:contents` dissolves
- *             the nav-left box so the logo and the link row become direct flex
- *             items of the <nav>; `order` then puts the logo and Log Out on
- *             row one (justify-between spreads them) and the full-width link
- *             row underneath, centred and wrapping as needed. Each link is a
- *             44px touch target via `gnl-touch`.
- *
- * No hamburger: the four labels are short, they fit two rows at 320px, and a
- * disclosure button would mean JavaScript state for a nav whose entire content
- * is visible anyway.
- */
+/** The signed-in header. Desktop layout from 1024px, phone layout below. */
 export function TopNav() {
-  return (
-    <nav
-      /*
-       * `gnl-bleed` + its two colour variables let the dark bar paint to the
-       * edges of a monitor wider than the 1440 shell while its CONTENT stays
-       * inside the 1440 cap. Above 1440 the bar used to stop at 1440 and sit
-       * in white bands, which reads as a boxed-in page rather than a site
-       * header. Inert at <= 1440; see .gnl-bleed in globals.css.
-       */
-      className="gnl-bleed [--gnl-bleed-bg:#2b3a4e] [--gnl-bleed-line:#ffffff] box-border flex h-[69px] w-full max-w-[1440px] items-center justify-between bg-[#2b3a4e] px-[80px] shadow-[inset_0_-1px_0_0_#ffffff] max-lg:px-[32px] max-md:h-auto max-md:flex-wrap max-md:gap-y-[12px] max-md:px-[16px] max-md:py-[12px]"
-      data-node-id="6031:6245"
-    >
-      {/* nav-left 6022:2271 */}
-      <div className="flex shrink-0 items-center gap-[48px] max-lg:gap-[24px] max-md:contents">
-        <Link href="/dashboard/" className="relative h-[33.645px] w-[112px] shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="MyGovNL" className="absolute inset-0 block size-full max-w-none" src={ASSETS.mygovnlLogo} />
-        </Link>
-        <NavLinks className="flex shrink-0 items-center gap-[32px] max-lg:gap-[20px] max-md:order-3 max-md:w-full max-md:flex-wrap max-md:justify-center max-md:gap-x-[20px] max-md:gap-y-0" />
-      </div>
-
-      {/* nav-right 6022:2296 */}
-      <div className="flex shrink-0 items-center max-md:order-2">
-        <BtnSignOut />
-      </div>
-    </nav>
-  );
+  return <GnwtHeader authenticated />;
 }

@@ -68,22 +68,24 @@ export default function WalletReviewPage() {
           {r.cardSubline ? (
             /* Frame 14682 6420:95310 — the mark, then the service, 8 px apart. */
             <div className="flex flex-col items-center gap-[8px]">
+              {/* GNWT 1:24181 / 45:93042: gnwt-navbar-brand--logo, 156 x 33.9, its
+                  wordmark white on the dark card. */}
               <img
-                src="/assets/flow3/gnl-crest-wordmark-white.svg"
-                alt="Government of Newfoundland and Labrador"
-                width={72}
-                height={36}
-                className="block h-[36px] w-[72px] object-contain"
+                src="/assets/gnwt/navbar-brand--logo-on-dark.svg"
+                alt="Government of Northwest Territories"
+                width={156}
+                height={34}
+                className="block h-[33.87px] w-[156px] object-contain"
               />
               <p style={{ fontSize: "14px", fontWeight: 300, lineHeight: 1.2 }}>{r.cardSubline}</p>
             </div>
           ) : (
             <img
-              src="/assets/flow3/gnl-crest-wordmark-white.svg"
-              alt="Government of Newfoundland and Labrador"
-              width={72}
-              height={36}
-              className="block h-[36px] w-[72px] object-contain"
+              src="/assets/gnwt/navbar-brand--logo-on-dark.svg"
+              alt="Government of Northwest Territories"
+              width={156}
+              height={34}
+              className="block h-[33.87px] w-[156px] object-contain"
               data-node-id="6345:12133"
             />
           )}

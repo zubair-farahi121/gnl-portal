@@ -86,46 +86,33 @@ export type DocumentType = "DRIVERS_LICENCE" | "PASSPORT";
 
 export type CaptureSide = "front" | "back";
 
+/**
+ * One run of text inside a Terms paragraph. `italic` runs render as <em>
+ * (the Act names in the GNWT privacy notices).
+ */
+export type TermsRun = { text: string; italic?: boolean };
+
 export type ServiceTerms = {
-  /** Sub-title on the Terms screen: "Driver and Vehicle Services". */
+  /** Document name under "Terms and Conditions": "Driver and Vehicle Services". */
   name: string;
   /** Rendered verbatim after "Last modified: ". */
   lastModified: string;
   /** Rendered verbatim after "Version ". A string, because the design shows no unit. */
   version: string;
   /**
-   * The consent paragraph in the Terms scroll box (NL-05 / PP-05).
+   * The privacy notice in the Terms scroll box, one array of runs per
+   * paragraph. GNWT re-brand (release-2, 2026-11-16): replaces the GNL
+   * `consent.beforeEmail/email/afterEmail` split; the Newfoundland text and
+   * its e-mail link are gone. Copy is verbatim from Figma 24:49022 / 42:76944.
    *
-   * ADDED 2026-09-28 WITH FLOW B's DESKTOP WIZARD. DEMO_AUDIT.md "What Tier 2
-   * inherits", item 1: *"The Terms consent paragraph is still hardcoded for
-   * `driver-vehicle` … Flow B's paragraph (§9 PP-05) is a DIFFERENT TEXT, not a
-   * substitution. Add a `consent` field to `ServiceConfig` before building
-   * PP-05, or that screen will fork."* This is that field.
-   *
-   * THREE PARTS, NOT ONE STRING, because the email address inside the paragraph
-   * is drawn as a link (an inert <button> — see the Terms screen) and the two
-   * paragraphs put it in different places: Flow A's ENDS on the address, Flow
-   * B's has a full stop after it. `afterEmail` is "" for Flow A, and the screen
-   * renders nothing at all for an empty string, so Flow A's DOM is unchanged.
+   * TODO(designer): the LAST paragraph of each notice is cut off by the
+   * scroll box in Figma and cannot be read. It is reproduced up to where the
+   * design stops, ending in "…". Ask Tatyana Poirier for the full text.
    */
-  consent: {
-    beforeEmail: string;
-    email: string;
-    afterEmail: string;
-  };
-  /**
-   * TATYANA'S FEEDBACK, 2026-10-20 (StudentAidNL only). Three per-service
-   * fields so Flow A's Terms screen stays exactly as it is:
-   *
-   *   showName       false hides the document name under "Terms and
-   *                  Conditions". `name` is still used for the scroll box's
-   *                  accessible name.
-   *   consentHeading a heading above the consent paragraph, inside the
-   *                  scroll box. Omitted = no heading (Flow A).
-   *   checkboxLabel  the text beside the consent checkbox.
-   */
+  paragraphs: readonly (readonly TermsRun[])[];
+  /** false hides the document name under "Terms and Conditions". */
   showName: boolean;
-  consentHeading?: string;
+  /** The text beside the consent checkbox. */
   checkboxLabel: string;
 };
 
@@ -163,7 +150,10 @@ export type ServiceConfig = {
   methods: readonly IdvMethod[];
   /** Pre-selected method. `gnl_idv` in both flows (§8.1, §9). */
   defaultMethod: IdvMethod;
-  /** Flow B inserts PP-08 "Other verification" between the method step and the hand-off. */
+  /**
+   * GNL Flow B inserted PP-08 "Other verification" between the method step and
+   * the hand-off. false for both GNWT services (release-2).
+   */
   otherVerificationStep: boolean;
   /** Pre-selected row on the "Accepted documents" screen (NL-14 / PP-15). */
   defaultDocument: DocumentType;
@@ -234,18 +224,9 @@ export function serviceRoutes(id: ServiceId) {
     /** Choose verification service (NL-07 / PP-07). */
     onboard: `${base}onboard/`,
     /**
-     * PP-08 "Other verification" — Figma 6217:35183. ADDED 2026-09-28.
-     *
-     * FLOW B ONLY. It is a path for every service (like `cidRoutes().captureBack`
-     * is) but a PAGE only for services with `otherVerificationStep: true` —
-     * `otherVerificationParams` below decides which, exactly as
-     * `cidBackCaptureParams` decides the back capture. So
-     * /services/driver-vehicle/other-verification/ is never generated and
-     * nothing links to it.
-     *
-     * Named for the screen's own heading rather than §6's suggested
-     * `.../prerequisites/other`, for the same reason `confirmDetails` is: the
-     * app's wizard paths are flat, one segment per screen.
+     * The retired PP-08 "Other verification" path. NOT IN EITHER GNWT FLOW
+     * (release-2): nothing links here. Kept so the prerendered page can
+     * forward old links to the hand-off — see `otherVerificationParams`.
      */
     otherVerification: `${base}other-verification/`,
     /** Confirm some details, **Confirmed** (NL-22 / PP-21). */
@@ -476,13 +457,18 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
    */
   "driver-vehicle": {
     id: "driver-vehicle",
-    title: "Driver and Vehicle",
+    /* GNWT re-brand: the wizard / CertifiO title (Figma 24:48794 etc.). */
+    title: "Driver and Vehicle Services",
     subtitle: "View and manage your driver and vehicle services",
-    // U+0027, as the prerequisite-check frame draws it.
+    /*
+     * GNWT: STRAIGHT U+0027 in both states (Figma 24:49147 and 32:55012 use
+     * the same glyph). "or acceptable form of photo ID" is the designer's new
+     * copy (magenta annotation in Figma), rendered in the normal colour.
+     */
     requirement: "Must have a valid driver's license or acceptable form of photo ID",
-    // U+2019, as the prerequisite-confirmed frame draws it. See the type.
-    requirementConfirmed: "Must have a valid driver’s license or acceptable form of photo ID",
-    methods: ["mrd", "gnl_idv"],
+    requirementConfirmed: "Must have a valid driver's license or acceptable form of photo ID",
+    /* GNWT: one method only, "GNWT Identity Verification Service" (25:51591). */
+    methods: ["gnl_idv"],
     defaultMethod: "gnl_idv",
     otherVerificationStep: false,
     defaultDocument: "DRIVERS_LICENCE",
@@ -499,25 +485,39 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
       // The trailing full stop is the design's; it closes the whole list.
       "road test payments, and more.",
     ],
-    // U+2019 in "Driver’s", as the confirmation frame draws it.
-    goToServiceLabel: "Go to Service Driver’s License Renewal",
+    /* Figma 32:55108. */
+    goToServiceLabel: "Go to Service Driver and Vehicle Services",
     terms: {
       name: "Driver and Vehicle Services",
-      lastModified: "2025-04-29",
+      lastModified: "2026-02-26",
       version: "4",
-      /*
-       * MOVED HERE 2026-09-28 from `TERMS.consentBody` in
-       * src/lib/data/onboarding.ts, character for character — the trailing
-       * space after "contact" is the join to the address. §8.1 NL-05 verbatim.
-       */
-      consent: {
-        beforeEmail:
-          "I consent to Government of Newfoundland and Labrador checking the information that I provide against the Motor Registration Division's system to make sure that I am who I say I am, validate my access to new services as they become available in MyGovNL, and receive personalized notifications regarding my upcoming renewals. For any questions related to how your information is being handled, please contact ",
-        email: "digitalgovernment@gov.nl.ca",
-        afterEmail: "",
-      },
+      /* Figma 24:49022, verbatim. Last paragraph truncated in the design. */
+      paragraphs: [
+        [
+          {
+            text: "Personal information collected by the Compliance and Licensing Division within the Department of Infrastructure is done under the authority of the ",
+          },
+          { text: "Motor Vehicles Act", italic: true },
+          { text: " s. 307.92 and the " },
+          { text: "Access to Information and Protection of Privacy Act", italic: true },
+          { text: " s. 40 (c) (i)." },
+        ],
+        [
+          {
+            text: "The personal information collected is limited to what is required to administer Driver and Vehicle Licensing Services and is protected by the privacy provisions of the ",
+          },
+          { text: "Access to Information and Protection of Privacy Act", italic: true },
+          { text: "." },
+        ],
+        [
+          {
+            // TODO(designer): truncated in Figma after "the Registrar of".
+            text: "If you have any questions about the collection or use of your personal information, contact the Registrar of …",
+          },
+        ],
+      ],
       showName: true,
-      checkboxLabel: "I have read and accept terms and condition",
+      checkboxLabel: "I have read and accept the terms and condition",
     },
   },
 
@@ -532,74 +532,69 @@ export const SERVICES: Record<ServiceId, ServiceConfig> = {
    */
   studentaid: {
     id: "studentaid",
-    title: "StudentAidNL",
+    /* GNWT re-brand: Figma 40:76892 etc. */
+    title: "Student Financial Assistance",
     // §10.1 copy fix — the Figma frame's subtitle still says Driver and Vehicle.
-    subtitle: "View and manage your StudentAidNL services",
+    subtitle: "View and manage your Student Financial Assistance services",
     /*
-     * PP-06 Confirm Some Details: REQUIRED. "driver license" — NO apostrophe
-     * and no "s". That is what §9 PP-06 writes and what the only source for the
-     * screen draws: 6206:27501 is a pasted screenshot of the live portal, read
-     * 2026-09-28, and it says "Must have a valid driver license, health card, or
-     * have neither because out of province". Reproduced, not corrected.
-     *
-     * WAS "driver's license" until 2026-09-28, copied from PP-07's card. PP-07's
-     * three cards do not use this field at all any more — they spell their own
-     * bullets, because the design gives them THREE different spellings; see
-     * `METHOD_OPTIONS` in src/lib/data/onboarding.ts.
+     * GNWT, Figma 42:77005 / 42:80944: TYPOGRAPHIC U+2019, no full stop, the
+     * same string in both states.
      */
-    /* 2026-10-23, Bob's request (via Martin) and Figma 6206:27601: "…or
-       acceptable form of photo ID" replaces both the live-portal copy above
-       and Tatyana's 2026-10-20 "verify you have neither", on both the
-       Required and the Confirmed state. */
-    requirement:
-      "Must have a valid driver's license, health card, or acceptable form of photo ID",
-    /*
-     * PP-21 Confirm some details: CONFIRMED — Figma 6217:80865, verbatim:
-     * TYPOGRAPHIC U+2019 in "driver’s" AND A TRAILING FULL STOP, which §9 PP-21
-     * also writes. It was the PP-07 string without the stop until 2026-09-28.
-     */
-    requirementConfirmed:
-      "Must have a valid driver’s license, health card, or acceptable form of photo ID.",
-    // PP-07 draws three cards: MCP, MRD, GNL IDV — GNL IDV selected.
-    methods: ["mcp", "mrd", "gnl_idv"],
+    requirement: "Must have a valid driver’s license, health card or other",
+    requirementConfirmed: "Must have a valid driver’s license, health card or other",
+    /* GNWT: one method only (42:77032); no MCP / MRD cards. */
+    methods: ["gnl_idv"],
     defaultMethod: "gnl_idv",
-    // PP-08 "Other verification" (6217:35183) sits between the method step and the hand-off.
-    otherVerificationStep: true,
+    /*
+     * GNWT: NO "Other verification" step — Prereq_02 goes straight to the
+     * CertifiO hand-off. The route file still exists so old links resolve;
+     * see `otherVerificationParams`.
+     */
+    otherVerificationStep: false,
     defaultDocument: "PASSPORT",
     // No back capture: a passport has one page to photograph.
     captureSides: ["front"],
     // §10.1: "(front)" is dropped on both capture states.
     captureTitles: { front: "Capture ID document" },
-    successServiceLabel: "StudentAidNL",
+    successServiceLabel: "Student Financial Assistance",
     availableServices: [
       "Apply for student financial assistance",
       "Check your application status",
       "Receive messages about your application",
       "Download tax documents",
     ],
-    goToServiceLabel: "Go to Service StudentAidNL",
+    /* Figma 44:81091. */
+    goToServiceLabel: "Go to Service Student Financial Assistance",
     terms: {
-      name: "StudentAidNL",
-      lastModified: "2026-08-26",
-      version: "7",
-      /*
-       * §9 PP-05, verbatim. A DIFFERENT PARAGRAPH from Flow A's, not a
-       * substitution into it — "hereby", MCP as well as MRD, no "new services"
-       * clause — and it ends with a full stop AFTER the address, which is why
-       * `afterEmail` exists.
-       */
-      consent: {
-        beforeEmail:
-          "I hereby consent to the Government of Newfoundland and Labrador collecting, using, and verifying the information I provide by comparing it with records maintained by the Motor Registration Division and the Medical Care Plan (MCP). This verification is conducted for the purposes of confirming my identity and delivering personalized notifications where required. Any questions regarding the collection, use, or handling of my personal information may be directed to ",
-        email: "digitalgovernment@gov.nl.ca",
-        afterEmail: ".",
-      },
-      /* Tatyana's feedback, 2026-10-20: no "StudentAidNL" under the heading,
-         a "Consent for Identity Verification" heading in the box, and the
-         checkbox wording below. */
-      showName: false,
-      consentHeading: "Consent for Identity Verification",
-      checkboxLabel: "I have read and accept the above Terms and Conditions",
+      name: "Student Financial Assistance",
+      lastModified: "2026-03-09",
+      version: "4",
+      /* Figma 42:76944, verbatim. Last paragraph truncated in the design. */
+      paragraphs: [
+        [
+          { text: "Under the authority of the " },
+          { text: "Access to Information and Protection of Privacy (ATIPP) Act", italic: true },
+          { text: ", Section 40(a), Section 40(c)(i) and the " },
+          { text: "Student Financial Assistance Act", italic: true },
+          {
+            text: " and Regulations. The information will be used to determine eligibility for Student Financial Assistance (SFA) and for the general administration and enforcement of this program. The privacy provisions of ",
+          },
+          { text: "ATIPP", italic: true },
+          { text: " protect your information. Personal information is defined under " },
+          { text: "ATIPP", italic: true },
+          {
+            text: ", Section 2. All applicants have the right to examine and request correction of their records and to request a review by the Information and Privacy Commissioner.",
+          },
+        ],
+        [
+          {
+            // TODO(designer): truncated in Figma after "Department of".
+            text: "If you have any questions about the collection of information, contact the SFA Manager, Department of …",
+          },
+        ],
+      ],
+      showName: true,
+      checkboxLabel: "I have read and accept the terms and condition",
     },
   },
 };
@@ -730,16 +725,15 @@ export function serviceVariantParams(): { serviceId: ServiceId }[] {
 }
 
 /**
- * The services whose wizard has PP-08 "Other verification" — i.e. the ones
- * `/services/[serviceId]/other-verification/` should exist for.
+ * The services that get a page at `/services/[serviceId]/other-verification/`.
  *
- * `otherVerificationStep` decides, exactly as `captureSides` decides the back
- * capture in `cidBackCaptureParams`: a service without the step gets no page at
- * that path, so there is no orphan screen for a presenter to type their way
- * into. Today: `studentaid` only.
+ * GNWT re-brand (release-2): neither GNWT flow has the old PP-08 "Other
+ * verification" step any more (`otherVerificationStep` is false everywhere),
+ * and nothing links to it. The route is STILL GENERATED for the services that
+ * have a `[serviceId]` wizard, so an old bookmark or a presenter typing the
+ * URL lands on a page that forwards to the CertifiO hand-off instead of a 404
+ * (see OtherVerificationScreen).
  */
 export function otherVerificationParams(): { serviceId: ServiceId }[] {
-  return serviceVariantParams().filter(
-    ({ serviceId }) => SERVICES[serviceId].otherVerificationStep,
-  );
+  return serviceVariantParams();
 }

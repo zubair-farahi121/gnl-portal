@@ -111,7 +111,7 @@ export const C1_CONTENT: Record<CredentialKind, C1Content> = {
   studentaid: NOA_C1,
 };
 
-/** Where each credential's C1 page is — the wallet's "◀ MyGovNL" goes back there. */
+/** Where each credential's C1 page is — the wallet's "◀ eServices" goes back there. */
 export const C1_ROUTE: Record<CredentialKind, string> = {
   "driver-vehicle": FLOW3_ROUTES.c1,
   studentaid: FLOW4_ROUTES.c1,
@@ -142,7 +142,7 @@ export type WalletCredential = {
     cardTitle: string;
     cardSubtitle: string;
     /** The icon beside the offer card's title. */
-    icon: "vc" | "tasks";
+    icon: "vc" | "tasks" | "truck";
   };
   review: {
     cardTitle: string;
@@ -172,6 +172,8 @@ export type WalletCredential = {
 
 const VRC_WALLET: WalletCredential = {
   kind: "driver-vehicle",
+  /* GNWT release-2: GNWT 1:25112 / 1:23430 / 1:24181 draw the service under the issuer. */
+  issuerSubline: "Driver and Vehicle Services",
   connectBody: WALLET_COPY.connect.body,
   offer: {
     heading: WALLET_COPY.offer.heading,
@@ -179,10 +181,14 @@ const VRC_WALLET: WalletCredential = {
     body: WALLET_COPY.offer.body,
     cardTitle: WALLET_COPY.offer.cardTitle,
     cardSubtitle: WALLET_COPY.offer.cardSubtitle,
-    icon: "vc",
+    /* GNWT 1:23430: "Truck_delivery" 32 x 32 beside the title. */
+    icon: "truck",
   },
   review: {
     cardTitle: WALLET_COPY.review.cardTitle,
+    /* GNWT 1:24181: the GNWT logo, then the service, as Flow 4's card. */
+    cardSubline: "Driver and Vehicle Services",
+    cardMinHeight: 188,
     intro: WALLET_COPY.review.intro,
     rows: WALLET_COPY.review.rows,
     consent: WALLET_CONSENT,
@@ -194,6 +200,8 @@ const VRC_WALLET: WalletCredential = {
   addedBody: WALLET_COPY.added.body,
   card: {
     title: WALLET_COPY.cards.vrc.title,
+    /* GNWT 1:24962. */
+    subline: "Driver and Vehicle Services, GNWT",
     rows: WALLET_COPY.cards.vrc.rows,
     issuedLabel,
     glyph: "truck",

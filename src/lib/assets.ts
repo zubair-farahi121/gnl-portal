@@ -371,6 +371,19 @@ export const ASSETS = {
    * of the group's own size. Reproduced verbatim — see the file header.
    */
   livenessFaceGuide: "/assets/liveness-face-guide.svg",
+
+  /*
+   * GNWT (release-2). The Government of Northwest Territories' own artwork,
+   * supplied by the design team on 2026-11-16 (OneDrive zip), unchanged apart
+   * from one <style> rule added to the wave so its blend mode survives being
+   * loaded as an <img>.
+   */
+  /** Header logo, 304 x 66 (150 x 32.566 on a phone). */
+  gnwtLogo: "/assets/gnwt/navbar-brand--logo.svg",
+  /** Footer logo, white, 175.98 x 27.71. */
+  gnwtFooterLogo: "/assets/gnwt/gnwt-footer-logo.svg",
+  /** The "curve in motion" wave above the footer band, 1920 x 148, stretched to the width. */
+  gnwtWave: "/assets/gnwt/gnwt-curve-in-motion.svg",
 } as const;
 
 export type AssetKey = keyof typeof ASSETS;

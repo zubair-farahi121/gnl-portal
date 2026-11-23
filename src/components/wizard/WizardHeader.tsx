@@ -35,10 +35,15 @@ import type { StepIndex } from "@/lib/demo-data";
  * See the note on the size maps in ProgressStepper.
  */
 const TITLE_SIZE = {
-  sm: "text-[24px]",
-  lg: "text-[28px]",
-  cid: "text-[24px] md:text-[28px]",
+  sm: "text-[24px] text-[color:var(--gnl-heading,#212326)]",
+  /* GNWT desktop wizard (release-2, B-wizard.md §1.3): 35px Bold #333333,
+     stepping down on narrow screens so a long service name stays readable. */
+  lg: "text-[35px] text-[#333333] max-md:text-[30px] max-xs:text-[24px]",
+  cid: "text-[24px] text-[color:var(--gnl-heading,#212326)] md:text-[28px]",
 } as const;
+
+/** Title-to-stepper gap. GNWT `lg`: 16px. */
+const HEADER_GAP = { sm: "gap-[24px]", lg: "gap-[16px]", cid: "gap-[24px]" } as const;
 
 export function WizardHeader({
   title,
@@ -56,9 +61,9 @@ export function WizardHeader({
   subStep?: SubStep;
 }) {
   return (
-    <div className="flex w-full shrink-0 flex-col items-center gap-[24px]" data-node-id="6031:6308">
+    <div className={`flex w-full shrink-0 flex-col items-center ${HEADER_GAP[size]}`} data-node-id="6031:6308">
       <p
-        className={`w-full shrink-0 text-center ${TITLE_SIZE[size]} font-bold leading-[1.5] text-[color:var(--gnl-heading,#212326)]`}
+        className={`w-full shrink-0 text-center ${TITLE_SIZE[size]} font-bold leading-[1.5] [overflow-wrap:anywhere]`}
         data-node-id="6031:6309"
       >
         {title}
