@@ -60,7 +60,7 @@ function Svg({ size = 16, children, className = "" }: { size?: number; children:
   );
 }
 
-const ICON_PATHS: Record<ContactIcon | ScopeIcon | "star" | "lock" | "chevron" | "check", ReactNode> = {
+const ICON_PATHS: Record<ContactIcon | ScopeIcon | "star" | "lock" | "chevron", ReactNode> = {
   building: (
     <>
       <rect x="4" y="2" width="16" height="20" rx="1" />
@@ -100,7 +100,6 @@ const ICON_PATHS: Record<ContactIcon | ScopeIcon | "star" | "lock" | "chevron" |
     </>
   ),
   chevron: <path d="m9 18 6-6-6-6" />,
-  check: <path d="M20 6 9 17l-5-5" />,
 };
 
 function Icon({ name, size, className }: { name: keyof typeof ICON_PATHS; size?: number; className?: string }) {
@@ -118,7 +117,11 @@ const CARD = "rounded-[6px] border border-solid border-[#d4d8da] bg-white p-[16p
 function Badge({ trusted }: { trusted: boolean }) {
   return trusted ? (
     <span className="flex shrink-0 items-center gap-[4px] rounded-full bg-[#d1e7dd] px-[12px] py-[6px] text-[14px] font-normal leading-[1.4] text-[#198754]" data-status-badge="trusted">
-      <Icon name="check" size={12} />
+      {/* Review 2026-11-23 (Tatyana, nice to have): Bootstrap Icons "check-lg"
+          (MIT, icons.getbootstrap.com/icons/check-lg), filled with the pill's text colour. */}
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true" className="block shrink-0" data-icon="bi-check-lg">
+        <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z" />
+      </svg>
       {C.badgeTrusted}
     </span>
   ) : (
