@@ -222,3 +222,5 @@ recorded here as stated by the requester.
 Re-baselined 2026-11-17 — GNWT wallet flows 3 and 4 (release-2): the wallet-* frames are pictures of the GNWT build, reviewed side by side against the GNWT Figma prototype frames (flow 3 section 45:91986 and the flow 4 section) on 2026-11-17.
 
 Re-baselined 2026-11-17 (second pass) — GNWT wallet details: one status icon, the down chevron on "Verified government issuer", the truck on W-04, the trash key on W-07, no "Today" card on W-01; wallet-* frames re-taken from the GNWT build after a side-by-side check against the GNWT Figma prototype frames.
+
+Re-baselined 2026-11-23 — review fixes (Tatyana): header search text 1rem / 75 % opacity, "Confirmation required" pill 14px / 400, Flow 1 Summary CTA "Continue". Every frame re-taken from the GNWT build; changes were <=0.11% per frame.

@@ -139,12 +139,12 @@ const TERMS_SCOPES: Record<ServiceId, readonly TermsScope[]> = {
 };
 
 /**
- * The Summary screen's primary CTA. The design file disagrees with itself:
- * Flow 1 (24:48794) says "I Consent", Flow 2 (40:76892) says "Continue".
- * Each frame is followed as drawn; open question for the designer.
+ * The Summary screen's primary CTA. Figma Flow 1 (24:48794) draws "I Consent",
+ * Flow 2 (40:76892) "Continue". Review 2026-11-23 (Tatyana): Flow 1 reads
+ * "Continue" too — "I Consent" belongs on the Terms screen only.
  */
 const SUMMARY_CTA: Record<ServiceId, string> = {
-  "driver-vehicle": "I Consent",
+  "driver-vehicle": "Continue",
   studentaid: "Continue",
 };
 

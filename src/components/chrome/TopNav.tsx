@@ -150,7 +150,8 @@ export function GnwtHeader({ authenticated, compact = false }: { authenticated: 
             className={`flex w-[256px] shrink-0 cursor-default select-none items-center border border-solid border-[#8b8d90] p-[12px] ${TEXT}`}
             {...INERT}
           >
-            <span className="flex-1 text-[20px] font-normal leading-none">Search</span>
+            {/* Review 2026-11-23 (Tatyana): 1rem, 75 % opacity. */}
+            <span className="flex-1 text-[1rem] font-normal leading-none opacity-75">Search</span>
             <SearchIcon />
           </div>
           {authenticated ? <UserMenu /> : null}

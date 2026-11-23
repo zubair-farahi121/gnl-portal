@@ -271,8 +271,8 @@ async function run(width) {
    * Summary step.
    */
   await step('3  Click to Proceed -> summary', click('Click to Proceed'), '/services/driver-vehicle/summary');
-  /* GNWT Flow 1 Summary (24:48794) labels its primary "I Consent", as drawn. */
-  await step('3a Summary -> terms', click('I Consent'), '/services/driver-vehicle/terms');
+  /* GNWT Flow 1 Summary: "Continue" (review 2026-11-23; Figma 24:48794 drew "I Consent"). */
+  await step('3a Summary -> terms', click('Continue'), '/services/driver-vehicle/terms');
 
   /*
    * 3b — THE CHECKBOX RULE, NEGATIVE CASE (§7.4). Click "I Consent" with the

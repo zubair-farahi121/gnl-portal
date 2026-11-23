@@ -122,7 +122,7 @@ function Badge({ trusted }: { trusted: boolean }) {
       {C.badgeTrusted}
     </span>
   ) : (
-    <span className="flex shrink-0 items-center gap-[6px] rounded-full bg-[#ffc3c9] px-[12px] py-[6px] text-[12px] font-bold leading-[1.5] text-[#b11721]" data-status-badge="unverified">
+    <span className="flex shrink-0 items-center gap-[6px] rounded-full bg-[#ffc3c9] px-[12px] py-[6px] text-[14px] font-normal leading-[1.4] text-[#b11721]" data-status-badge="unverified">
       <Icon name="lock" size={12} />
       {C.badgeUnverified}
     </span>

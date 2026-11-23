@@ -27,7 +27,7 @@ import { ASSETS } from "@/lib/assets";
  */
 
 const CARD =
-  "relative box-border flex w-full flex-col items-start gap-[16px] rounded-[6px] border border-solid border-[#d4d8da] bg-white p-[12px] hover:border-[#8b8d90]";
+  "group relative box-border flex w-full flex-col items-start gap-[16px] rounded-[6px] border border-solid border-[#d4d8da] bg-white p-[12px] hover:border-[#8b8d90]";
 
 /** Fixed design heights, as minimums, applied only at the 4-column width. */
 const MIN_HEIGHT = {
@@ -88,7 +88,10 @@ export function ServiceCard({
       data-service-card={href ? "link" : "inert"}
     >
       {/* card-header */}
-      <div className="flex w-full shrink-0 items-start gap-[8px]">
+      {/* Review 2026-11-23 (Tatyana, nice to have): the title row takes
+          --menu-color-hover (#F2F2F2) while the card is hovered. The negative
+          margin + equal padding keep the layout identical when not hovered. */}
+      <div className="-m-[6px] flex w-[calc(100%+12px)] shrink-0 items-start gap-[8px] rounded-[4px] p-[6px] transition-colors group-hover:bg-[var(--menu-color-hover)]">
         <h3 className="m-0 min-w-px flex-[1_0_0]">
           {href ? (
             <Link href={href} className={TITLE_CONTROL}>
